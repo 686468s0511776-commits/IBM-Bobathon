@@ -1274,6 +1274,80 @@
     font-size: 14px;
   }
 
+  /* ══════════════════════════════
+     雙方確認完成 & 取消任務列
+  ══════════════════════════════ */
+  .chat-action-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px; background: #fffbeb;
+    border-bottom: 1.5px solid #fde68a;
+    flex-shrink: 0; flex-wrap: wrap;
+  }
+  .chat-action-label { font-size: 12px; color: #92400e; font-weight: 600; flex: 1; min-width: 0; }
+  .btn-task-complete {
+    padding: 5px 16px; border-radius: 20px; border: none;
+    background: #22c55e; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-task-complete:hover { opacity: .85; }
+  .btn-task-complete:disabled { background: #9ca3af; cursor: default; }
+  .btn-task-cancel {
+    padding: 5px 14px; border-radius: 20px;
+    border: 1.5px solid #ef4444; background: #fff;
+    color: #ef4444; font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-task-cancel:hover { background: #fef2f2; }
+  .chat-pending-note {
+    font-size: 11px; color: #d97706; background: #fef9c3;
+    border-radius: 8px; padding: 3px 10px; font-weight: 600;
+  }
+
+  /* ══════════════════════════════
+     評價 Modal
+  ══════════════════════════════ */
+  .review-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 3000;
+    align-items: center; justify-content: center;
+  }
+  .review-overlay.open { display: flex; }
+  .review-box {
+    background: #fff; border-radius: 18px;
+    width: min(400px, 94vw); padding: 32px 28px;
+    box-shadow: 0 16px 64px rgba(0,0,0,.28);
+    text-align: center;
+  }
+  .review-box h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .review-box .review-sub { font-size: 13px; color: #6b7280; margin-bottom: 20px; }
+  .star-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 18px; }
+  .star-btn {
+    font-size: 32px; background: none; border: none; cursor: pointer;
+    filter: grayscale(1); transition: filter .15s, transform .1s;
+  }
+  .star-btn.active { filter: grayscale(0); transform: scale(1.15); }
+  .review-textarea {
+    width: 100%; min-height: 80px; border: 1.5px solid #e5e7eb;
+    border-radius: 10px; padding: 10px 12px; font-size: 13px;
+    resize: none; margin-bottom: 16px; font-family: inherit;
+  }
+  .review-textarea:focus { outline: none; border-color: #5B8DB8; }
+  .btn-review-submit {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    background: #5B8DB8; color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: opacity .15s;
+  }
+  .btn-review-submit:hover { opacity: .88; }
+  .btn-review-skip {
+    margin-top: 10px; background: none; border: none;
+    color: #9ca3af; font-size: 13px; cursor: pointer; text-decoration: underline;
+  }
+  .profile-rating {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fef9c3; border-radius: 20px; padding: 2px 10px;
+    font-size: 13px; font-weight: 700; color: #92400e; margin-top: 6px;
+  }
+
 </style>
 
 <!-- Mock 登入/註冊：獨立 script，不依賴 Firebase module -->
@@ -1836,8 +1910,9 @@
           <div>
             <div class="profile-name" id="profile-name">—</div>
             <div class="profile-meta" id="profile-meta">—</div>
-            <div style="margin-top:10px">
+            <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
               <span class="points-badge large" id="profile-points">⭐ — 點</span>
+              <span class="profile-rating" id="profile-rating" style="display:none">⭐ —</span>
             </div>
             <!-- 我的技能管理區 -->
             <div class="my-skills-section" style="margin-top:14px">
@@ -1974,12 +2049,17 @@
           <button class="btn-show-phone" id="cr-show-phone-btn" onclick="window.togglePhoneReveal()" title="顯示對方聯絡電話">📞 顯示電話</button>
           <div class="phone-reveal-box" id="cr-phone-reveal"></div>
         </div>
-        <!-- 對話狀態列 -->
+        <!-- 對話狀態列（討論中 / 已約定） -->
         <div class="chat-status-bar" id="cr-status-bar">
           <span class="chat-status-label">對話狀態：</span>
           <button class="chat-status-btn active" data-status="discussing" onclick="window.setChatStatus('discussing')">💬 討論中</button>
           <button class="chat-status-btn" data-status="scheduled" onclick="window.setChatStatus('scheduled')">📅 已約定</button>
-          <button class="chat-status-btn" data-status="done" onclick="window.setChatStatus('done')">✅ 服務完成</button>
+        </div>
+        <!-- 任務行動列（確認完成 / 取消任務） -->
+        <div class="chat-action-bar" id="cr-action-bar" style="display:none">
+          <span class="chat-action-label" id="cr-action-label">任務進行中</span>
+          <button class="btn-task-complete" id="btn-task-complete" onclick="window.requestCompletion()">✅ 已完成</button>
+          <button class="btn-task-cancel" onclick="window.requestCancel()">✕ 取消任務</button>
         </div>
         <!-- 訊息列表 -->
         <div class="cr-messages" id="cr-messages"></div>
@@ -2260,6 +2340,27 @@
 <div class="toast" id="toast"></div>
 
 <!-- ════════════════════════════════
+     評價 Modal
+════════════════════════════════ -->
+<div class="review-overlay" id="review-overlay">
+  <div class="review-box">
+    <h3>⭐ 為對方評分</h3>
+    <div class="review-sub" id="review-sub">請為這次的互助服務評分</div>
+    <div class="star-row" id="review-stars">
+      <button class="star-btn" data-star="1" onclick="window.setReviewStar(1)">⭐</button>
+      <button class="star-btn" data-star="2" onclick="window.setReviewStar(2)">⭐</button>
+      <button class="star-btn" data-star="3" onclick="window.setReviewStar(3)">⭐</button>
+      <button class="star-btn" data-star="4" onclick="window.setReviewStar(4)">⭐</button>
+      <button class="star-btn" data-star="5" onclick="window.setReviewStar(5)">⭐</button>
+    </div>
+    <textarea class="review-textarea" id="review-comment" placeholder="說說你的感受，例如：非常準時、態度親切！（選填）"></textarea>
+    <button class="btn-review-submit" onclick="window.submitReview()">送出評價</button>
+    <br>
+    <button class="btn-review-skip" onclick="window.skipReview()">略過，稍後再說</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
      管理者後台 Modal
 ════════════════════════════════ -->
 <div class="admin-overlay" id="admin-overlay">
@@ -2333,6 +2434,10 @@ let activeRejectId  = null;
 let _unreadUnsub     = null;  // onSnapshot 取消器（已改為 _unreadChatUnsubs 陣列）
 let _unreadMap       = {};    // { chatId: Set<senderId> } — 以「有幾人」更新導覽列
 let _unreadCountMap  = {};    // { chatId: number } — 實際未讀訊息則數，用於左欄紅點數字
+
+// 評價 Modal 狀態
+let _reviewData     = null;   // { toUserId, toName, taskId, chatId }
+let _reviewStar     = 0;      // 目前選擇的星數
 
 // ── 點數常數：技能 → 所需點數 ──
 const SKILL_POINTS = {
@@ -3894,6 +3999,7 @@ async function renderProfile() {
   document.getElementById('profile-meta').textContent = `${currentUserData.age} 歲・${currentUserData.gender}`;
   const profilePtsEl = document.getElementById('profile-points');
   if (profilePtsEl) profilePtsEl.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
+  _renderProfileRating();
 
   // ── 我的技能管理區：分類顯示 ──
   const d = currentUserData;
@@ -4382,10 +4488,12 @@ async function getUserInfo(uid, hintFromChat) {
       // displayName（新欄位）優先；其次 name（舊欄位）；再取 email 前綴
       const name = d.displayName || d.name || d.email?.split('@')[0] || '社區鄰居';
       const info = {
-        displayName: name,
-        avatar:      d.photoURL || null,
-        emoji:       d.emoji    || null,
-        meta:        d.age && d.gender ? `${d.age} 歲・${d.gender}` : '',
+        displayName:   name,
+        avatar:        d.photoURL || null,
+        emoji:         d.emoji    || null,
+        meta:          d.age && d.gender ? `${d.age} 歲・${d.gender}` : '',
+        averageRating: d.averageRating ?? null,
+        reviewCount:   d.reviewCount   ?? 0,
       };
       _userCache[uid] = info;
       return info;
@@ -4526,7 +4634,13 @@ window.loadChatList = () => {
           const nameEl = document.getElementById('cr-name');
           const metaEl = document.getElementById('cr-meta');
           if (nameEl) nameEl.textContent = info.displayName;
-          if (metaEl) metaEl.textContent = info.meta || c.peerMeta || '';
+          if (metaEl) {
+            const ratingStr = (info.averageRating != null && info.reviewCount > 0)
+              ? `  ⭐ ${Number(info.averageRating).toFixed(1)}（${info.reviewCount} 則）` : '';
+            metaEl.textContent = (info.meta || c.peerMeta || '') + ratingStr;
+          }
+          // 同步更新行動列狀態
+          _updateChatActionBar(c);
         });
       }
     }
@@ -4572,7 +4686,13 @@ window.openChatRoom = async (chatId) => {
   }
 
   document.getElementById('cr-name').textContent = peerName;
-  document.getElementById('cr-meta').textContent = peerInfo.meta || chat.peerMeta || '';
+  // 顯示對方 meta + 星級評分
+  const peerRatingStr = (() => {
+    const avg   = peerInfo.averageRating ?? peerInfo.rating;
+    const count = peerInfo.reviewCount   ?? 0;
+    return (avg != null && count > 0) ? `  ⭐ ${Number(avg).toFixed(1)}（${count} 則）` : '';
+  })();
+  document.getElementById('cr-meta').textContent = (peerInfo.meta || chat.peerMeta || '') + peerRatingStr;
   document.getElementById('cr-messages').innerHTML = '';
   document.getElementById('cr-input').focus();
 
@@ -4588,6 +4708,9 @@ window.openChatRoom = async (chatId) => {
   const storedStatus = chat.chatStatus || 'discussing';
   document.querySelectorAll('.chat-status-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.status === storedStatus));
+
+  // ── 更新任務行動列（雙方確認完成 / 取消）──
+  _updateChatActionBar(chat);
 
   // 解除舊監聽器
   if (window._roomUnsubscribe) { window._roomUnsubscribe(); window._roomUnsubscribe = null; }
@@ -5003,18 +5126,337 @@ window.togglePhoneReveal = () => {
 };
 
 window.setChatStatus = async (status) => {
-  // 更新 UI
   document.querySelectorAll('.chat-status-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.status === status));
-  // 持久化到 Firestore（非同步，失敗不影響 UI）
   if (activeChatId) {
     try {
       await setDoc(doc(db, 'chats', activeChatId), { chatStatus: status }, { merge: true });
     } catch(e) { /* 靜默失敗 */ }
   }
-  const statusLabels = { discussing:'💬 討論中', scheduled:'📅 已約定', done:'✅ 服務完成' };
+  const statusLabels = { discussing:'💬 討論中', scheduled:'📅 已約定' };
   showToast(`對話狀態已更新：${statusLabels[status] || status}`);
 };
+
+// ═══════════════════════════════════════
+//  雙方確認完成 / 取消任務
+// ═══════════════════════════════════════
+
+// ── 根據 chat 文件的 taskStatus 更新行動列 ──
+function _updateChatActionBar(chat) {
+  const actionBar  = document.getElementById('cr-action-bar');
+  const label      = document.getElementById('cr-action-label');
+  const completeBtn= document.getElementById('btn-task-complete');
+  if (!actionBar || !label || !completeBtn || !currentUser) return;
+
+  const ts = chat.taskStatus || 'active';          // active | pending_completion | completed | canceled
+  const confirmedBy = chat.completionConfirmedBy || null; // uid of first confirmer
+
+  if (ts === 'completed' || ts === 'canceled') {
+    actionBar.style.display = 'none';
+    return;
+  }
+
+  actionBar.style.display = 'flex';
+
+  if (ts === 'pending_completion') {
+    if (confirmedBy === currentUser.uid) {
+      // 我已確認，等對方
+      label.innerHTML = '⏳ 已送出完成確認，等待對方確認中…';
+      completeBtn.disabled = true;
+      completeBtn.textContent = '✅ 已送出';
+    } else {
+      // 對方已確認，等我
+      label.innerHTML = '🔔 對方已標示任務完成，請確認是否完成？';
+      completeBtn.disabled = false;
+      completeBtn.textContent = '✅ 確認完成';
+    }
+  } else {
+    // active 狀態
+    label.innerHTML = '任務進行中';
+    completeBtn.disabled = false;
+    completeBtn.textContent = '✅ 已完成';
+  }
+}
+
+// ── 第一方或第二方按「已完成」──
+window.requestCompletion = async () => {
+  if (!activeChatId || !currentUser) return;
+  const chat = myChats.find(c => c.chatId === activeChatId);
+  if (!chat) return;
+
+  const ts           = chat.taskStatus || 'active';
+  const confirmedBy  = chat.completionConfirmedBy || null;
+  const peerId       = otherUid(chat);
+
+  if (ts === 'pending_completion' && confirmedBy !== currentUser.uid) {
+    // 第二方確認 → 觸發點數轉帳 + 評價
+    await _finalizeCompletion(chat);
+  } else if (ts === 'active') {
+    // 第一方送出確認
+    try {
+      await setDoc(doc(db, 'chats', activeChatId), {
+        taskStatus: 'pending_completion',
+        completionConfirmedBy: currentUser.uid,
+        completionRequestedAt: serverTimestamp()
+      }, { merge: true });
+      // 本地更新
+      chat.taskStatus = 'pending_completion';
+      chat.completionConfirmedBy = currentUser.uid;
+      _updateChatActionBar(chat);
+      showToast('✅ 已送出完成確認，等待對方確認…');
+      // 寄一則系統訊息通知對方
+      await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+        senderId:   currentUser.uid,
+        receiverId: peerId,
+        text:       '🔔 我已標示任務完成，請確認是否完成？',
+        type:       'system',
+        time:       nowTime(),
+        timestamp:  serverTimestamp(),
+        isRead:     false
+      });
+    } catch(e) {
+      showToast('操作失敗，請稍後再試');
+    }
+  }
+};
+
+// ── 雙方均確認 → 執行點數轉帳 ──
+async function _finalizeCompletion(chat) {
+  const peerId      = otherUid(chat);
+  const peerInfo    = await getUserInfo(peerId, chat);
+
+  // 取得 invite 資料（points, inviteId）
+  let points = 0;
+  let inviteId = chat.inviteId || '';
+  if (inviteId) {
+    try {
+      const invSnap = await getDoc(doc(db, 'invites', inviteId));
+      points = invSnap.data()?.points || 0;
+    } catch(e) {}
+  }
+  // 若無 invite 記錄，從 chat 文件取 points
+  if (!points) points = chat.points || 0;
+
+  // 判斷誰是求助者（付款方）/ 提供者（收款方）
+  // chat.inviteType: 'need' 代表發起者是求助者、chat.requesterUid 或 chat.participants[0]
+  const requesterUid = chat.requesterUid || chat.participants?.find(u => u !== peerId) || currentUser.uid;
+  const providerUid  = chat.providerUid  || peerId;
+
+  const fee         = Math.floor(points * 0.1);
+  const providerGain= points - fee;
+
+  try {
+    if (points > 0) {
+      const reqRef      = doc(db, 'users', requesterUid);
+      const provRef     = doc(db, 'users', providerUid);
+      const treasuryRef = doc(db, 'system', 'treasury');
+
+      await runTransaction(db, async (t) => {
+        const reqSnap = await t.get(reqRef);
+        const curPts  = reqSnap.data()?.points ?? 0;
+        if (curPts < points) throw new Error('點數不足');
+        t.update(reqRef,      { points: increment(-points) });
+        t.update(provRef,     { points: increment(providerGain) });
+        t.set(treasuryRef,    { totalFees: increment(fee) }, { merge: true });
+        if (inviteId) t.update(doc(db, 'invites', inviteId), { status: '已完成' });
+        t.update(doc(db, 'chats', activeChatId), {
+          taskStatus: 'completed',
+          completedAt: serverTimestamp()
+        });
+      });
+
+      // 點數記錄
+      const reqName  = (await getUserInfo(requesterUid)).displayName || '求助者';
+      const provName = peerInfo.displayName || '提供者';
+      await addDoc(collection(db,'point_transactions'), {
+        uid: requesterUid, userId: requesterUid, name: reqName,
+        type:'deduct', delta:-points, amount:points,
+        reason:`任務完成 — 支付給 ${provName}（含 ${fee} 點平台費）`,
+        description:`任務完成 — 支付給 ${provName}（含 ${fee} 點平台費）`,
+        counterpart: provName,
+        createdAt: serverTimestamp(), timestamp: serverTimestamp()
+      });
+      await addDoc(collection(db,'point_transactions'), {
+        uid: providerUid, userId: providerUid, name: provName,
+        type:'gain', delta:providerGain, amount:providerGain,
+        reason:`任務完成 — 收到來自 ${reqName}（扣除 ${fee} 點手續費）`,
+        description:`任務完成 — 收到來自 ${reqName}（扣除 ${fee} 點手續費）`,
+        counterpart: reqName,
+        createdAt: serverTimestamp(), timestamp: serverTimestamp()
+      });
+      await addDoc(collection(db,'points_history'), {
+        inviteId, requesterUid, providerUid,
+        providerName: provName, requesterName: reqName,
+        totalPoints: points, fee, providerGain,
+        type:'service_complete', createdAt: serverTimestamp()
+      });
+
+      // 更新本地點數
+      if (currentUser.uid === providerUid) {
+        currentUserData.points = (currentUserData.points ?? 0) + providerGain;
+      } else {
+        currentUserData.points = Math.max(0, (currentUserData.points ?? 0) - points);
+      }
+      updateSidebarUser();
+    } else {
+      // 無點數任務，僅更新狀態
+      await setDoc(doc(db, 'chats', activeChatId), {
+        taskStatus: 'completed', completedAt: serverTimestamp()
+      }, { merge: true });
+      if (inviteId) {
+        await setDoc(doc(db, 'invites', inviteId), { status: '已完成' }, { merge: true });
+      }
+    }
+
+    // 系統訊息
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderId: currentUser.uid, receiverId: peerId,
+      text: '🎉 雙方均已確認完成！感謝本次互助！',
+      type: 'system', time: nowTime(),
+      timestamp: serverTimestamp(), isRead: false
+    });
+
+    // 更新本地 chat 狀態
+    if (chat) chat.taskStatus = 'completed';
+    _updateChatActionBar(chat || { taskStatus: 'completed' });
+
+    showToast(points > 0
+      ? `✅ 任務完成！${currentUser.uid === providerUid ? `獲得 ${providerGain} 點（扣除 ${fee} 點手續費）` : `已支付 ${points} 點`}`
+      : '✅ 任務已完成！感謝本次互助！');
+
+    // 觸發雙方評價
+    _openReviewModal(peerId, peerInfo.displayName, inviteId || activeChatId);
+    renderProfile();
+  } catch(e) {
+    showToast(e.message === '點數不足' ? '點數不足，無法完成結算' : `操作失敗：${e.message}`);
+  }
+}
+
+// ── 取消任務 ──
+window.requestCancel = async () => {
+  if (!activeChatId || !currentUser) return;
+  if (!confirm('確定要取消這個任務嗎？取消後不會執行點數轉帳。')) return;
+
+  const chat   = myChats.find(c => c.chatId === activeChatId);
+  const peerId = chat ? otherUid(chat) : '';
+
+  try {
+    await setDoc(doc(db, 'chats', activeChatId), {
+      taskStatus: 'canceled', canceledAt: serverTimestamp(),
+      canceledBy: currentUser.uid
+    }, { merge: true });
+    if (chat?.inviteId) {
+      await setDoc(doc(db, 'invites', chat.inviteId), { status: '已取消' }, { merge: true });
+    }
+    // 系統訊息
+    if (peerId) {
+      await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+        senderId: currentUser.uid, receiverId: peerId,
+        text: '⚠️ 任務已取消，媒合解除。',
+        type: 'system', time: nowTime(),
+        timestamp: serverTimestamp(), isRead: false
+      });
+    }
+    if (chat) chat.taskStatus = 'canceled';
+    _updateChatActionBar(chat || { taskStatus: 'canceled' });
+    showToast('任務已取消');
+    renderProfile();
+  } catch(e) {
+    showToast('操作失敗，請稍後再試');
+  }
+};
+
+// ═══════════════════════════════════════
+//  評價系統
+// ═══════════════════════════════════════
+
+// ── 開啟評價 Modal ──
+function _openReviewModal(toUserId, toName, taskId) {
+  _reviewData  = { toUserId, toName, taskId };
+  _reviewStar  = 0;
+  document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('review-comment').value = '';
+  document.getElementById('review-sub').textContent = `請為「${toName}」這次的互助服務評分`;
+  document.getElementById('review-overlay').classList.add('open');
+}
+
+// ── 星級點擊 ──
+window.setReviewStar = (n) => {
+  _reviewStar = n;
+  document.querySelectorAll('.star-btn').forEach(b =>
+    b.classList.toggle('active', parseInt(b.dataset.star) <= n));
+};
+
+// ── 送出評價 ──
+window.submitReview = async () => {
+  if (!_reviewData) return;
+  if (_reviewStar === 0) { showToast('請先選擇星數'); return; }
+  const { toUserId, toName, taskId } = _reviewData;
+  const comment = document.getElementById('review-comment').value.trim();
+
+  try {
+    // 寫入 reviews 集合
+    await addDoc(collection(db, 'reviews'), {
+      taskId,
+      fromUserId: currentUser.uid,
+      fromName:   currentUserData.displayName || currentUserData.name || '—',
+      toUserId,
+      toName,
+      rating:     _reviewStar,
+      comment,
+      createdAt:  serverTimestamp()
+    });
+
+    // 重新計算受評者的平均星級
+    await _recalcRating(toUserId);
+
+    document.getElementById('review-overlay').classList.remove('open');
+    _reviewData = null;
+    showToast('⭐ 評價已送出，謝謝你的回饋！');
+  } catch(e) {
+    showToast('評價送出失敗，請稍後再試');
+  }
+};
+
+// ── 略過評價 ──
+window.skipReview = () => {
+  document.getElementById('review-overlay').classList.remove('open');
+  _reviewData = null;
+};
+
+// ── 重新計算用戶平均評分並寫入 Firestore ──
+async function _recalcRating(userId) {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'reviews'), where('toUserId', '==', userId))
+    );
+    if (snap.empty) return;
+    const ratings    = snap.docs.map(d => d.data().rating || 0);
+    const count      = ratings.length;
+    const avg        = Math.round((ratings.reduce((s, r) => s + r, 0) / count) * 10) / 10;
+    await setDoc(doc(db, 'users', userId), {
+      averageRating: avg,
+      reviewCount:   count
+    }, { merge: true });
+    // 若是自己的評分，更新本地快取
+    if (userId === currentUser?.uid && currentUserData) {
+      currentUserData.averageRating = avg;
+      currentUserData.reviewCount   = count;
+      _renderProfileRating();
+    }
+  } catch(e) { /* 靜默失敗 */ }
+}
+
+// ── 在 profile 頁顯示星級 ──
+function _renderProfileRating() {
+  const el = document.getElementById('profile-rating');
+  if (!el || !currentUserData) return;
+  const avg   = currentUserData.averageRating;
+  const count = currentUserData.reviewCount || 0;
+  if (avg == null || count === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'inline-flex';
+  el.textContent   = `⭐ ${avg.toFixed(1)} / 5.0（${count} 則評價）`;
+}
 
 // ═══════════════════════════════════════
 //  管理者後台
