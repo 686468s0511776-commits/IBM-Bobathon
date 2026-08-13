@@ -1419,12 +1419,19 @@ document.querySelectorAll('.skill-tags').forEach(container => {
 //  頁面 / Tab 切換
 // ─────────────────────────────────
 window.switchMainPage = (name) => {
-  const map = { home:'page-home', post:'page-post', profile:'page-profile' };
+  const map = { home:'page-home', post:'page-post', profile:'page-profile', chatroom:'page-chatroom' };
+  // 離開聊天室時清除所有聊天室監聽器
+  const currentActive = document.querySelector('.page.active')?.id;
+  if (currentActive === 'page-chatroom' && name !== 'chatroom') {
+    if (window._chatListUnsub)  { window._chatListUnsub();  window._chatListUnsub  = null; }
+    if (window._roomUnsubscribe){ window._roomUnsubscribe(); window._roomUnsubscribe = null; }
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(map[name]).classList.add('active');
   document.querySelectorAll('#main-nav .nav-btn').forEach((b,i) =>
-    b.classList.toggle('active', ['home','post','profile'][i] === name));
-  if (name === 'profile') window.renderProfile && window.renderProfile();
+    b.classList.toggle('active', ['home','post','chatroom','profile'][i] === name));
+  if (name === 'profile')  window.renderProfile && window.renderProfile();
+  if (name === 'chatroom') window.loadChatList && window.loadChatList();
   updateSidebarUser();
 };
 
@@ -1838,6 +1845,163 @@ window.confirmReject = () => {
   showToast('已拒絕邀請。');
   window.renderProfile && window.renderProfile();
 };
+
+// ─────────────────────────────────
+//  聊天室
+// ─────────────────────────────────
+let activeChatId    = null;   // 目前開啟的 chatId
+// ─────────────────────────────────
+//  聊天室即時監聽（onSnapshot）
+// ─────────────────────────────────
+// 使用 window 屬性存放，讓 switchMainPage 可跨作用域清除
+window._roomUnsubscribe = null;   // 訊息子集合監聽取消函式
+window._chatListUnsub  = null;    // 對話列表監聽取消函式
+let myChats = [];                 // { chatId, peerName, peerEmoji, peerMeta, lastMsg, lastTime }
+
+function renderChatList() {
+  const el = document.getElementById('chat-list-items');
+  if (!el) return;
+  if (myChats.length === 0) {
+    el.innerHTML = '<div class="empty-state" style="padding:40px 20px"><span class="empty-icon">💬</span><p>尚無對話紀錄<br><small style="font-size:12px">接受邀請後即可開始聊天</small></p></div>';
+    return;
+  }
+  el.innerHTML = myChats.map(c => {
+    const isMe    = c.lastSenderUid === currentUser.uid;
+    const preview = c.lastMsg ? (isMe ? `你：${c.lastMsg}` : c.lastMsg) : '尚無訊息';
+    return `<div class="chat-list-item ${activeChatId===c.chatId?'active':''}" onclick="window.openChatRoom('${c.chatId}')">
+      <div class="chat-list-avatar">${c.peerEmoji||'🙂'}</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="chat-list-name">${c.peerName||'未知'}</div>
+        <div class="chat-list-preview">${preview}</div>
+      </div>
+      <div class="chat-list-time">${c.lastTime||''}</div>
+    </div>`;
+  }).join('');
+}
+
+// 載入對話列表 — 使用 onSnapshot 即時監聽
+window.loadChatList = () => {
+  const el = document.getElementById('chat-list-items');
+  if (!currentUser || !el) return;
+  el.innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af">載入中...</div>';
+
+  // 若已有監聽器先解除，避免重複訂閱
+  if (window._chatListUnsub) { window._chatListUnsub(); window._chatListUnsub = null; }
+
+  const q = query(
+    collection(db, 'chats'),
+    where('participants', 'array-contains', currentUser.uid)
+  );
+
+  window._chatListUnsub = onSnapshot(q, snap => {
+    myChats = snap.docs.map(d => ({ chatId: d.id, ...d.data() }));
+    // 按最後訊息時間降序排列（若有 lastTime 則排前）
+    myChats.sort((a, b) => (b.lastTime || '').localeCompare(a.lastTime || ''));
+    renderChatList();
+    // 若目前開著的對話對象資料更新了（例如對方名稱），同步更新標頭
+    if (activeChatId) {
+      const c = myChats.find(x => x.chatId === activeChatId);
+      if (c) {
+        const nameEl = document.getElementById('cr-name');
+        const metaEl = document.getElementById('cr-meta');
+        if (nameEl) nameEl.textContent = c.peerName  || '未知';
+        if (metaEl) metaEl.textContent = c.peerMeta  || '';
+      }
+    }
+  }, () => {
+    el.innerHTML = '<div class="empty-state" style="padding:40px 20px"><span class="empty-icon">⚠️</span><p>載入失敗，請重新整理</p></div>';
+  });
+};
+
+// 開啟特定對話 — messages 子集合使用 onSnapshot 即時監聽
+window.openChatRoom = (chatId) => {
+  activeChatId = chatId;
+  const chat = myChats.find(c => c.chatId === chatId);
+  if (!chat) return;
+
+  // 更新左側列表 active 樣式
+  document.querySelectorAll('.chat-list-item').forEach(el =>
+    el.classList.toggle('active', el.getAttribute('onclick')?.includes(`'${chatId}'`)));
+
+  // 顯示右側對話區
+  document.getElementById('chat-room-empty').style.display = 'none';
+  const activeEl = document.getElementById('chat-room-active');
+  activeEl.style.display = 'flex';
+  document.getElementById('cr-avatar').textContent = chat.peerEmoji || '🙂';
+  document.getElementById('cr-name').textContent   = chat.peerName  || '未知';
+  document.getElementById('cr-meta').textContent   = chat.peerMeta  || '';
+  document.getElementById('cr-messages').innerHTML = '';
+  document.getElementById('cr-input').focus();
+
+  // 解除上一個訊息監聽器
+  if (window._roomUnsubscribe) { window._roomUnsubscribe(); window._roomUnsubscribe = null; }
+
+  const msgQ = query(
+    collection(db, 'chats', chatId, 'messages'),
+    orderBy('createdAt', 'asc')
+  );
+
+  window._roomUnsubscribe = onSnapshot(msgQ, snap => {
+    const msgEl     = document.getElementById('cr-messages');
+    if (!msgEl) return;
+    const myEmoji   = currentUserData?.emoji || '🙂';
+    const peerEmoji = chat.peerEmoji || '🙂';
+
+    // 只 append 新增訊息，避免全部重繪造成閃爍
+    const existingCount = msgEl.querySelectorAll('.bubble-wrap').length;
+    const newDocs = snap.docs.slice(existingCount);
+    newDocs.forEach(d => {
+      const m    = d.data();
+      const isMe = m.senderUid === currentUser.uid;
+      const div  = document.createElement('div');
+      div.className = `bubble-wrap ${isMe ? 'me' : ''}`;
+      div.innerHTML = `
+        ${!isMe ? `<div class="bubble-avatar">${peerEmoji}</div>` : ''}
+        <div>
+          <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time||''}</div>
+          <div class="bubble">${m.text}</div>
+        </div>
+        ${isMe ? `<div class="bubble-avatar" style="background:#fff7ed">${myEmoji}</div>` : ''}`;
+      msgEl.appendChild(div);
+    });
+    if (newDocs.length > 0) msgEl.scrollTop = msgEl.scrollHeight;
+  });
+};
+
+// 送出訊息
+window.sendRoomMsg = async () => {
+  const input = document.getElementById('cr-input');
+  const text  = input.value.trim();
+  if (!text || !activeChatId) return;
+  input.value = '';
+  const t = nowTime();
+  try {
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderUid:  currentUser.uid,
+      senderName: currentUserData.name,
+      text, time: t,
+      createdAt: serverTimestamp()
+    });
+    // 更新 chat 文件的最後訊息（對話列表的 onSnapshot 會自動重新渲染）
+    await setDoc(doc(db, 'chats', activeChatId), {
+      lastMsg: text, lastTime: t, lastSenderUid: currentUser.uid
+    }, { merge: true });
+  } catch(e) {
+    showToast('訊息送出失敗：' + e.message);
+  }
+};
+
+// 接受邀請時把對話資料存進 chats（補齊 peerName 等欄位）
+function ensureChatDoc(chatId, inv, fromUid) {
+  return setDoc(doc(db, 'chats', chatId), {
+    participants: [currentUser.uid, fromUid],
+    inviteId:     inv.id,
+    peerName:     inv.fromName,
+    peerEmoji:    inv.fromEmoji || '🙂',
+    peerMeta:     inv.fromMeta  || '',
+    createdAt:    serverTimestamp()
+  }, { merge: true });
+}
 
 // ─────────────────────────────────
 //  Toast
