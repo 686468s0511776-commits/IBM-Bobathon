@@ -2055,32 +2055,104 @@ window.confirmReject = () => {
   window.renderProfile && window.renderProfile();
 };
 
-// ─────────────────────────────────
-//  聊天室
-// ─────────────────────────────────
-let activeChatId    = null;   // 目前開啟的 chatId
-// ─────────────────────────────────
-//  聊天室即時監聽（onSnapshot）
-// ─────────────────────────────────
-// 使用 window 屬性存放，讓 switchMainPage 可跨作用域清除
-window._roomUnsubscribe = null;   // 訊息子集合監聽取消函式
-window._chatListUnsub  = null;    // 對話列表監聽取消函式
-let myChats = [];                 // { chatId, peerName, peerEmoji, peerMeta, lastMsg, lastTime }
+// ═══════════════════════════════════════
+//  聊天室核心
+// ═══════════════════════════════════════
 
-function renderChatList() {
+let activeChatId = null;
+window._roomUnsubscribe = null;
+window._chatListUnsub   = null;
+let myChats = [];
+
+// ─────────────────────────────────
+//  getUserInfo：通用使用者資料查詢（含本地快取）
+// ─────────────────────────────────
+const _userCache = {};   // uid → { displayName, avatar }
+
+async function getUserInfo(uid) {
+  if (!uid) return { displayName: '社區鄰居', avatar: null };
+  // 1. 本地快取命中
+  if (_userCache[uid]) return _userCache[uid];
+  // 2. 若是自己，直接從 currentUserData 拿
+  if (uid === currentUser?.uid && currentUserData) {
+    const info = {
+      displayName: currentUserData.name || currentUserData.email?.split('@')[0] || '社區鄰居',
+      avatar:      currentUserData.photoURL || null,
+      emoji:       currentUserData.emoji || null,
+    };
+    _userCache[uid] = info;
+    return info;
+  }
+  // 3. 查詢 Firestore users/{uid}
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    if (snap.exists()) {
+      const d = snap.data();
+      const info = {
+        displayName: d.name || d.email?.split('@')[0] || '社區鄰居',
+        avatar:      d.photoURL || null,
+        emoji:       d.emoji    || null,
+        meta:        d.age && d.gender ? `${d.age} 歲・${d.gender}` : '',
+      };
+      _userCache[uid] = info;
+      return info;
+    }
+  } catch(e) { /* 查詢失敗則退回預設 */ }
+  const fallback = { displayName: '社區鄰居', avatar: null, emoji: null, meta: '' };
+  _userCache[uid] = fallback;
+  return fallback;
+}
+
+// 產生頭像 HTML：優先 emoji，其次 photoURL img，最後預設圖示
+function avatarHtml(info, size = 36, bgColor = '#fff7ed') {
+  if (info.emoji) {
+    return `<div class="bubble-avatar" style="background:${bgColor};width:${size}px;height:${size}px;font-size:${Math.round(size*0.55)}px">${info.emoji}</div>`;
+  }
+  if (info.avatar) {
+    return `<img class="bubble-avatar" src="${info.avatar}" alt="${info.displayName}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%">`;
+  }
+  // 文字頭像：取名字第一個字
+  const letter = (info.displayName || '?')[0].toUpperCase();
+  return `<div class="bubble-avatar" style="background:#F97316;color:#fff;width:${size}px;height:${size}px;font-size:${Math.round(size*0.45)}px;font-weight:800">${letter}</div>`;
+}
+
+// 左側列表頭像（尺寸略大）
+function listAvatarHtml(info) {
+  if (info.emoji) {
+    return `<div class="chat-list-avatar">${info.emoji}</div>`;
+  }
+  if (info.avatar) {
+    return `<img class="chat-list-avatar" src="${info.avatar}" alt="${info.displayName}" style="object-fit:cover;border-radius:50%">`;
+  }
+  const letter = (info.displayName || '?')[0].toUpperCase();
+  return `<div class="chat-list-avatar" style="background:#F97316;color:#fff;font-size:18px;font-weight:800">${letter}</div>`;
+}
+
+// ─────────────────────────────────
+//  renderChatList：渲染左側對話列表
+// ─────────────────────────────────
+async function renderChatList() {
   const el = document.getElementById('chat-list-items');
   if (!el) return;
   if (myChats.length === 0) {
     el.innerHTML = '<div class="empty-state" style="padding:40px 20px"><span class="empty-icon">💬</span><p>尚無對話紀錄<br><small style="font-size:12px">接受邀請後即可開始聊天</small></p></div>';
     return;
   }
-  el.innerHTML = myChats.map(c => {
+
+  // 同時查詢所有對話對象的資料
+  const infos = await Promise.all(
+    myChats.map(c => getUserInfo(c.peerId || ''))
+  );
+
+  el.innerHTML = myChats.map((c, i) => {
+    const info    = infos[i];
+    const name    = c.peerName || info.displayName;
     const isMe    = c.lastSenderUid === currentUser.uid;
     const preview = c.lastMsg ? (isMe ? `你：${c.lastMsg}` : c.lastMsg) : '尚無訊息';
     return `<div class="chat-list-item ${activeChatId===c.chatId?'active':''}" onclick="window.openChatRoom('${c.chatId}')">
-      <div class="chat-list-avatar">${c.peerEmoji||'🙂'}</div>
+      ${listAvatarHtml({ ...info, emoji: c.peerEmoji || info.emoji })}
       <div style="flex:1;overflow:hidden">
-        <div class="chat-list-name">${c.peerName||'未知'}</div>
+        <div class="chat-list-name">${name}</div>
         <div class="chat-list-preview">${preview}</div>
       </div>
       <div class="chat-list-time">${c.lastTime||''}</div>
@@ -2088,13 +2160,14 @@ function renderChatList() {
   }).join('');
 }
 
-// 載入對話列表 — 使用 onSnapshot 即時監聽
+// ─────────────────────────────────
+//  loadChatList：onSnapshot 監聽 chats 集合
+// ─────────────────────────────────
 window.loadChatList = () => {
   const el = document.getElementById('chat-list-items');
   if (!currentUser || !el) return;
   el.innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af">載入中...</div>';
 
-  // 若已有監聽器先解除，避免重複訂閱
   if (window._chatListUnsub) { window._chatListUnsub(); window._chatListUnsub = null; }
 
   const q = query(
@@ -2104,17 +2177,19 @@ window.loadChatList = () => {
 
   window._chatListUnsub = onSnapshot(q, snap => {
     myChats = snap.docs.map(d => ({ chatId: d.id, ...d.data() }));
-    // 按最後訊息時間降序排列（若有 lastTime 則排前）
     myChats.sort((a, b) => (b.lastTime || '').localeCompare(a.lastTime || ''));
-    renderChatList();
-    // 若目前開著的對話對象資料更新了（例如對方名稱），同步更新標頭
+    renderChatList();   // async，自動補全對方名稱/頭像
+
+    // 若已開啟某對話，同步更新 header
     if (activeChatId) {
       const c = myChats.find(x => x.chatId === activeChatId);
       if (c) {
-        const nameEl = document.getElementById('cr-name');
-        const metaEl = document.getElementById('cr-meta');
-        if (nameEl) nameEl.textContent = c.peerName  || '未知';
-        if (metaEl) metaEl.textContent = c.peerMeta  || '';
+        getUserInfo(c.peerId || '').then(info => {
+          const nameEl = document.getElementById('cr-name');
+          const metaEl = document.getElementById('cr-meta');
+          if (nameEl) nameEl.textContent = c.peerName || info.displayName;
+          if (metaEl) metaEl.textContent = info.meta  || c.peerMeta || '';
+        });
       }
     }
   }, () => {
@@ -2122,27 +2197,48 @@ window.loadChatList = () => {
   });
 };
 
-// 開啟特定對話 — messages 子集合使用 onSnapshot 即時監聽
-window.openChatRoom = (chatId) => {
+// ─────────────────────────────────
+//  openChatRoom：開啟對話，訊息 onSnapshot 即時監聽
+// ─────────────────────────────────
+window.openChatRoom = async (chatId) => {
   activeChatId = chatId;
   const chat = myChats.find(c => c.chatId === chatId);
   if (!chat) return;
+
+  // 查詢對方真實資料
+  const peerId   = chat.peerId || '';
+  const peerInfo = await getUserInfo(peerId);
+  const myInfo   = await getUserInfo(currentUser.uid);
+  const peerName = chat.peerName || peerInfo.displayName;
 
   // 更新左側列表 active 樣式
   document.querySelectorAll('.chat-list-item').forEach(el =>
     el.classList.toggle('active', el.getAttribute('onclick')?.includes(`'${chatId}'`)));
 
-  // 顯示右側對話區
+  // 顯示右側對話區 header
   document.getElementById('chat-room-empty').style.display = 'none';
   const activeEl = document.getElementById('chat-room-active');
   activeEl.style.display = 'flex';
-  document.getElementById('cr-avatar').textContent = chat.peerEmoji || '🙂';
-  document.getElementById('cr-name').textContent   = chat.peerName  || '未知';
-  document.getElementById('cr-meta').textContent   = chat.peerMeta  || '';
+
+  // 更新 header 頭像（支援 emoji / photoURL / 文字）
+  const crAvatar = document.getElementById('cr-avatar');
+  if (peerInfo.emoji) {
+    crAvatar.textContent = peerInfo.emoji;
+    crAvatar.style.backgroundImage = '';
+  } else if (peerInfo.avatar) {
+    crAvatar.innerHTML = `<img src="${peerInfo.avatar}" alt="${peerName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    crAvatar.textContent = (peerName)[0].toUpperCase();
+    crAvatar.style.background = '#F97316';
+    crAvatar.style.color = '#fff';
+  }
+
+  document.getElementById('cr-name').textContent = peerName;
+  document.getElementById('cr-meta').textContent = peerInfo.meta || chat.peerMeta || '';
   document.getElementById('cr-messages').innerHTML = '';
   document.getElementById('cr-input').focus();
 
-  // 解除上一個訊息監聽器
+  // 解除舊監聽器
   if (window._roomUnsubscribe) { window._roomUnsubscribe(); window._roomUnsubscribe = null; }
 
   const msgQ = query(
@@ -2150,44 +2246,48 @@ window.openChatRoom = (chatId) => {
     orderBy('timestamp', 'asc')
   );
 
-  window._roomUnsubscribe = onSnapshot(msgQ, snap => {
+  window._roomUnsubscribe = onSnapshot(msgQ, async snap => {
     const msgEl = document.getElementById('cr-messages');
     if (!msgEl) return;
-    const myEmoji   = currentUserData?.emoji || '🙂';
-    const peerEmoji = chat.peerEmoji || '🙂';
 
-    // 只 append 增量訊息，避免全部重繪造成閃爍
+    // 增量 append：只處理新增的訊息
     const existingCount = msgEl.querySelectorAll('.bubble-wrap').length;
     const newDocs = snap.docs.slice(existingCount);
-    newDocs.forEach(d => {
-      const m    = d.data();
-      // senderId（新格式）兼容舊的 senderUid
-      const isMe = (m.senderId || m.senderUid) === currentUser.uid;
-      const div  = document.createElement('div');
+
+    for (const d of newDocs) {
+      const m      = d.data();
+      const sender = m.senderId || m.senderUid || '';
+      const isMe   = sender === currentUser.uid;
+
+      // 動態取得發送者資料（已快取，不會重複請求）
+      const senderInfo = isMe ? myInfo : await getUserInfo(sender || peerId);
+
+      const div = document.createElement('div');
       div.className = `bubble-wrap ${isMe ? 'me' : ''}`;
       div.innerHTML = `
-        ${!isMe ? `<div class="bubble-avatar">${peerEmoji}</div>` : ''}
+        ${!isMe ? avatarHtml(senderInfo, 36) : ''}
         <div>
           <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time||''}</div>
           <div class="bubble">${m.text}</div>
         </div>
-        ${isMe ? `<div class="bubble-avatar" style="background:#fff7ed">${myEmoji}</div>` : ''}`;
+        ${isMe ? avatarHtml(senderInfo, 36, '#fff7ed') : ''}`;
       msgEl.appendChild(div);
-    });
+    }
+
     if (newDocs.length > 0) msgEl.scrollTop = msgEl.scrollHeight;
   });
 };
 
-// 送出訊息
+// ─────────────────────────────────
+//  sendRoomMsg：送出訊息
+// ─────────────────────────────────
 window.sendRoomMsg = async () => {
   const input = document.getElementById('cr-input');
   const text  = input.value.trim();
   if (!text || !activeChatId) return;
   input.value = '';
-  const t = nowTime();
-
-  // 從對話資料取得 peerId（用於 receiverId 欄位）
-  const chat = myChats.find(c => c.chatId === activeChatId);
+  const t     = nowTime();
+  const chat  = myChats.find(c => c.chatId === activeChatId);
   const peerId = chat?.peerId || '';
 
   try {
@@ -2196,9 +2296,8 @@ window.sendRoomMsg = async () => {
       receiverId: peerId,
       text,
       time:       t,
-      timestamp:  serverTimestamp()    // 排序用
+      timestamp:  serverTimestamp()
     });
-    // 更新 chat 文件預覽（列表 onSnapshot 自動重渲染）
     await setDoc(doc(db, 'chats', activeChatId), {
       lastMsg:       text,
       lastTime:      t,
@@ -2209,13 +2308,14 @@ window.sendRoomMsg = async () => {
   }
 };
 
-// 接受邀請時建立/更新 chats 文件
-// chatId = [myUid, peerUid].sort().join('_')  ← 雙方統一
+// ─────────────────────────────────
+//  ensureChatDoc：接受邀請時建立/更新 chats 文件
+// ─────────────────────────────────
 function ensureChatDoc(chatId, inv, peerId) {
   return setDoc(doc(db, 'chats', chatId), {
-    participants: [currentUser.uid, peerId].sort(), // 排序後與 chatId 一致
+    participants: [currentUser.uid, peerId].sort(),
     peerName:     inv.fromName,
-    peerEmoji:    inv.fromEmoji || '🙂',
+    peerEmoji:    inv.fromEmoji || null,
     peerMeta:     inv.fromMeta  || '',
     peerId,
     createdAt:    serverTimestamp()
