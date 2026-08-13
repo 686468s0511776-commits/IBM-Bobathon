@@ -1428,6 +1428,7 @@
       </button>
       <button class="sidebar-btn" onclick="window.switchMainPage('profile')">
         <span class="sidebar-icon">📋</span> 查看互助紀錄
+        <span id="sb-invite-badge-1" style="display:none;background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:auto"></span>
       </button>
       <button class="sidebar-btn" onclick="window.switchMainPage('shop')">
         <span class="sidebar-icon">⭐</span> 點數兌換中心
@@ -1506,6 +1507,7 @@
       </button>
       <button class="sidebar-btn" onclick="switchMainPage('profile')">
         <span class="sidebar-icon">📋</span> 查看互助紀錄
+        <span id="sb-invite-badge-2" style="display:none;background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:auto"></span>
       </button>
       <button class="sidebar-btn" onclick="switchMainPage('shop')">
         <span class="sidebar-icon">⭐</span> 點數兌換中心
@@ -1655,6 +1657,7 @@
       </button>
       <button class="sidebar-btn active">
         <span class="sidebar-icon">📋</span> 查看互助紀錄
+        <span id="sb-invite-badge-3" style="display:none;background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:auto"></span>
       </button>
       <button class="sidebar-btn" onclick="switchMainPage('shop')">
         <span class="sidebar-icon">⭐</span> 點數兌換中心
@@ -1751,6 +1754,7 @@
       </button>
       <button class="sidebar-btn" onclick="switchMainPage('profile')">
         <span class="sidebar-icon">📋</span> 查看互助紀錄
+        <span id="sb-invite-badge-4" style="display:none;background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:auto"></span>
       </button>
       <button class="sidebar-btn active">
         <span class="sidebar-icon">⭐</span> 點數兌換中心
@@ -2785,6 +2789,32 @@ function _sendBrowserNotification(chatId, msg) {
   } catch(e) { /* 通知建立失敗靜默忽略 */ }
 }
 
+// ─────────────────────────────────
+//  _updateInviteBadges：同步更新「收到邀請」頁籤 badge + 四個 sidebar 紅點
+// ─────────────────────────────────
+function _updateInviteBadges() {
+  const cnt = recvInvites.filter(r =>
+    r.status === '等待回覆' || r.status === 'pending' || r.status === '進行中'
+  ).length;
+
+  // 頁籤 badge（括號格式）
+  const tabBadge = document.getElementById('recv-badge');
+  if (tabBadge) tabBadge.textContent = cnt ? `(${cnt})` : '';
+
+  // sidebar 四個 badge（數字格式，紅點）
+  [1, 2, 3, 4].forEach(n => {
+    const el = document.getElementById(`sb-invite-badge-${n}`);
+    if (!el) return;
+    if (cnt > 0) {
+      el.textContent = cnt;
+      el.style.display = 'inline';
+    } else {
+      el.style.display = 'none';
+      el.textContent = '';
+    }
+  });
+}
+
 // 即時監聽收到的邀請
 let _inviteListenerUnsub = null;
 function _startInviteListener() {
@@ -2830,14 +2860,8 @@ function _startInviteListener() {
     // 記錄本次快照的所有 ID
     _knownInviteIds = new Set(snap.docs.map(d => d.id));
 
-    // 更新 badge
-    const badge = document.getElementById('recv-badge');
-    if (badge) {
-      const cnt = recvInvites.filter(r =>
-        r.status === '等待回覆' || r.status === 'pending' || r.status === '進行中'
-      ).length;
-      badge.textContent = cnt ? `(${cnt})` : '';
-    }
+    // 更新 badge（頁籤 + sidebar）
+    _updateInviteBadges();
 
     // 只對真正新增的邀請彈通知
     newDocs.forEach(d => {
@@ -3765,7 +3789,7 @@ async function renderProfile() {
   }
 
   const pending = recvInvites.filter(r => r.status === '等待回覆' || r.status === 'pending' || r.status === '進行中');
-  badge.textContent = pending.length ? `(${pending.length})` : '';
+  _updateInviteBadges();   // 同步更新 sidebar 紅點
   rl.innerHTML = pending.length
     ? pending.map(h => `<div class="history-item">
         <div class="h-name">來自：${h.fromName} <small style="color:#9ca3af;font-weight:400">${h.fromMeta}</small></div>
@@ -3962,6 +3986,7 @@ window.acceptInvite = async (id, btn) => {
     contactEl.style.userSelect = 'none';
   }
   document.getElementById('match-modal-overlay').classList.add('open');
+  _updateInviteBadges();
   window.renderProfile && window.renderProfile();
 };
 
@@ -4084,6 +4109,7 @@ window.confirmReject = () => {
   if (inv) { inv.status = '已拒絕'; if (reason) inv.rejectReason = reason; }
   window.closeRejectModal();
   showToast('已拒絕邀請。');
+  _updateInviteBadges();
   window.renderProfile && window.renderProfile();
 };
 
