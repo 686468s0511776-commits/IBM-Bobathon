@@ -2854,9 +2854,11 @@ function enterApp() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
-  // ── 管理者按鈕顯示 ──
+  // ── 管理者按鈕顯示（雙重判斷：Firestore role 或 Email 白名單）──
   const adminBtn = document.getElementById('admin-nav-btn');
-  if (adminBtn && currentUserData && currentUserData.role === 'admin') {
+  const _isAdmin = (currentUserData && currentUserData.role === 'admin')
+                || (currentUser && ADMIN_EMAILS.includes(currentUser.email));
+  if (adminBtn && _isAdmin) {
     adminBtn.style.display = 'inline-flex';
   }
 }
@@ -4984,8 +4986,10 @@ let _adminCurrentTab = 'treasury';  // 當前分頁
 
 // ── 開啟管理者後台 ──
 window.openAdminPanel = async () => {
-  // 權限守衛
-  if (!currentUserData || currentUserData.role !== 'admin') {
+  // 權限守衛（雙重判斷）
+  const _isAdminUser = (currentUserData && currentUserData.role === 'admin')
+                    || (currentUser && ADMIN_EMAILS.includes(currentUser.email));
+  if (!_isAdminUser) {
     alert('⚠️ 權限不足：僅管理者可使用此功能');
     return;
   }
