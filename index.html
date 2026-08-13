@@ -3425,12 +3425,12 @@ function calcPoints(skills) {
 
 // ── 兌換中心商品資料 ──
 const SHOP_ITEMS = [
-  { id:'s1', icon:'🏪', name:'7-ELEVEN 50元商品卡',   desc:'可於全台7-ELEVEN門市兌換，有效期限3個月。',       price:30 },
-  { id:'s2', icon:'☕', name:'大杯拿鐵兌換券',          desc:'適用星巴克門市大杯熱/冷拿鐵，限門市使用。',         price:20 },
-  { id:'s3', icon:'🍔', name:'麥當勞大麥克套餐券',       desc:'可兌換大麥克超值套餐一份，效期兩個月。',           price:25 },
-  { id:'s4', icon:'🎬', name:'威秀電影票（單張）',        desc:'適用全台威秀影城，假日加映不限定，有效期限1個月。', price:40 },
-  { id:'s5', icon:'🛒', name:'全聯福利中心100元折價券',  desc:'全聯單筆消費滿150元折100元，限用一次。',           price:50 },
-  { id:'s6', icon:'🧋', name:'珍珠奶茶兌換券',           desc:'適用50嵐、CoCo等連鎖手搖店，大杯任選一杯。',      price:12 },
+  { id:'s1', icon:'🏪', name:'7-ELEVEN 50元商品卡',   desc:'可於全台7-ELEVEN門市兌換，有效期限3個月。',       price:75  },
+  { id:'s2', icon:'☕', name:'大杯拿鐵兌換券',          desc:'適用星巴克門市大杯熱/冷拿鐵，限門市使用。',         price:200 },
+  { id:'s3', icon:'🍔', name:'麥當勞大麥克套餐券',       desc:'可兌換大麥克超值套餐一份，效期兩個月。',           price:210 },
+  { id:'s4', icon:'🎬', name:'威秀電影票（單張）',        desc:'適用全台威秀影城，假日加映不限定，有效期限1個月。', price:495 },
+  { id:'s5', icon:'🛒', name:'全聯福利中心100元折價券',  desc:'全聯單筆消費滿150元折100元，限用一次。',           price:150 },
+  { id:'s6', icon:'🧋', name:'珍珠奶茶兌換券',           desc:'適用50嵐、CoCo等連鎖手搖店，大杯任選一杯。',      price:90  },
 ];
 
 const autoReplies = [
@@ -5392,17 +5392,53 @@ async function renderProfile() {
 
   const pending = recvInvites.filter(r => r.status === '等待回覆' || r.status === 'pending' || r.status === '進行中');
   _updateInviteBadges();   // 同步更新 sidebar 紅點
-  rl.innerHTML = pending.length
-    ? pending.map(h => `<div class="history-item">
-        <div class="h-name">來自：${h.fromName} <small style="color:#9ca3af;font-weight:400">${h.fromMeta}</small></div>
-        <div class="h-time">⏰ 希望時間：${h.time || '未指定'}</div>
-        <div class="h-msg">${h.msg || '（無說明）'}</div>
-        <div>
-          <button class="btn-accept" onclick="window.acceptInvite('${h.id}', this)">✅ 接受</button>
-          <button class="btn-reject" onclick="window.openRejectModal('${h.id}','${h.fromName}','${(h.msg||'').replace(/'/g,"&#39;")}')">❌ 拒絕</button>
+
+  if (!pending.length) {
+    rl.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span><p>目前沒有待處理的邀請</p></div>';
+  } else {
+    // 批次抓取所有邀請者的最新 user info（含 photoURL/displayName/averageRating）
+    const userInfoMap = {};
+    await Promise.all(pending.map(async h => {
+      if (h.fromUid) {
+        userInfoMap[h.fromUid] = await getUserInfo(h.fromUid);
+      }
+    }));
+
+    rl.innerHTML = pending.map(h => {
+      const info     = (h.fromUid && userInfoMap[h.fromUid]) || {};
+      const name     = info.displayName || h.fromName;
+      const meta     = info.meta        || h.fromMeta || '';
+      const hasPhoto = !!info.avatar;
+      const avatarHTML = hasPhoto
+        ? `<img src="${info.avatar}" alt="${name}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #e5e7eb">`
+        : `<span style="width:42px;height:42px;border-radius:50%;background:#f3f4f6;display:inline-flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:2px solid #e5e7eb">${info.emoji || h.fromEmoji || '🙂'}</span>`;
+      const clickable = h.fromUid
+        ? `onclick="window.openUserProfile('${h.fromUid}')" style="cursor:pointer"`
+        : '';
+      const nameStyle = h.fromUid
+        ? 'cursor:pointer;text-decoration:underline dotted;color:inherit'
+        : '';
+      const ratingStr = (info.averageRating != null)
+        ? ` ⭐${Number(info.averageRating).toFixed(1)}`
+        : '';
+
+      return `<div class="history-item" style="display:flex;gap:12px;align-items:flex-start">
+        <div ${clickable} title="查看 ${name} 的主頁">${avatarHTML}</div>
+        <div style="flex:1;min-width:0">
+          <div class="h-name">
+            <span ${h.fromUid ? `onclick="window.openUserProfile('${h.fromUid}')"` : ''} style="${nameStyle}" title="查看主頁">${name}</span>
+            <small style="color:#9ca3af;font-weight:400"> ${meta}${ratingStr}</small>
+          </div>
+          <div class="h-time">⏰ 希望時間：${h.time || '未指定'}</div>
+          <div class="h-msg">${h.msg || '（無說明）'}</div>
+          <div>
+            <button class="btn-accept" onclick="window.acceptInvite('${h.id}', this)">✅ 接受</button>
+            <button class="btn-reject" onclick="window.openRejectModal('${h.id}','${h.fromName}','${(h.msg||'').replace(/'/g,"&#39;")}')">❌ 拒絕</button>
+          </div>
         </div>
-      </div>`).join('')
-    : '<div class="empty-state"><span class="empty-icon">📭</span><p>目前沒有待處理的邀請</p></div>';
+      </div>`;
+    }).join('');
+  }
   // 點數交易記錄
   await renderTransactions();
 }
