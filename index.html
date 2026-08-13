@@ -1019,7 +1019,7 @@
         <div class="contact-value" id="match-modal-contact"></div>
       </div>
     </div>
-    <button class="btn-chat" onclick="window.openChatModal()">開始對話 💬</button>
+    <button class="btn-chat" onclick="window.goToChatRoom()">前往聊天室 💬</button>
     <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="window.closeMatchModal()">稍後再說</button>
   </div>
 </div>
@@ -1698,6 +1698,7 @@ window.renderProfile = async function renderProfile() {
         const data = d.data();
         return {
           id:        d.id,
+          fromUid:   data.fromUid,        // ← 必要：用於產生正確 chatId
           fromName:  data.fromName,
           fromEmoji: data.fromEmoji || '🙂',
           fromMeta:  data.fromMeta  || '',
@@ -1730,15 +1731,29 @@ window.renderProfile = async function renderProfile() {
 // ─────────────────────────────────
 //  接受邀請 → 配對成功 Modal
 // ─────────────────────────────────
-window.acceptInvite = (id, btn) => {
+window.acceptInvite = async (id, btn) => {
   btn.disabled = true; btn.textContent = '處理中...';
   const inv = recvInvites.find(r => r.id === id);
   if (!inv) return;
   inv.status = '已接受';
   activeMatchInv = inv;
-  if (!chatLogs[inv.id]) {
-    chatLogs[inv.id] = [{ from: 'peer', text: inv.msg, time: nowTime() }];
+
+  // 雙方 UID 排序產生唯一且一致的 chatId
+  const peerId = inv.fromUid;
+  const chatId = peerId
+    ? [currentUser.uid, peerId].sort().join('_')
+    : null;
+  inv.chatId = chatId;
+
+  if (chatId && peerId) {
+    try {
+      await ensureChatDoc(chatId, inv, peerId);
+      await setDoc(doc(db, 'invites', id), { status: '已接受', chatId }, { merge: true });
+    } catch(e) {
+      console.error('acceptInvite Firestore 寫入失敗:', e.message);
+    }
   }
+
   document.getElementById('match-modal-sub').textContent = `你已接受來自 ${inv.fromName} 的邀請`;
   document.getElementById('match-modal-info').innerHTML = `
     <div class="match-info-row"><span class="label">👤 對象</span><span class="value">${inv.fromName}（${inv.fromMeta}）</span></div>
@@ -1751,6 +1766,20 @@ window.acceptInvite = (id, btn) => {
 
 window.closeMatchModal = () => {
   document.getElementById('match-modal-overlay').classList.remove('open');
+};
+
+// 從配對成功 Modal 直接跳到聊天室並開啟對話
+window.goToChatRoom = () => {
+  window.closeMatchModal();
+  if (!activeMatchInv?.chatId) {
+    window.switchMainPage('chatroom');
+    return;
+  }
+  window.switchMainPage('chatroom');
+  // 等對話列表載入後再開啟（onSnapshot 是非同步的，短暫延遲確保資料就緒）
+  setTimeout(() => {
+    window.openChatRoom(activeMatchInv.chatId);
+  }, 800);
 };
 
 // ─────────────────────────────────
@@ -1938,21 +1967,22 @@ window.openChatRoom = (chatId) => {
 
   const msgQ = query(
     collection(db, 'chats', chatId, 'messages'),
-    orderBy('createdAt', 'asc')
+    orderBy('timestamp', 'asc')
   );
 
   window._roomUnsubscribe = onSnapshot(msgQ, snap => {
-    const msgEl     = document.getElementById('cr-messages');
+    const msgEl = document.getElementById('cr-messages');
     if (!msgEl) return;
     const myEmoji   = currentUserData?.emoji || '🙂';
     const peerEmoji = chat.peerEmoji || '🙂';
 
-    // 只 append 新增訊息，避免全部重繪造成閃爍
+    // 只 append 增量訊息，避免全部重繪造成閃爍
     const existingCount = msgEl.querySelectorAll('.bubble-wrap').length;
     const newDocs = snap.docs.slice(existingCount);
     newDocs.forEach(d => {
       const m    = d.data();
-      const isMe = m.senderUid === currentUser.uid;
+      // senderId（新格式）兼容舊的 senderUid
+      const isMe = (m.senderId || m.senderUid) === currentUser.uid;
       const div  = document.createElement('div');
       div.className = `bubble-wrap ${isMe ? 'me' : ''}`;
       div.innerHTML = `
@@ -1975,30 +2005,39 @@ window.sendRoomMsg = async () => {
   if (!text || !activeChatId) return;
   input.value = '';
   const t = nowTime();
+
+  // 從對話資料取得 peerId（用於 receiverId 欄位）
+  const chat = myChats.find(c => c.chatId === activeChatId);
+  const peerId = chat?.peerId || '';
+
   try {
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
-      senderUid:  currentUser.uid,
-      senderName: currentUserData.name,
-      text, time: t,
-      createdAt: serverTimestamp()
+      senderId:   currentUser.uid,
+      receiverId: peerId,
+      text,
+      time:       t,
+      timestamp:  serverTimestamp()    // 排序用
     });
-    // 更新 chat 文件的最後訊息（對話列表的 onSnapshot 會自動重新渲染）
+    // 更新 chat 文件預覽（列表 onSnapshot 自動重渲染）
     await setDoc(doc(db, 'chats', activeChatId), {
-      lastMsg: text, lastTime: t, lastSenderUid: currentUser.uid
+      lastMsg:       text,
+      lastTime:      t,
+      lastSenderUid: currentUser.uid
     }, { merge: true });
   } catch(e) {
     showToast('訊息送出失敗：' + e.message);
   }
 };
 
-// 接受邀請時把對話資料存進 chats（補齊 peerName 等欄位）
-function ensureChatDoc(chatId, inv, fromUid) {
+// 接受邀請時建立/更新 chats 文件
+// chatId = [myUid, peerUid].sort().join('_')  ← 雙方統一
+function ensureChatDoc(chatId, inv, peerId) {
   return setDoc(doc(db, 'chats', chatId), {
-    participants: [currentUser.uid, fromUid],
-    inviteId:     inv.id,
+    participants: [currentUser.uid, peerId].sort(), // 排序後與 chatId 一致
     peerName:     inv.fromName,
     peerEmoji:    inv.fromEmoji || '🙂',
     peerMeta:     inv.fromMeta  || '',
+    peerId,
     createdAt:    serverTimestamp()
   }, { merge: true });
 }
