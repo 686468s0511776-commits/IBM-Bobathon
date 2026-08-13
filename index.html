@@ -82,6 +82,52 @@
   /* ══════════════════════════════
      手機版響應式覆蓋
   ══════════════════════════════ */
+  /* ══════════════════════════════
+     手機版側邊抽屜 Overlay
+  ══════════════════════════════ */
+  .mobile-sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,.45);
+  }
+  .mobile-sidebar-overlay.open { display: block; }
+
+  .mobile-sidebar-drawer {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 301;
+    width: 280px;
+    background: var(--bg-sidebar, #fff);
+    border-right: 1.5px solid #d0e4f5;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 72px 20px 100px;
+  }
+  body.dark .mobile-sidebar-drawer {
+    border-right-color: #374151;
+  }
+  .mobile-sidebar-drawer.open { transform: translateX(0); }
+
+  .mobile-sidebar-drawer .msd-title {
+    font-size: 11px; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin: 4px 0 6px; padding: 0 8px;
+  }
+  .mobile-sidebar-drawer .msd-btn {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 14px; border-radius: 10px;
+    border: none; background: none;
+    font-size: 14px; font-weight: 600; color: #4b5563;
+    cursor: pointer; text-align: left; width: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-sidebar-drawer .msd-btn:active { background: #EDF4FB; color: #5B8DB8; }
+  body.dark .mobile-sidebar-drawer .msd-btn { color: #d1d5db; }
+  body.dark .mobile-sidebar-drawer .msd-btn:active { background: rgba(255,255,255,.1); }
+  .mobile-sidebar-drawer .msd-icon { font-size: 20px; width: 26px; text-align: center; }
+  .mobile-sidebar-drawer .msd-divider { height: 1px; background: #d0e4f5; margin: 8px 0; }
+  body.dark .mobile-sidebar-drawer .msd-divider { background: #374151; }
+
   @media (max-width: 768px) {
     .navbar {
       padding: 0 12px;
@@ -3442,6 +3488,22 @@
 <div class="toast" id="toast"></div>
 
 <!-- ════════════════════════════════
+     手機版側邊抽屜選單（Mobile Sidebar Drawer）
+════════════════════════════════ -->
+<div class="mobile-sidebar-overlay" id="mobile-sidebar-overlay" onclick="window.closeMobileDrawer()"></div>
+<div class="mobile-sidebar-drawer" id="mobile-sidebar-drawer">
+  <div class="msd-title">探索</div>
+  <button class="msd-btn" onclick="window.switchTab('need');   window.closeMobileDrawer()"><span class="msd-icon">🤝</span> 需要幫助</button>
+  <button class="msd-btn" onclick="window.switchTab('offer');  window.closeMobileDrawer()"><span class="msd-icon">💪</span> 提供幫助</button>
+  <div class="msd-divider"></div>
+  <div class="msd-title">快速操作</div>
+  <button class="msd-btn" onclick="window.switchMainPage('post');     window.closeMobileDrawer()"><span class="msd-icon">➕</span> 發布我的需求</button>
+  <button class="msd-btn" onclick="window.switchMainPage('profile');  window.closeMobileDrawer()"><span class="msd-icon">📋</span> 查看互助紀錄</button>
+  <button class="msd-btn" onclick="window.switchMainPage('shop');     window.closeMobileDrawer()"><span class="msd-icon">⭐</span> 點數兌換中心</button>
+  <button class="msd-btn" id="msd-admin-btn" onclick="window.openAdminPanel(); window.closeMobileDrawer()" style="display:none"><span class="msd-icon">👑</span> 管理者後台</button>
+</div>
+
+<!-- ════════════════════════════════
      手機版底部導覽列（Mobile Bottom Nav）
 ════════════════════════════════ -->
 <div class="mobile-bottom-nav" id="mobile-bottom-nav" style="display:none">
@@ -3646,6 +3708,23 @@ const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127
 })();
 
 // ─────────────────────────────────
+//  手機 Google Redirect 登入結果接收（頁面 redirect 返回後執行）
+// ─────────────────────────────────
+getRedirectResult(auth).then(result => {
+  // result 有值代表是 redirect 登入剛返回；onAuthStateChanged 會自動接手後續流程
+  if (result && result.user) {
+    console.log('✅ Google Redirect 登入成功：', result.user.email);
+  }
+}).catch(e => {
+  if (e.code && e.code !== 'auth/null-user') {
+    console.warn('getRedirectResult error:', e.code, e.message);
+    // 僅在登入頁才顯示錯誤
+    const errEl = document.getElementById('login-error');
+    if (errEl) { errEl.textContent = 'Google 登入失敗：' + e.message; errEl.style.display = 'block'; }
+  }
+});
+
+// ─────────────────────────────────
 //  Auth 狀態監聽（唯一進入點，重新整理後自動恢復登入）
 // ─────────────────────────────────
 onAuthStateChanged(auth, async user => {
@@ -3723,15 +3802,22 @@ window.switchAuthTab = (tab) => {
 };
 
 // ─────────────────────────────────
-//  Google 登入（統一使用 Popup）
+//  Google 登入（手機用 Redirect，電腦用 Popup）
 // ─────────────────────────────────
 window.signInWithGoogle = async () => {
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   try {
-    const { signInWithPopup } = await import("https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js");
-    await signInWithPopup(auth, googleProvider);
-    // 成功後由 onAuthStateChanged 接手，自動進入 App
+    if (isMobile) {
+      // 手機：改用 Redirect 避免彈窗被攔截
+      await signInWithRedirect(auth, googleProvider);
+      // redirect 後頁面會跳走，由 getRedirectResult 在返回後接收結果
+    } else {
+      const { signInWithPopup } = await import("https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js");
+      await signInWithPopup(auth, googleProvider);
+      // 成功後由 onAuthStateChanged 接手，自動進入 App
+    }
   } catch(e) {
-    if (e.code !== 'auth/popup-closed-by-user') {
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
       showErr('login-error', 'Google 登入失敗：' + e.message);
     }
   }
@@ -4131,10 +4217,12 @@ function enterApp() {
   // ── 管理者按鈕顯示（雙重判斷：Firestore role 或 Email 白名單）──
   const adminBtn    = document.getElementById('admin-nav-btn');
   const mbnAdminBtn = document.getElementById('mbn-admin');
+  const msdAdminBtn = document.getElementById('msd-admin-btn');  // 抽屜選單
   const _isAdmin = (currentUserData && currentUserData.role === 'admin')
                 || (currentUser && ADMIN_EMAILS.includes(currentUser.email));
-  if (adminBtn && _isAdmin)    adminBtn.style.display    = 'inline-flex';
+  if (adminBtn    && _isAdmin) adminBtn.style.display    = 'inline-flex';
   if (mbnAdminBtn && _isAdmin) mbnAdminBtn.style.display = 'flex';
+  if (msdAdminBtn && _isAdmin) msdAdminBtn.style.display = 'flex';
 }
 
 // ─────────────────────────────────
@@ -4468,20 +4556,48 @@ window.switchMainPage = (name) => {
     b.classList.toggle('active', ['home','post','shop','chatroom','profile'][i] === name));
   // ── 同步更新手機底部導覽列 active ──
   _updateMobileNavActive(name);
+  // ── 切換頁面時關閉手機抽屜（若開著）──
+  window.closeMobileDrawer && window.closeMobileDrawer();
   if (name === 'profile')  renderProfile();
   if (name === 'chatroom') window.loadChatList && window.loadChatList();
   if (name === 'shop')     renderShop();
   updateSidebarUser();
 };
 
-// 漢堡選單：同步控制所有頁面的 sidebar
+// 漢堡選單：
+// 電腦版 → 切換 sidebar collapsed
+// 手機版 → 開啟/關閉抽屜 drawer
 let _sidebarCollapsed = false;
 window.toggleSidebarGlobal = () => {
-  _sidebarCollapsed = !_sidebarCollapsed;
-  ['home','post','profile','shop'].forEach(page => {
-    const sidebar = document.getElementById('sidebar-' + page);
-    if (sidebar) sidebar.classList.toggle('collapsed', _sidebarCollapsed);
-  });
+  const isMobileView = window.innerWidth <= 768;
+  if (isMobileView) {
+    // 手機：切換抽屜
+    const overlay = document.getElementById('mobile-sidebar-overlay');
+    const drawer  = document.getElementById('mobile-sidebar-drawer');
+    const isOpen  = drawer && drawer.classList.contains('open');
+    if (isOpen) {
+      window.closeMobileDrawer();
+    } else {
+      if (overlay) overlay.classList.add('open');
+      if (drawer)  drawer.classList.add('open');
+      document.body.style.overflow = 'hidden';  // 防止背景捲動
+    }
+  } else {
+    // 電腦：切換 sidebar collapsed
+    _sidebarCollapsed = !_sidebarCollapsed;
+    ['home','post','profile','shop'].forEach(page => {
+      const sidebar = document.getElementById('sidebar-' + page);
+      if (sidebar) sidebar.classList.toggle('collapsed', _sidebarCollapsed);
+    });
+  }
+};
+
+window.closeMobileDrawer = () => {
+  const overlay = document.getElementById('mobile-sidebar-overlay');
+  const drawer  = document.getElementById('mobile-sidebar-drawer');
+  if (overlay) overlay.classList.remove('open');
+  if (drawer)  drawer.classList.remove('open');
+  document.body.style.overflow = '';
 };
 
 window.switchTab = (type) => {
