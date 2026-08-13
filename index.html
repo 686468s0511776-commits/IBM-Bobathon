@@ -556,6 +556,90 @@
   }
   .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; display: block; }
   .empty-state p { font-size: 15px; }
+
+  /* ══════════════════════════════
+     聊天室頁面
+  ══════════════════════════════ */
+  .chat-page-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: calc(100vh - 60px);
+  }
+  .chat-list-panel {
+    background: #fff;
+    border-right: 1.5px solid #e5e7eb;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .chat-list-header {
+    padding: 20px 20px 14px;
+    font-size: 16px; font-weight: 800; color: #1f2328;
+    border-bottom: 1.5px solid #f3f4f6;
+    flex-shrink: 0;
+  }
+  .chat-list-items {
+    flex: 1; overflow-y: auto;
+  }
+  .chat-list-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px; cursor: pointer;
+    border-bottom: 1px solid #f9fafb;
+    transition: background .15s;
+  }
+  .chat-list-item:hover { background: #fff7ed; }
+  .chat-list-item.active { background: #fff7ed; }
+  .chat-list-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #fff7ed; display: flex; align-items: center;
+    justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .chat-list-name { font-size: 14px; font-weight: 700; color: #1f2328; }
+  .chat-list-preview { font-size: 12px; color: #9ca3af; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .chat-list-time { font-size: 11px; color: #9ca3af; margin-left: auto; flex-shrink: 0; }
+
+  .chat-room-panel {
+    display: flex; flex-direction: column;
+    background: #f9fafb;
+    overflow: hidden;
+  }
+  .chat-room-header {
+    background: #fff; padding: 16px 24px;
+    border-bottom: 1.5px solid #e5e7eb;
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+  .chat-room-header .avatar { width: 40px; height: 40px; font-size: 20px; }
+  .chat-room-name { font-size: 16px; font-weight: 800; color: #1f2328; }
+  .chat-room-meta { font-size: 12px; color: #9ca3af; }
+  .chat-room-messages {
+    flex: 1; overflow-y: auto;
+    padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .chat-room-input-row {
+    background: #fff; padding: 14px 20px;
+    border-top: 1.5px solid #e5e7eb;
+    display: flex; gap: 10px; flex-shrink: 0;
+  }
+  .chat-room-input {
+    flex: 1; padding: 11px 16px;
+    border: 1.5px solid #e5e7eb; border-radius: 24px;
+    font-size: 14px; outline: none; transition: border-color .2s;
+  }
+  .chat-room-input:focus { border-color: #F97316; }
+  .chat-room-send {
+    padding: 11px 22px; background: #F97316; color: #fff;
+    border: none; border-radius: 24px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+  }
+  .chat-room-send:hover { background: #ea6c0a; }
+  .chat-empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #9ca3af;
+  }
+  .chat-empty-state .icon { font-size: 52px; margin-bottom: 12px; }
+  .chat-empty-state p { font-size: 15px; }
 </style>
 
 <!-- Mock 登入/註冊：獨立 script，不依賴 Firebase module -->
@@ -708,6 +792,7 @@
   <div class="navbar-nav" id="main-nav" style="display:none">
     <button class="nav-btn active" onclick="switchMainPage('home')">🏠 首頁</button>
     <button class="nav-btn"       onclick="switchMainPage('post')">➕ 發布需求</button>
+    <button class="nav-btn"       onclick="switchMainPage('chatroom')">💬 聊天室 <span id="chat-unread-badge" style="background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:3px;display:none"></span></button>
     <button class="nav-btn"       onclick="switchMainPage('profile')">👤 我的</button>
   </div>
   <div class="navbar-user" id="navbar-user">
@@ -985,6 +1070,47 @@
         </div>
       </div>
     </main>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     頁面 5：聊天室
+════════════════════════════════ -->
+<div class="page" id="page-chatroom">
+  <div class="chat-page-layout">
+    <!-- 左側：對話列表 -->
+    <div class="chat-list-panel">
+      <div class="chat-list-header">💬 我的對話</div>
+      <div class="chat-list-items" id="chat-list-items">
+        <div class="empty-state" style="padding:40px 20px">
+          <span class="empty-icon">💬</span>
+          <p>尚無對話紀錄</p>
+        </div>
+      </div>
+    </div>
+    <!-- 右側：訊息區 -->
+    <div class="chat-room-panel" id="chat-room-panel">
+      <div class="chat-empty-state" id="chat-room-empty">
+        <div class="icon">👈</div>
+        <p>選擇左側對話開始聊天</p>
+      </div>
+      <div id="chat-room-active" style="display:none;flex-direction:column;height:100%">
+        <div class="chat-room-header">
+          <div class="avatar" id="cr-avatar"></div>
+          <div>
+            <div class="chat-room-name" id="cr-name"></div>
+            <div class="chat-room-meta" id="cr-meta"></div>
+          </div>
+        </div>
+        <div class="chat-room-messages" id="cr-messages"></div>
+        <div class="chat-room-input-row">
+          <input class="chat-room-input" id="cr-input" type="text"
+            placeholder="輸入訊息…"
+            onkeydown="if(event.key==='Enter') window.sendRoomMsg()" />
+          <button class="chat-room-send" onclick="window.sendRoomMsg()">送出</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1419,12 +1545,13 @@ document.querySelectorAll('.skill-tags').forEach(container => {
 //  頁面 / Tab 切換
 // ─────────────────────────────────
 window.switchMainPage = (name) => {
-  const map = { home:'page-home', post:'page-post', profile:'page-profile' };
+  const map = { home:'page-home', post:'page-post', profile:'page-profile', chatroom:'page-chatroom' };
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(map[name]).classList.add('active');
   document.querySelectorAll('#main-nav .nav-btn').forEach((b,i) =>
-    b.classList.toggle('active', ['home','post','profile'][i] === name));
-  if (name === 'profile') window.renderProfile && window.renderProfile();
+    b.classList.toggle('active', ['home','post','chatroom','profile'][i] === name));
+  if (name === 'profile')  window.renderProfile && window.renderProfile();
+  if (name === 'chatroom') window.loadChatList && window.loadChatList();
   updateSidebarUser();
 };
 
@@ -1733,15 +1860,11 @@ window.acceptInvite = async (id, btn) => {
   const isDemo = id.startsWith('r');
 
   if (!isDemo) {
-    // 建立獨立 chat 文件（若尚未存在）
+    // 建立獨立 chat 文件（含 peerName / peerEmoji 等欄位）
     const chatId = [currentUser.uid, inv.fromUid || id].sort().join('_') + '_' + id;
     inv.chatId = chatId;
     try {
-      await setDoc(doc(db, 'chats', chatId), {
-        participants: [currentUser.uid, inv.fromUid || id],
-        inviteId: id,
-        createdAt: serverTimestamp()
-      }, { merge: true });
+      await ensureChatDoc(chatId, inv, inv.fromUid || id);
       // 更新 invite 狀態
       await setDoc(doc(db, 'invites', id), { status: '已接受', chatId }, { merge: true });
     } catch(e) { /* 繼續 */ }
@@ -1914,6 +2037,132 @@ window.confirmReject = () => {
   showToast('已拒絕邀請。');
   window.renderProfile && window.renderProfile();
 };
+
+// ─────────────────────────────────
+//  聊天室
+// ─────────────────────────────────
+let activeChatId    = null;   // 目前開啟的 chatId
+let roomUnsubscribe = null;   // 訊息即時監聽取消函式
+let myChats         = [];     // { chatId, peerName, peerEmoji, peerMeta, lastMsg, lastTime }
+
+// 載入我的對話列表
+window.loadChatList = async () => {
+  const el = document.getElementById('chat-list-items');
+  if (!currentUser) return;
+  el.innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af">載入中...</div>';
+  try {
+    const q = query(
+      collection(db, 'chats'),
+      where('participants', 'array-contains', currentUser.uid)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      el.innerHTML = '<div class="empty-state" style="padding:40px 20px"><span class="empty-icon">💬</span><p>尚無對話紀錄<br><small style="font-size:12px">接受邀請後即可開始聊天</small></p></div>';
+      return;
+    }
+    myChats = snap.docs.map(d => ({ chatId: d.id, ...d.data() }));
+    el.innerHTML = myChats.map(c => {
+      const isMe = c.lastSenderUid === currentUser.uid;
+      const preview = c.lastMsg ? (isMe ? `你：${c.lastMsg}` : c.lastMsg) : '尚無訊息';
+      return `<div class="chat-list-item ${activeChatId===c.chatId?'active':''}" onclick="window.openChatRoom('${c.chatId}')">
+        <div class="chat-list-avatar">${c.peerEmoji||'🙂'}</div>
+        <div style="flex:1;overflow:hidden">
+          <div class="chat-list-name">${c.peerName||'未知'}</div>
+          <div class="chat-list-preview">${preview}</div>
+        </div>
+        <div class="chat-list-time">${c.lastTime||''}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state" style="padding:40px 20px"><span class="empty-icon">⚠️</span><p>載入失敗</p></div>';
+  }
+};
+
+// 開啟特定對話
+window.openChatRoom = (chatId) => {
+  activeChatId = chatId;
+  const chat = myChats.find(c => c.chatId === chatId);
+  if (!chat) return;
+
+  // 更新左側列表 active 狀態
+  document.querySelectorAll('.chat-list-item').forEach(el =>
+    el.classList.toggle('active', el.onclick?.toString().includes(chatId)));
+
+  // 顯示右側對話區
+  document.getElementById('chat-room-empty').style.display  = 'none';
+  const active = document.getElementById('chat-room-active');
+  active.style.display = 'flex';
+  document.getElementById('cr-avatar').textContent = chat.peerEmoji || '🙂';
+  document.getElementById('cr-name').textContent   = chat.peerName  || '未知';
+  document.getElementById('cr-meta').textContent   = chat.peerMeta  || '';
+  document.getElementById('cr-messages').innerHTML = '';
+  document.getElementById('cr-input').focus();
+
+  // 即時監聽訊息
+  if (roomUnsubscribe) roomUnsubscribe();
+  const msgQ = query(
+    collection(db, 'chats', chatId, 'messages'),
+    orderBy('createdAt', 'asc')
+  );
+  roomUnsubscribe = onSnapshot(msgQ, snap => {
+    const el = document.getElementById('cr-messages');
+    if (!el) return;
+    const myEmoji   = currentUserData?.emoji || '🙂';
+    const peerEmoji = chat.peerEmoji || '🙂';
+    el.innerHTML = snap.docs.map(d => {
+      const m    = d.data();
+      const isMe = m.senderUid === currentUser.uid;
+      return `<div class="bubble-wrap ${isMe?'me':''}">
+        ${!isMe ? `<div class="bubble-avatar">${peerEmoji}</div>` : ''}
+        <div>
+          <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time||''}</div>
+          <div class="bubble">${m.text}</div>
+        </div>
+        ${isMe ? `<div class="bubble-avatar" style="background:#fff7ed">${myEmoji}</div>` : ''}
+      </div>`;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  });
+};
+
+// 送出訊息
+window.sendRoomMsg = async () => {
+  const input = document.getElementById('cr-input');
+  const text  = input.value.trim();
+  if (!text || !activeChatId) return;
+  input.value = '';
+  const t = nowTime();
+  try {
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderUid:  currentUser.uid,
+      senderName: currentUserData.name,
+      text, time: t,
+      createdAt: serverTimestamp()
+    });
+    // 更新 chat 文件的最後訊息
+    await setDoc(doc(db, 'chats', activeChatId), {
+      lastMsg: text, lastTime: t, lastSenderUid: currentUser.uid
+    }, { merge: true });
+    // 更新本地列表預覽
+    const c = myChats.find(c => c.chatId === activeChatId);
+    if (c) { c.lastMsg = text; c.lastTime = t; c.lastSenderUid = currentUser.uid; }
+    window.loadChatList();
+  } catch(e) {
+    showToast('訊息送出失敗：' + e.message);
+  }
+};
+
+// 接受邀請時把對話資料存進 chats（補齊 peerName 等欄位）
+function ensureChatDoc(chatId, inv, fromUid) {
+  return setDoc(doc(db, 'chats', chatId), {
+    participants: [currentUser.uid, fromUid],
+    inviteId:     inv.id,
+    peerName:     inv.fromName,
+    peerEmoji:    inv.fromEmoji || '🙂',
+    peerMeta:     inv.fromMeta  || '',
+    createdAt:    serverTimestamp()
+  }, { merge: true });
+}
 
 // ─────────────────────────────────
 //  Toast
