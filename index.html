@@ -2184,6 +2184,14 @@ function listAvatarHtml(info) {
 }
 
 // ─────────────────────────────────
+//  otherUid：從 participants 取對方 UID（不依賴 peerId 欄位是否存在）
+// ─────────────────────────────────
+function otherUid(chat) {
+  const parts = chat.participants || [];
+  return parts.find(id => id !== currentUser.uid) || chat.peerId || '';
+}
+
+// ─────────────────────────────────
 //  renderChatList：渲染左側對話列表
 // ─────────────────────────────────
 async function renderChatList() {
@@ -2194,14 +2202,14 @@ async function renderChatList() {
     return;
   }
 
-  // 同時查詢所有對話對象的資料（傳入 chat 文件的 hint 作為備用）
+  // 從 participants 取對方 UID，再查詢真實資料（傳入 chat hint 作為 Firestore 備用）
   const infos = await Promise.all(
-    myChats.map(c => getUserInfo(c.peerId || '', c))
+    myChats.map(c => getUserInfo(otherUid(c), c))
   );
 
   el.innerHTML = myChats.map((c, i) => {
     const info    = infos[i];
-    const name    = c.peerName || info.displayName;
+    const name    = info.displayName;   // getUserInfo 已處理所有 fallback
     const isMe    = c.lastSenderUid === currentUser.uid;
     const preview = c.lastMsg ? (isMe ? `你：${c.lastMsg}` : c.lastMsg) : '尚無訊息';
     return `<div class="chat-list-item ${activeChatId===c.chatId?'active':''}" onclick="window.openChatRoom('${c.chatId}')">
@@ -2235,15 +2243,15 @@ window.loadChatList = () => {
     myChats.sort((a, b) => (b.lastTime || '').localeCompare(a.lastTime || ''));
     renderChatList();   // async，自動補全對方名稱/頭像
 
-    // 若已開啟某對話，同步更新 header
+    // 若已開啟某對話，同步更新 header（用 otherUid 確保取對方）
     if (activeChatId) {
       const c = myChats.find(x => x.chatId === activeChatId);
       if (c) {
-        getUserInfo(c.peerId || '', c).then(info => {
+        getUserInfo(otherUid(c), c).then(info => {
           const nameEl = document.getElementById('cr-name');
           const metaEl = document.getElementById('cr-meta');
-          if (nameEl) nameEl.textContent = c.peerName || info.displayName;
-          if (metaEl) metaEl.textContent = info.meta  || c.peerMeta || '';
+          if (nameEl) nameEl.textContent = info.displayName;
+          if (metaEl) metaEl.textContent = info.meta || c.peerMeta || '';
         });
       }
     }
@@ -2260,11 +2268,11 @@ window.openChatRoom = async (chatId) => {
   const chat = myChats.find(c => c.chatId === chatId);
   if (!chat) return;
 
-  // 查詢對方真實資料（傳入 chat 文件 hint，Firestore 查無時退回 peerName）
-  const peerId   = chat.peerId || '';
+  // 用 participants 取對方 UID，確保不會取到自己
+  const peerId   = otherUid(chat);
   const peerInfo = await getUserInfo(peerId, chat);
   const myInfo   = await getUserInfo(currentUser.uid);
-  const peerName = chat.peerName || peerInfo.displayName;
+  const peerName = peerInfo.displayName;   // getUserInfo 已處理所有 fallback
 
   // 更新左側列表 active 樣式
   document.querySelectorAll('.chat-list-item').forEach(el =>
