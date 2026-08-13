@@ -1702,6 +1702,181 @@
   body.dark .btn-renegotiate { color: #9ca3af; border-color: #4b5563; }
   body.dark .btn-renegotiate:hover { color: #e5e7eb; border-color: #9ca3af; }
 
+  /* ══════════════════════════════
+     搜尋列 & 快捷標籤
+  ══════════════════════════════ */
+  .search-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .search-input {
+    flex: 1; min-width: 180px; padding: 10px 16px;
+    border: 1.5px solid var(--border); border-radius: 24px;
+    font-size: 14px; outline: none; background: var(--bg-input);
+    color: var(--text-primary); transition: border-color .2s;
+  }
+  .search-input:focus { border-color: #5B8DB8; }
+  body.dark .search-input { background: #1e293b; }
+  .search-clear-btn {
+    padding: 9px 14px; border-radius: 24px; border: 1.5px solid var(--border);
+    background: var(--bg-surface2); color: var(--text-muted);
+    font-size: 13px; cursor: pointer; white-space: nowrap;
+    transition: all .15s;
+  }
+  .search-clear-btn:hover { border-color: #5B8DB8; color: #5B8DB8; }
+  .quick-tags-bar {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .quick-tag-btn {
+    padding: 5px 14px; border-radius: 20px;
+    border: 1.5px solid #e5e7eb; background: #fff;
+    font-size: 12px; font-weight: 700; color: #374151;
+    cursor: pointer; transition: all .15s;
+  }
+  .quick-tag-btn:hover, .quick-tag-btn.active {
+    background: #5B8DB8; border-color: #5B8DB8; color: #fff;
+  }
+  body.dark .quick-tag-btn { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+  body.dark .quick-tag-btn:hover, body.dark .quick-tag-btn.active {
+    background: #5B8DB8; border-color: #5B8DB8; color: #fff;
+  }
+
+  /* ══════════════════════════════
+     他人主頁 Modal（User Profile Modal）
+  ══════════════════════════════ */
+  .user-profile-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 5000;
+    align-items: flex-start; justify-content: center;
+    padding: 40px 16px; overflow-y: auto;
+  }
+  .user-profile-overlay.open { display: flex; }
+  .user-profile-box {
+    background: var(--bg-surface); border-radius: 20px;
+    width: min(520px, 100%); padding: 28px 24px;
+    box-shadow: 0 16px 64px rgba(0,0,0,.3);
+    position: relative;
+  }
+  .upm-close {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: none; font-size: 20px;
+    color: var(--text-muted); cursor: pointer; line-height: 1;
+  }
+  .upm-header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+  }
+  .upm-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: #EDF4FB; display: flex; align-items: center;
+    justify-content: center; font-size: 32px; flex-shrink: 0;
+    overflow: hidden;
+  }
+  .upm-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .upm-name { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+  .upm-meta { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .upm-rating {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #fef9c3; color: #92400e; border-radius: 20px;
+    padding: 3px 12px; font-size: 12px; font-weight: 700; margin-top: 6px;
+  }
+  body.dark .upm-rating { background: #451a03; color: #fcd34d; }
+  .upm-section { margin-bottom: 18px; }
+  .upm-section-title {
+    font-size: 12px; font-weight: 800; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .upm-contact-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--text-primary);
+  }
+  .upm-contact-row:last-child { border-bottom: none; }
+  .upm-contact-label { color: var(--text-muted); font-size: 12px; width: 60px; flex-shrink: 0; }
+  .upm-copy-btn {
+    margin-left: auto; padding: 3px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg-surface2);
+    font-size: 11px; color: var(--text-muted); cursor: pointer;
+    transition: all .15s;
+  }
+  .upm-copy-btn:hover { border-color: #5B8DB8; color: #5B8DB8; }
+  .upm-review-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .upm-review-item:last-child { border-bottom: none; }
+  .upm-review-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #EDF4FB; display: flex; align-items: center;
+    justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .upm-report-btn {
+    width: 100%; margin-top: 16px; padding: 9px;
+    background: none; border: 1.5px solid #ef4444;
+    border-radius: 10px; color: #ef4444;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: all .15s;
+  }
+  .upm-report-btn:hover { background: #fef2f2; }
+
+  /* ══════════════════════════════
+     檢舉 Modal
+  ══════════════════════════════ */
+  .report-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 6000;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .report-overlay.open { display: flex; }
+  .report-box {
+    background: var(--bg-surface); border-radius: 16px;
+    width: min(400px, 100%); padding: 24px 20px;
+    box-shadow: 0 12px 48px rgba(0,0,0,.3);
+  }
+  .report-box h3 { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+  .report-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .report-reason-input {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 14px; background: var(--bg-input); color: var(--text-primary);
+    resize: vertical; min-height: 80px; outline: none; margin-bottom: 14px;
+    transition: border-color .2s;
+  }
+  .report-reason-input:focus { border-color: #ef4444; }
+
+  /* ══════════════════════════════
+     聊天室安全提醒橫幅
+  ══════════════════════════════ */
+  .safety-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 16px; background: #fffbeb;
+    border-bottom: 1.5px solid #fde68a; flex-shrink: 0; flex-wrap: wrap;
+    animation: slideDown .3s ease;
+  }
+  body.dark .safety-banner { background: #1c1a02; border-bottom-color: #854d0e; }
+  .safety-banner-text { font-size: 12px; color: #92400e; flex: 1; line-height: 1.5; }
+  body.dark .safety-banner-text { color: #fcd34d; }
+  .safety-banner-close {
+    background: none; border: none; color: #92400e; cursor: pointer;
+    font-size: 16px; flex-shrink: 0; padding: 0;
+  }
+  body.dark .safety-banner-close { color: #fcd34d; }
+  @keyframes slideDown {
+    from { max-height: 0; opacity: 0; overflow: hidden; }
+    to   { max-height: 200px; opacity: 1; }
+  }
+
+  /* 聊天室頂部檢舉按鈕 */
+  .btn-report-chat {
+    margin-left: 8px; padding: 5px 11px;
+    background: none; border: 1.5px solid #fca5a5;
+    border-radius: 8px; color: #ef4444;
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    transition: all .15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-report-chat:hover { background: #fef2f2; }
+
   /* 點數協商 Modal */
   .points-modal-overlay {
     display: none; position: fixed; inset: 0;
@@ -2199,6 +2374,20 @@
             <p>以下是社區鄰里正在尋求協助的需求，你能幫上忙嗎？</p>
           </div>
         </div>
+        <!-- 搜尋列 + 快捷標籤 -->
+        <div class="search-bar-wrap">
+          <input class="search-input" id="need-search-input" type="text"
+            placeholder="🔍 搜尋需求或技能（如：換燈泡、水電、貓）"
+            oninput="window.searchCards('need')" />
+          <button class="search-clear-btn" onclick="window.clearSearch('need')">✕ 清除</button>
+        </div>
+        <div class="quick-tags-bar" id="need-quick-tags">
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('need','代購代辦')">🔥 代領包裹</button>
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('need','陪伴聊天')">🔥 寵物臨時照顧</button>
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('need','智慧手機教學')">🔥 智慧手機教學</button>
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('need','水電修繕')">🔥 水電修繕</button>
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('need','家具組裝')">🔥 家具組裝</button>
+        </div>
         <!-- 距離過濾器 -->
         <div class="filter-bar" id="need-filter-bar">
           <span class="filter-bar-label">📍 距離篩選：</span>
@@ -2217,6 +2406,20 @@
             <h2>💪 提供幫助</h2>
             <p>以下是願意提供協助的社區夥伴，找找看誰能幫你！</p>
           </div>
+        </div>
+        <!-- 搜尋列 + 快捷標籤 -->
+        <div class="search-bar-wrap">
+          <input class="search-input" id="offer-search-input" type="text"
+            placeholder="🔍 搜尋技能或名稱（如：水電、烹飪、電腦）"
+            oninput="window.searchCards('offer')" />
+          <button class="search-clear-btn" onclick="window.clearSearch('offer')">✕ 清除</button>
+        </div>
+        <div class="quick-tags-bar" id="offer-quick-tags">
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('offer','代購代辦')">🔥 代領包裹</button>
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('offer','陪伴聊天')">🔥 寵物臨時照顧</button>
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('offer','智慧手機教學')">🔥 智慧手機教學</button>
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('offer','水電修繕')">🔥 水電修繕</button>
+          <button class="quick-tag-btn" onclick="window.applyQuickTag('offer','接送服務')">🔥 接送服務</button>
         </div>
         <!-- 距離過濾器 -->
         <div class="filter-bar" id="offer-filter-bar">
@@ -2577,13 +2780,19 @@
       <div id="chat-room-active" style="display:none;flex-direction:column;height:100%">
         <!-- 標頭 -->
         <div class="chat-room-header">
-          <div class="cr-avatar" id="cr-avatar">🙂</div>
-          <div>
-            <div class="cr-name" id="cr-name">—</div>
+          <div class="cr-avatar" id="cr-avatar" style="cursor:pointer" onclick="window.openChatPeerProfile()">🙂</div>
+          <div style="flex:1;min-width:0">
+            <div class="cr-name" id="cr-name" style="cursor:pointer" onclick="window.openChatPeerProfile()">—</div>
             <div class="cr-meta" id="cr-meta"></div>
           </div>
           <button class="btn-show-phone" id="cr-show-phone-btn" onclick="window.togglePhoneReveal()" title="顯示對方聯絡電話">📞 顯示電話</button>
           <div class="phone-reveal-box" id="cr-phone-reveal"></div>
+          <button class="btn-report-chat" onclick="window.openReportModal('chat')" title="檢舉此用戶">🚩 檢舉</button>
+        </div>
+        <!-- 安全提醒橫幅（首次開啟對話時顯示） -->
+        <div class="safety-banner" id="cr-safety-banner" style="display:none">
+          <span class="safety-banner-text">💡 <strong>社區安全提醒：</strong>建議首次見面選擇公開場所，請勿隨意透露家中地址或給予鑰匙。如遇可疑狀況請立即聯繫警方（110）。</span>
+          <button class="safety-banner-close" onclick="window.closeSafetyBanner()" title="關閉">✕</button>
         </div>
         <!-- 對話狀態流程列（Pipeline） -->
         <div class="chat-status-bar" id="cr-status-bar">
@@ -2897,6 +3106,52 @@
 </div>
 
 <!-- ════════════════════════════════
+     他人主頁 Modal（User Profile Modal）
+════════════════════════════════ -->
+<div class="user-profile-overlay" id="user-profile-overlay" onclick="window._upmOverlayClick(event)">
+  <div class="user-profile-box" id="user-profile-box">
+    <button class="upm-close" onclick="window.closeUserProfile()">✕</button>
+    <div class="upm-header">
+      <div class="upm-avatar" id="upm-avatar">🙂</div>
+      <div>
+        <div class="upm-name" id="upm-name">—</div>
+        <div class="upm-meta" id="upm-meta"></div>
+        <div id="upm-rating" class="upm-rating" style="display:none">⭐ —</div>
+      </div>
+    </div>
+    <div class="upm-section">
+      <div class="upm-section-title">🛠️ 技能專長</div>
+      <div id="upm-skills" class="tags" style="margin:0"></div>
+    </div>
+    <div class="upm-section">
+      <div class="upm-section-title">📞 聯絡資訊</div>
+      <div id="upm-contact-list"></div>
+    </div>
+    <div class="upm-section">
+      <div class="upm-section-title">⭐ 獲得的評價</div>
+      <div id="upm-reviews"><div style="text-align:center;padding:16px;color:#9ca3af;font-size:13px">載入中…</div></div>
+    </div>
+    <button class="upm-report-btn" onclick="window.openReportModal('profile')">🚩 檢舉此用戶</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     檢舉 Modal
+════════════════════════════════ -->
+<div class="report-overlay" id="report-overlay" onclick="window._reportOverlayClick(event)">
+  <div class="report-box" id="report-box">
+    <h3>🚩 檢舉用戶</h3>
+    <p id="report-modal-sub">請說明檢舉原因，我們將在 24 小時內審查處理。</p>
+    <textarea class="report-reason-input" id="report-reason-input"
+      placeholder="例如：對方言語不當、疑似詐騙、騷擾行為…"></textarea>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="window.closeReportModal()">取消</button>
+      <button class="btn-send" style="background:#ef4444" onclick="window.submitReport()">送出檢舉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
      點數協商 Modal（Helper 設定報價）
 ════════════════════════════════ -->
 <div class="points-modal-overlay" id="points-modal-overlay">
@@ -3027,7 +3282,7 @@ const SKILL_POINTS = {
   '陪伴聊天':    2,
 };
 const DEFAULT_POINTS = 3;
-const REGISTER_BONUS = 50;
+const REGISTER_BONUS = 100;
 // ── 管理者 Email 白名單（多位管理者可加逗號分隔）──
 const ADMIN_EMAILS = ['686468s0511776@gmail.com'];
 
@@ -3969,7 +4224,10 @@ window.redeemItem = async (itemId) => {
   const item = SHOP_ITEMS.find(i => i.id === itemId);
   if (!item || !currentUser) return;
   const userPts = currentUserData?.points ?? 0;
-  if (userPts < item.price) return showToast('點數不足，無法兌換');
+  if (userPts < item.price) {
+    showToast(`⚠️ 點數不足（需要 ${item.price} 點，目前 ${userPts} 點）。請至點數兌換中心購買點數 💳`);
+    return;
+  }
 
   const userRef = doc(db, 'users', currentUser.uid);
   try {
@@ -4387,12 +4645,63 @@ function _filterCardsByDist(cards, distFilter) {
 window.setDistFilter = (tab, dist) => {
   if (tab === 'need') _needFilterDist = dist;
   else _offerFilterDist = dist;
-  // 更新按鈕 active 狀態
   document.querySelectorAll(`#${tab}-filter-bar .filter-btn`).forEach(b =>
     b.classList.toggle('active', b.dataset.dist === dist));
-  // 重新渲染
-  if (tab === 'need') renderNeedCards(_filterCardsByDist(_allNeedCards, dist));
-  else renderOfferCards(_filterCardsByDist(_allOfferCards, dist));
+  _applyAllFilters(tab);
+};
+
+// ── 搜尋 + 距離雙重過濾 ──
+function _applyAllFilters(tab) {
+  const keyword = (document.getElementById(`${tab}-search-input`)?.value || '').trim().toLowerCase();
+  const dist    = tab === 'need' ? _needFilterDist : _offerFilterDist;
+  const base    = tab === 'need' ? _allNeedCards : _allOfferCards;
+
+  let cards = _filterCardsByDist(base, dist);
+  if (keyword) {
+    cards = cards.filter(d => {
+      const text = [
+        d.name || '', d.displayName || '',
+        ...(d.skills || []),
+        d.desc || '', d.time || ''
+      ].join(' ').toLowerCase();
+      return text.includes(keyword);
+    });
+  }
+  if (tab === 'need') renderNeedCards(cards);
+  else renderOfferCards(cards);
+}
+
+// ── 即時關鍵字搜尋 ──
+window.searchCards = (tab) => {
+  _applyAllFilters(tab);
+  // 更新快捷標籤 active 狀態（若與目前輸入不符則取消 active）
+  const keyword = (document.getElementById(`${tab}-search-input`)?.value || '').trim().toLowerCase();
+  document.querySelectorAll(`#${tab}-quick-tags .quick-tag-btn`).forEach(b =>
+    b.classList.toggle('active', keyword && b.textContent.toLowerCase().includes(keyword.replace(/🔥\s*/,''))));
+};
+
+// ── 清除搜尋 ──
+window.clearSearch = (tab) => {
+  const input = document.getElementById(`${tab}-search-input`);
+  if (input) input.value = '';
+  document.querySelectorAll(`#${tab}-quick-tags .quick-tag-btn`).forEach(b => b.classList.remove('active'));
+  _applyAllFilters(tab);
+};
+
+// ── 快捷標籤點擊 ──
+window.applyQuickTag = (tab, keyword) => {
+  const input = document.getElementById(`${tab}-search-input`);
+  if (!input) return;
+  // 若已是同一個關鍵字則清除（toggle）
+  if (input.value.trim() === keyword) {
+    input.value = '';
+    document.querySelectorAll(`#${tab}-quick-tags .quick-tag-btn`).forEach(b => b.classList.remove('active'));
+  } else {
+    input.value = keyword;
+    document.querySelectorAll(`#${tab}-quick-tags .quick-tag-btn`).forEach(b =>
+      b.classList.toggle('active', b.getAttribute('onclick')?.includes(`'${keyword}'`)));
+  }
+  _applyAllFilters(tab);
 };
 
 // 自訂技能輸入（reg 為註冊頁，post 為發布頁）
@@ -4597,11 +4906,14 @@ function renderOfferCards(users) {
            <div class="btn-card-mine">👤 我的資料</div>
          </div>`
       : `<button class="btn-card" onclick="${actionClick}">尋求幫助 💬</button>`;
+    const offerUid       = (d.id && d.id !== 'demo') ? d.id : null;
+    const oAvatarClick   = (offerUid && !isMe) ? `onclick="window.openUserProfile('${offerUid}')" style="cursor:pointer"` : '';
+    const oNameClick     = (offerUid && !isMe) ? `onclick="window.openUserProfile('${offerUid}')" style="cursor:pointer;text-decoration:underline dotted"` : '';
     return `<div class="card">
       <div class="card-header">
-        <div class="avatar">${d.emoji||'🙂'}</div>
+        <div class="avatar" ${oAvatarClick}>${d.emoji||'🙂'}</div>
         <div>
-          <div class="card-name">${d.name || d.displayName || '社區鄰居'}</div>
+          <div class="card-name" ${oNameClick}>${d.name || d.displayName || '社區鄰居'}</div>
           <div class="card-meta">${d.age ? d.age + ' 歲・' + d.gender : ''}</div>
         </div>
       </div>
@@ -5524,6 +5836,9 @@ window.openChatRoom = async (chatId) => {
 
   // ── 更新任務行動列（雙方確認完成 / 取消）──
   _updateChatActionBar(chat);
+
+  // ── 安全提醒橫幅（首次開啟此聊天室時顯示一次）──
+  _showSafetyBannerIfNeeded(chatId);
 
   // ── 雙方互評：若對方已完成任務並等待我評價，自動彈出評價視窗 ──
   if (chat.pendingReviewFor === currentUser.uid && chat.pendingReviewTarget) {
@@ -7204,8 +7519,254 @@ window.openChatReview = () => {
   const taskId   = btn.dataset.taskId   || activeChatId || '';
   if (!peerId) { showToast('找不到對方資訊'); return; }
   _openReviewModal(peerId, peerName, taskId);
-  btn.style.display = 'none';   // 送出後隱藏，避免重複評價
+  btn.style.display = 'none';
 };
+
+// ═══════════════════════════════════════
+//  他人主頁 Modal（User Profile Modal）
+// ═══════════════════════════════════════
+
+let _upmTargetUid = null;  // 當前查看的用戶 UID
+
+// ── 從任意 uid 開啟主頁 Modal ──
+window.openUserProfile = async (uid) => {
+  if (!uid || uid === currentUser?.uid) return;  // 不查自己
+  _upmTargetUid = uid;
+  document.getElementById('user-profile-overlay').classList.add('open');
+
+  // 重置內容
+  const avatarEl  = document.getElementById('upm-avatar');
+  const nameEl    = document.getElementById('upm-name');
+  const metaEl    = document.getElementById('upm-meta');
+  const ratingEl  = document.getElementById('upm-rating');
+  const skillsEl  = document.getElementById('upm-skills');
+  const contactEl = document.getElementById('upm-contact-list');
+  const reviewsEl = document.getElementById('upm-reviews');
+
+  if (avatarEl)  avatarEl.textContent = '⏳';
+  if (nameEl)    nameEl.textContent   = '載入中…';
+  if (metaEl)    metaEl.textContent   = '';
+  if (ratingEl)  ratingEl.style.display = 'none';
+  if (skillsEl)  skillsEl.innerHTML   = '—';
+  if (contactEl) contactEl.innerHTML  = '—';
+  if (reviewsEl) reviewsEl.innerHTML  = '<div style="text-align:center;padding:16px;color:#9ca3af;font-size:13px">載入中…</div>';
+
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    if (!snap.exists()) { if (nameEl) nameEl.textContent = '（用戶不存在）'; return; }
+    const d = snap.data();
+
+    // 頭像
+    if (avatarEl) {
+      if (d.photoURL) {
+        avatarEl.innerHTML = `<img src="${d.photoURL}" alt="${d.name||''}">`;
+      } else {
+        avatarEl.textContent = d.emoji || (d.name?.[0] || '🙂');
+      }
+    }
+
+    // 姓名 + meta
+    const name = d.displayName || d.name || '社區鄰居';
+    if (nameEl) nameEl.textContent = name;
+    if (metaEl) metaEl.textContent = (d.age && d.gender) ? `${d.age} 歲・${d.gender}` : (d.meta || '');
+
+    // 星級
+    if (ratingEl && d.averageRating != null && (d.reviewCount || 0) > 0) {
+      ratingEl.textContent = `⭐ ${Number(d.averageRating).toFixed(1)} / 5.0（${d.reviewCount} 則評價）`;
+      ratingEl.style.display = 'inline-flex';
+    }
+
+    // 技能標籤
+    const allSkills = [
+      ...(d.generalSkills || []),
+      ...(d.techSkills    || []),
+      ...(d.skills        || [])
+    ].filter((s, i, arr) => s && arr.indexOf(s) === i);
+    if (skillsEl) {
+      skillsEl.innerHTML = allSkills.length
+        ? allSkills.map(s => `<span class="tag">${s}</span>`).join('')
+        : '<span style="color:#9ca3af;font-size:13px">尚未設定技能</span>';
+    }
+
+    // 聯絡資訊
+    const contacts = [];
+    if (d.email) contacts.push({ label: 'Email', value: d.email });
+    if (d.phone) contacts.push({ label: '電話', value: d.phone });
+    if (d.line)  contacts.push({ label: 'LINE', value: d.line });
+    if (contactEl) {
+      contactEl.innerHTML = contacts.length
+        ? contacts.map(c => `
+          <div class="upm-contact-row">
+            <span class="upm-contact-label">${c.label}</span>
+            <span style="flex:1">${c.value}</span>
+            <button class="upm-copy-btn" onclick="window._copyText('${c.value.replace(/'/g,'')}')">複製</button>
+          </div>`).join('')
+        : '<div style="color:#9ca3af;font-size:13px;padding:8px 0">對方尚未設定聯絡資訊</div>';
+    }
+
+    // 評價（非同步）
+    _loadUpmReviews(uid);
+
+  } catch(e) {
+    if (nameEl) nameEl.textContent = '（載入失敗）';
+    console.error('[openUserProfile]', e);
+  }
+};
+
+// ── 載入 UserProfile Modal 的評價列表 ──
+async function _loadUpmReviews(uid) {
+  const reviewsEl = document.getElementById('upm-reviews');
+  if (!reviewsEl) return;
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'reviews'), where('toUserId', '==', uid))
+    );
+    const docs = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+
+    if (!docs.length) {
+      reviewsEl.innerHTML = '<div style="color:#9ca3af;font-size:13px;padding:8px 0">尚無評價</div>';
+      return;
+    }
+    reviewsEl.innerHTML = docs.slice(0, 10).map(r => {
+      const stars   = '★'.repeat(Math.round(r.rating||0)) + '☆'.repeat(5-Math.round(r.rating||0));
+      const name    = r.fromName || '匿名';
+      const date    = r.createdAt?.toDate?.().toLocaleDateString('zh-TW') || '';
+      const comment = (r.comment || '（無留言）').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<div class="upm-review-item">
+        <div class="upm-review-avatar">${name[0]||'？'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-size:13px;font-weight:700">${name}</span>
+            <span style="color:#f59e0b;font-size:12px">${stars}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-primary);line-height:1.5">${comment}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${date}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    reviewsEl.innerHTML = '<div style="color:#ef4444;font-size:13px">評價載入失敗</div>';
+  }
+}
+
+window.closeUserProfile = () => {
+  document.getElementById('user-profile-overlay').classList.remove('open');
+  _upmTargetUid = null;
+};
+
+window._upmOverlayClick = (e) => {
+  if (e.target === document.getElementById('user-profile-overlay')) window.closeUserProfile();
+};
+
+// ── 點擊聊天室頂部頭像/名稱 → 開啟對方主頁 ──
+window.openChatPeerProfile = () => {
+  if (!activeChatId || !currentUser) return;
+  const chat  = myChats.find(c => c.chatId === activeChatId);
+  if (!chat) return;
+  const peerId = (chat.participants || []).find(u => u !== currentUser.uid)
+              || chat.providerUid || chat.requesterUid;
+  if (peerId) window.openUserProfile(peerId);
+};
+
+// ── 複製文字到剪貼簿 ──
+window._copyText = (text) => {
+  navigator.clipboard?.writeText(text)
+    .then(() => showToast('✅ 已複製到剪貼簿'))
+    .catch(() => showToast('複製失敗，請手動複製'));
+};
+
+// ═══════════════════════════════════════
+//  檢舉用戶
+// ═══════════════════════════════════════
+
+let _reportTargetUid  = null;
+let _reportContext    = '';   // 'chat' | 'profile'
+
+window.openReportModal = (context) => {
+  _reportContext = context;
+  _reportTargetUid = (context === 'chat')
+    ? (() => {
+        const chat = myChats.find(c => c.chatId === activeChatId);
+        return chat ? (chat.participants||[]).find(u => u !== currentUser?.uid) : null;
+      })()
+    : _upmTargetUid;
+
+  if (!_reportTargetUid) { showToast('找不到被檢舉對象'); return; }
+  document.getElementById('report-reason-input').value = '';
+  document.getElementById('report-overlay').classList.add('open');
+};
+
+window.closeReportModal = () => {
+  document.getElementById('report-overlay').classList.remove('open');
+};
+
+window._reportOverlayClick = (e) => {
+  if (e.target === document.getElementById('report-overlay')) window.closeReportModal();
+};
+
+window.submitReport = async () => {
+  const reason = document.getElementById('report-reason-input').value.trim();
+  if (!reason) { showToast('請填寫檢舉原因'); return; }
+  if (!_reportTargetUid || !currentUser) return;
+
+  const btn = document.querySelector('#report-overlay .btn-send');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 送出中…'; }
+
+  try {
+    await addDoc(collection(db, 'reports'), {
+      reporterUid:  currentUser.uid,
+      reporterName: currentUserData?.name || currentUserData?.displayName || '—',
+      targetUid:    _reportTargetUid,
+      reason,
+      context:      _reportContext,
+      chatId:       _reportContext === 'chat' ? activeChatId : null,
+      createdAt:    serverTimestamp(),
+      status:       'pending'
+    });
+    window.closeReportModal();
+    showToast('✅ 檢舉已送出，我們將盡快審查處理');
+  } catch(e) {
+    showToast('檢舉送出失敗：' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '送出檢舉'; }
+  }
+};
+
+// ═══════════════════════════════════════
+//  聊天室安全提醒橫幅
+// ═══════════════════════════════════════
+
+// ── 每個聊天室只顯示一次（localStorage 記憶） ──
+function _showSafetyBannerIfNeeded(chatId) {
+  const key = `safety_seen_${chatId}`;
+  if (localStorage.getItem(key)) return;
+  const banner = document.getElementById('cr-safety-banner');
+  if (banner) {
+    banner.style.display = 'flex';
+    localStorage.setItem(key, '1');
+  }
+}
+
+window.closeSafetyBanner = () => {
+  const banner = document.getElementById('cr-safety-banner');
+  if (banner) banner.style.display = 'none';
+};
+
+// ═══════════════════════════════════════
+//  點數不足提醒
+// ═══════════════════════════════════════
+
+// 在任何消費點數前呼叫此函式作檢查
+function _checkPointsSufficient(required) {
+  const pts = currentUserData?.points ?? 0;
+  if (pts < required) {
+    showToast(`⚠️ 點數不足（需要 ${required} 點，目前 ${pts} 點）。請至點數兌換中心購買點數 💳`);
+    return false;
+  }
+  return true;
+}
 </script>
 </body>
 </html>
