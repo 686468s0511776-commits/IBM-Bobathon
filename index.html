@@ -1748,6 +1748,28 @@
   }
   body.dark .quote-locked-badge { background: #14532d; color: #4ade80; }
 
+  /* 雙方達成共識橫幅 */
+  .quote-agreed-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    background: linear-gradient(90deg, #f0fdf4, #dcfce7);
+    border-bottom: 2px solid #86efac;
+    flex-shrink: 0;
+  }
+  body.dark .quote-agreed-banner {
+    background: linear-gradient(90deg, #052e16, #14532d);
+    border-bottom-color: #166534;
+  }
+  .quote-agreed-text {
+    font-size: 14px; font-weight: 800; color: #15803d; flex: 1;
+  }
+  body.dark .quote-agreed-text { color: #4ade80; }
+  .quote-agreed-pts {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 16px; border-radius: 20px;
+    background: #16a34a; color: #fff; font-size: 13px; font-weight: 800;
+  }
+
   /* 舊有按鈕（保留向下相容） */
   .btn-set-points {
     padding: 4px 12px; border-radius: 20px; border: none;
@@ -4772,8 +4794,8 @@ async function loadCards() {
   const _needQ = query(collection(db, 'needs'), orderBy('createdAt', 'desc'));
   window._needCardsUnsub = onSnapshot(_needQ, snap => {
     const allCards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // 只顯示 open 狀態：排除 completed/in_progress/canceled/closed/下架
-    const _inactiveStatuses = new Set(['completed', '已完成', 'canceled', '已取消', 'closed', 'in_progress']);
+    // 顯示 open 與 in_progress 狀態（in_progress 顯示「已被接單」；排除 completed/canceled/closed/下架）
+    const _inactiveStatuses = new Set(['completed', '已完成', 'canceled', '已取消', 'closed']);
     const activeCards = allCards.filter(c =>
       !c.isArchived && !_inactiveStatuses.has(c.status)
     );
@@ -4942,11 +4964,16 @@ function renderNeedCards(cards) {
       ? `<span class="reward-badge">${rewardMap[d.reward] || d.reward}</span>`
       : '';
 
+    // 處理中狀態標籤
+    const isInProgress = d.status === 'in_progress';
+    const inProgressBadge = isInProgress
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;background:#fef9c3;color:#92400e;border:1px solid #fde68a;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">⏳ 處理中</span>`
+      : '';
+
     // 底部按鈕（嚴格 isMe，訪客守衛，含 in_progress 狀態）
     const actionClick = _isGuest
       ? `window.showLoginPrompt('help')`
       : `window.openModal('need','${data}')`;
-    const isInProgress = d.status === 'in_progress';
     const bottomBtn = isMe
       ? `<div class="card-btn-row">
            <div class="btn-card-mine">📌 我的需求</div>
@@ -4954,7 +4981,7 @@ function renderNeedCards(cards) {
            <button class="btn-card-delete" onclick="window.openDeleteConfirm('needs','${d.id}','${d.desc.slice(0,18).replace(/'/g,'')}')">🗑️</button>
          </div>`
       : isInProgress
-        ? `<button class="btn-card" disabled style="background:#f3f4f6;color:#9ca3af;border:1px solid #e5e7eb;cursor:not-allowed">⏳ 已被接單</button>`
+        ? `<button class="btn-card" disabled style="background:#f3f4f6;color:#9ca3af;border:1px solid #e5e7eb;cursor:not-allowed">⏳ 已被接單（處理中）</button>`
         : `<button class="btn-card" onclick="${actionClick}">我來幫忙 🙋</button>`;
 
     return `<div class="card" id="need-card-${d.id}">
@@ -4966,7 +4993,7 @@ function renderNeedCards(cards) {
         </div>
       </div>
       <div class="tags">${tagsHTML(d.skills)}${distBadge}</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${urgencyBadge}${rewardBadge}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${urgencyBadge}${rewardBadge}${inProgressBadge}</div>
       <div class="card-need-title">${d.skills.join('・') || '求助需求'}</div>
       <div class="card-desc">${d.desc}${d.time ? `<br><small style="color:#9ca3af;font-size:11px">⏰ ${d.time}</small>` : ''}</div>
       ${(()=>{const pts=d.points??0;if(!pts)return'';const fee=d.fee??Math.floor(pts*0.1);const hr=d.helperReceive??(pts-fee);return `<div style="font-size:11px;color:#7a7930;background:#f5f4dc;border:1px solid #cccb85;border-radius:8px;padding:4px 10px;margin-bottom:8px">⭐ 此服務需要 ${pts} 點（幫助者獲得 ${hr} 點）</div>`})()}
@@ -6235,18 +6262,24 @@ function renderBubbleContent(m) {
     // isMe 在 renderBubbleContent 外部，透過 data attribute 傳入
     const fromMe   = (m._isMe === true);   // 由呼叫端注入
     const msgId    = m._docId || '';
-    const actionsHtml = (!fromMe && isPending)
-      ? `<div class="quote-card-actions">
-           <button class="btn-qc-agree" onclick="window.agreeQuotedPoints()">✅ 同意 ${pts} 點</button>
-           <button class="btn-qc-counter" onclick="window._toggleCounterRow('qcc-${msgId}')">💬 重新出價</button>
-         </div>
-         <div class="quote-card-counter-row" id="qcc-${msgId}">
-           <input class="quote-counter-input" id="qci-${msgId}" type="number" min="1" max="9999" placeholder="輸入你的出價" />
-           <button class="btn-qc-send-counter" onclick="window.submitCounterQuote('qci-${msgId}', this)">送出</button>
-         </div>`
-      : (fromMe && isPending
-          ? `<div style="font-size:11px;color:#6d28d9;margin-top:8px">⏳ 等待對方確認中…</div>`
-          : `<div style="font-size:11px;color:#16a34a;margin-top:8px">✅ 已確認</div>`);
+    // 如果 chat 層級已同意（quoteStatus=agreed 或 points>0），不論訊息狀態為何都顯示「已確認」
+    const activeChatData = myChats.find(c => c.chatId === activeChatId);
+    const chatAlreadyAgreed = activeChatData &&
+      (activeChatData.quoteStatus === 'agreed' || (activeChatData.points || 0) > 0);
+    const actionsHtml = (chatAlreadyAgreed)
+      ? `<div style="font-size:11px;color:#16a34a;margin-top:8px">✅ 已確認</div>`
+      : (!fromMe && isPending)
+        ? `<div class="quote-card-actions">
+             <button class="btn-qc-agree" onclick="window.agreeQuotedPoints()">✅ 同意 ${pts} 點</button>
+             <button class="btn-qc-counter" onclick="window._toggleCounterRow('qcc-${msgId}')">💬 重新出價</button>
+           </div>
+           <div class="quote-card-counter-row" id="qcc-${msgId}">
+             <input class="quote-counter-input" id="qci-${msgId}" type="number" min="1" max="9999" placeholder="輸入你的出價" />
+             <button class="btn-qc-send-counter" onclick="window.submitCounterQuote('qci-${msgId}', this)">送出</button>
+           </div>`
+        : (fromMe && isPending
+            ? `<div style="font-size:11px;color:#6d28d9;margin-top:8px">⏳ 等待對方確認中…</div>`
+            : `<div style="font-size:11px;color:#16a34a;margin-top:8px">✅ 已確認</div>`);
     return `<div class="bubble-quote-card">
       <div style="font-size:12px;font-weight:700;margin-bottom:4px">💰 服務報價</div>
       <div class="quote-amount">${pts} 點</div>
@@ -6517,18 +6550,29 @@ window.handleFileSelect = async (input) => {
 //  ensureChatDoc：接受邀請時建立/更新 chats 文件
 // ─────────────────────────────────
 function ensureChatDoc(chatId, inv, peerId) {
+  // 判斷角色：inv.type='need' 代表我（currentUser）是提供者，inv 發起者是求助者
+  //           inv.type='offer' 代表我（currentUser）是求助者，inv 發起者是提供者
+  // 若 inv.requesterUid 已由 sendInvite 填好則直接使用，否則依 type 推算
+  const resolvedRequesterUid = inv.requesterUid
+    || (inv.type === 'need'  ? peerId           : currentUser.uid);
+  const resolvedProviderUid  = inv.providerUid
+    || (inv.type === 'need'  ? currentUser.uid  : peerId);
+
   return setDoc(doc(db, 'chats', chatId), {
-    participants: [currentUser.uid, peerId].sort(),
-    peerName:     inv.fromName,
-    peerEmoji:    inv.fromEmoji || null,
-    peerMeta:     inv.fromMeta  || '',
+    participants:  [currentUser.uid, peerId].sort(),
+    peerName:      inv.fromName,
+    peerEmoji:     inv.fromEmoji || null,
+    peerMeta:      inv.fromMeta  || '',
     peerId,
-    inviteId:     inv.id           || null,
-    needId:       inv.needId       || inv.taskId || null,   // ← 讓 _finalizeCompletion 能找到 needs 文件
-    taskTitle:    inv.taskTitle    || inv.msg    || '',
-    points:       inv.points       || 0,
-    taskStatus:   'active',
-    createdAt:    serverTimestamp()
+    inviteId:      inv.id            || null,
+    needId:        inv.needId        || inv.taskId || null,   // ← 讓 _finalizeCompletion 能找到 needs 文件
+    taskTitle:     inv.taskTitle     || inv.msg    || '',
+    points:        inv.points        || 0,
+    requesterUid:  resolvedRequesterUid,   // ← 付款方（求助者）
+    providerUid:   resolvedProviderUid,    // ← 收款方（提供者）
+    inviteType:    inv.type          || 'need',
+    taskStatus:    'active',
+    createdAt:     serverTimestamp()
   }, { merge: true });
 }
 
@@ -6836,6 +6880,11 @@ function _updateQuoteBar(chat) {
   const inner = document.getElementById('cr-quote-bar-inner');
   if (!bar || !inner || !currentUser) return;
 
+  // 每次重新渲染前，先把容器 className 還原為預設（防止狀態 C 設定 agreed-banner 後殘留）
+  if (!bar.classList.contains('chat-quote-bar')) {
+    bar.className = 'chat-quote-bar';
+  }
+
   const ts           = chat.taskStatus  || 'active';
   const quoteStatus  = chat.quoteStatus || '';
   const quotedPoints = chat.quotedPoints || 0;
@@ -6848,13 +6897,14 @@ function _updateQuoteBar(chat) {
     return;
   }
 
-  // ── 狀態 C：點數已鎖定 ──
+  // ── 狀態 C：點數已鎖定（達成共識橫幅）──
   if (lockedPoints > 0 && quoteStatus === 'agreed') {
-    bar.classList.add('show');
+    // 改用醒目的 agreed 橫幅樣式
+    bar.className = 'quote-agreed-banner';
     inner.innerHTML = `
-      <span class="chat-quote-label">💰 服務點數</span>
-      <span class="quote-locked-badge">✅ 已鎖定 ${lockedPoints} 點</span>
-      <span style="font-size:11px;color:var(--text-muted);flex:1">（完成任務後自動結算）</span>`;
+      <span class="quote-agreed-text">🎉 雙方已達成共識，成交金額：<strong>${lockedPoints} 點</strong></span>
+      <span class="quote-agreed-pts">✅ 已鎖定 ${lockedPoints} 點</span>
+      <span style="font-size:11px;color:var(--text-muted);margin-left:6px">（完成任務後自動結算）</span>`;
     return;
   }
 
@@ -6881,24 +6931,18 @@ function _updateQuoteBar(chat) {
     return;
   }
 
-  // ── 狀態 A：尚未報價 或 已撤回／重新協商 → 雙方皆可出價 ──
-  const needsQuote = !quoteStatus || quoteStatus === 'renegotiate';
-  if (needsQuote) {
-    bar.classList.add('show');
-    inner.innerHTML = `
-      <span class="chat-quote-label">💰 點數議價</span>
-      <div class="quote-input-wrap">
-        <input class="quote-pts-input" id="inline-quote-input" type="number" min="1" max="9999"
-          placeholder="輸入提議點數（如 100）"
-          oninput="window._onQuoteInputChange(this)" />
-        <span class="quote-fee-hint" id="inline-quote-hint">輸入後可預覽手續費</span>
-      </div>
-      <button class="btn-send-quote" id="inline-quote-btn" onclick="window.submitInlineQuote()">💰 發送出價</button>`;
-    return;
-  }
-
-  // 其他狀態：隱藏
-  bar.classList.remove('show');
+  // ── 狀態 A（預設）：尚未報價、已撤回、或任何未命中以上條件的狀態
+  // 只要任務尚未完成且點數未鎖定，一律顯示議價輸入列（不論由哪一方發起的聊天）
+  bar.classList.add('show');
+  inner.innerHTML = `
+    <span class="chat-quote-label">💰 點數議價</span>
+    <div class="quote-input-wrap">
+      <input class="quote-pts-input" id="inline-quote-input" type="number" min="1" max="9999"
+        placeholder="輸入提議點數（如 100）"
+        oninput="window._onQuoteInputChange(this)" />
+      <span class="quote-fee-hint" id="inline-quote-hint">輸入後可預覽手續費</span>
+    </div>
+    <button class="btn-send-quote" id="inline-quote-btn" onclick="window.submitInlineQuote()">💰 發送出價</button>`;
 }
 
 // ── 報價輸入框即時預覽 ──
@@ -7881,7 +7925,6 @@ window.agreeQuotedPoints = async () => {
   if (!pts) return showToast('找不到報價資訊');
 
   const peerId      = chat ? otherUid(chat) : '';
-  const proposerUid = chat?.quotedBy || peerId;   // 報價發出方
   const fee  = Math.floor(pts * 0.1);
   const gain = pts - fee;
 
@@ -7898,6 +7941,33 @@ window.agreeQuotedPoints = async () => {
       await setDoc(doc(db, 'invites', chat.inviteId), { points: pts }, { merge: true });
     }
 
+    // ── 同步更新任務文件狀態為 in_progress（雙向：不論來自 needs 還是 services 的任務）──
+    // chat.needId / chat.taskId → needs 集合（「需要幫助」的求助任務）
+    // chat.serviceId            → services / offers 集合（「提供幫助」的提供任務，若有）
+    const agreeNeedId    = chat.needId    || chat.taskId    || null;
+    const agreeServiceId = chat.serviceId || chat.offerId   || null;
+
+    if (agreeNeedId) {
+      setDoc(doc(db, 'needs', agreeNeedId), {
+        status:     'in_progress',
+        acceptedBy: currentUser.uid,
+        acceptedAt: serverTimestamp()
+      }, { merge: true }).catch(() => {});
+      // 更新本地快取
+      const cached = (_allNeedCards || []).find(c => c.id === agreeNeedId);
+      if (cached) { cached.status = 'in_progress'; cached.acceptedBy = currentUser.uid; }
+      renderNeedCards(_filterCardsByDist(_allNeedCards || [], _needFilterDist));
+    }
+    if (agreeServiceId) {
+      // 如果聊天室來源為「提供幫助」，更新對應服務文件（集合名依實際命名，此為通用 fallback）
+      const svcColName = chat.serviceCollection || 'services';
+      setDoc(doc(db, svcColName, agreeServiceId), {
+        status:      'in_progress',
+        acceptedBy:  currentUser.uid,
+        acceptedAt:  serverTimestamp()
+      }, { merge: true }).catch(() => {});
+    }
+
     // 傳送系統確認訊息
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
       senderId:   currentUser.uid,
@@ -7909,7 +7979,7 @@ window.agreeQuotedPoints = async () => {
       isRead:     false
     });
 
-    // 更新本地快取
+    // 更新本地快取 + 立即渲染頂部「達成共識」橫幅
     if (chat) { chat.quoteStatus = 'agreed'; chat.points = pts; }
     _updateChatActionBar(chat || {});
     showToast(`🎉 已鎖定 ${pts} 點！任務正式開始`);
