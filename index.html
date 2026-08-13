@@ -1341,32 +1341,48 @@ onAuthStateChanged(auth, async user => {
   if (user) {
     currentUser = user;
     try {
+      // 每次登入都確保 displayName / email / photoURL 寫入（merge 不覆蓋其他欄位）
+      const derivedName = user.displayName || user.email.split('@')[0] || '社區鄰居';
+      await setDoc(doc(db, 'users', user.uid), {
+        uid:         user.uid,
+        displayName: derivedName,
+        email:       user.email,
+        photoURL:    user.photoURL || '',
+        lastSeen:    serverTimestamp()
+      }, { merge: true });
+
       const snap = await getDoc(doc(db, 'users', user.uid));
       if (snap.exists()) {
-        // Firestore 有資料 → 直接進入 App
         currentUserData = snap.data();
+        // 確保本地 currentUserData 有 name 欄位（舊資料可能只有 displayName 或只有 name）
+        if (!currentUserData.name) currentUserData.name = currentUserData.displayName || derivedName;
         enterApp();
       } else {
-        // Firestore 無資料 → 新用戶，補填資料
+        // 理論上 setDoc 後一定存在，保險起見
         currentUserData = {
-          name:   user.displayName || user.email.split('@')[0],
-          email:  user.email,
-          emoji:  '🙂',
-          skills: [],
-          age:    '',
-          gender: ''
+          name:        derivedName,
+          displayName: derivedName,
+          email:       user.email,
+          photoURL:    user.photoURL || '',
+          emoji:       '🙂',
+          skills:      [],
+          age:         '',
+          gender:      ''
         };
         showSkillSetup();
       }
     } catch(e) {
-      // Firestore 讀取失敗 → 用基本資料直接進入 App
+      // Firestore 讀取失敗 → 用 Auth 基本資料直接進入 App
+      const derivedName = user.displayName || user.email.split('@')[0] || '社區鄰居';
       currentUserData = {
-        name:   user.displayName || user.email.split('@')[0],
-        email:  user.email,
-        emoji:  '🙂',
-        skills: [],
-        age:    '',
-        gender: ''
+        name:        derivedName,
+        displayName: derivedName,
+        email:       user.email,
+        photoURL:    user.photoURL || '',
+        emoji:       '🙂',
+        skills:      [],
+        age:         '',
+        gender:      ''
       };
       enterApp();
     }
@@ -1467,14 +1483,19 @@ window.completeSetup = async () => {
   if (!gender) return alert('請選擇性別');
 
   const emojis = ['👨','👩','🧑','👷','👩‍💻','👩‍🍳','🚗'];
+  const derivedName = currentUserData.name || currentUserData.displayName
+                   || currentUser.displayName || currentUser.email.split('@')[0] || '社區鄰居';
   await setDoc(doc(db, 'users', currentUser.uid), {
-    name:   currentUserData.name,
-    email:  currentUserData.email,
+    uid:         currentUser.uid,
+    name:        derivedName,
+    displayName: derivedName,        // 確保 getUserInfo 能查到
+    email:       currentUserData.email || currentUser.email,
+    photoURL:    currentUser.photoURL || '',
     age:    parseInt(age),
     gender, skills,
     emoji:  emojis[Math.floor(Math.random()*emojis.length)],
     createdAt: serverTimestamp()
-  });
+  }, { merge: true });
   document.getElementById('skill-setup-overlay')?.remove();
   const snap = await getDoc(doc(db, 'users', currentUser.uid));
   currentUserData = snap.data();
@@ -1524,7 +1545,12 @@ window.doEmailRegister = async () => {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const emojis = ['👨','👩','🧑','👷','👩‍💻','👩‍🍳'];
     await setDoc(doc(db,'users', cred.user.uid), {
-      name, age: parseInt(age), gender, email, skills,
+      uid:         cred.user.uid,
+      name,
+      displayName: name,             // 確保 getUserInfo 能查到
+      age: parseInt(age), gender, email, skills,
+      email,
+      photoURL:    '',
       emoji: emojis[Math.floor(Math.random()*emojis.length)],
       createdAt: serverTimestamp()
     });
@@ -2069,27 +2095,37 @@ let myChats = [];
 // ─────────────────────────────────
 const _userCache = {};   // uid → { displayName, avatar }
 
-async function getUserInfo(uid) {
-  if (!uid) return { displayName: '社區鄰居', avatar: null };
+async function getUserInfo(uid, hintFromChat) {
+  // hintFromChat: { peerName, peerEmoji, peerEmail } 從 chats 文件帶入，作為 Firestore 查無資料時的備用
+  if (!uid) return _nameToInfo(hintFromChat?.peerName, hintFromChat);
+
   // 1. 本地快取命中
   if (_userCache[uid]) return _userCache[uid];
+
   // 2. 若是自己，直接從 currentUserData 拿
   if (uid === currentUser?.uid && currentUserData) {
+    const name = currentUserData.displayName || currentUserData.name
+              || currentUserData.email?.split('@')[0] || '社區鄰居';
     const info = {
-      displayName: currentUserData.name || currentUserData.email?.split('@')[0] || '社區鄰居',
+      displayName: name,
       avatar:      currentUserData.photoURL || null,
       emoji:       currentUserData.emoji || null,
+      meta:        currentUserData.age && currentUserData.gender
+                   ? `${currentUserData.age} 歲・${currentUserData.gender}` : '',
     };
     _userCache[uid] = info;
     return info;
   }
+
   // 3. 查詢 Firestore users/{uid}
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     if (snap.exists()) {
       const d = snap.data();
+      // displayName（新欄位）優先；其次 name（舊欄位）；再取 email 前綴
+      const name = d.displayName || d.name || d.email?.split('@')[0] || '社區鄰居';
       const info = {
-        displayName: d.name || d.email?.split('@')[0] || '社區鄰居',
+        displayName: name,
         avatar:      d.photoURL || null,
         emoji:       d.emoji    || null,
         meta:        d.age && d.gender ? `${d.age} 歲・${d.gender}` : '',
@@ -2097,10 +2133,29 @@ async function getUserInfo(uid) {
       _userCache[uid] = info;
       return info;
     }
-  } catch(e) { /* 查詢失敗則退回預設 */ }
+  } catch(e) { /* 查詢失敗，繼續往 fallback */ }
+
+  // 4. Firestore 查無此人 → 用 chat 文件中已存的 peerName/peerEmoji 作為 fallback
+  if (hintFromChat?.peerName) {
+    const info = _nameToInfo(hintFromChat.peerName, hintFromChat);
+    _userCache[uid] = info;
+    return info;
+  }
+
+  // 5. 最終 fallback：社區鄰居
   const fallback = { displayName: '社區鄰居', avatar: null, emoji: null, meta: '' };
   _userCache[uid] = fallback;
   return fallback;
+}
+
+// 把名稱/hint 轉成標準 info 物件
+function _nameToInfo(name, hint) {
+  return {
+    displayName: name || '社區鄰居',
+    avatar:      null,
+    emoji:       hint?.peerEmoji || null,
+    meta:        '',
+  };
 }
 
 // 產生頭像 HTML：優先 emoji，其次 photoURL img，最後預設圖示
@@ -2139,9 +2194,9 @@ async function renderChatList() {
     return;
   }
 
-  // 同時查詢所有對話對象的資料
+  // 同時查詢所有對話對象的資料（傳入 chat 文件的 hint 作為備用）
   const infos = await Promise.all(
-    myChats.map(c => getUserInfo(c.peerId || ''))
+    myChats.map(c => getUserInfo(c.peerId || '', c))
   );
 
   el.innerHTML = myChats.map((c, i) => {
@@ -2184,7 +2239,7 @@ window.loadChatList = () => {
     if (activeChatId) {
       const c = myChats.find(x => x.chatId === activeChatId);
       if (c) {
-        getUserInfo(c.peerId || '').then(info => {
+        getUserInfo(c.peerId || '', c).then(info => {
           const nameEl = document.getElementById('cr-name');
           const metaEl = document.getElementById('cr-meta');
           if (nameEl) nameEl.textContent = c.peerName || info.displayName;
@@ -2205,9 +2260,9 @@ window.openChatRoom = async (chatId) => {
   const chat = myChats.find(c => c.chatId === chatId);
   if (!chat) return;
 
-  // 查詢對方真實資料
+  // 查詢對方真實資料（傳入 chat 文件 hint，Firestore 查無時退回 peerName）
   const peerId   = chat.peerId || '';
-  const peerInfo = await getUserInfo(peerId);
+  const peerInfo = await getUserInfo(peerId, chat);
   const myInfo   = await getUserInfo(currentUser.uid);
   const peerName = chat.peerName || peerInfo.displayName;
 
@@ -2259,8 +2314,8 @@ window.openChatRoom = async (chatId) => {
       const sender = m.senderId || m.senderUid || '';
       const isMe   = sender === currentUser.uid;
 
-      // 動態取得發送者資料（已快取，不會重複請求）
-      const senderInfo = isMe ? myInfo : await getUserInfo(sender || peerId);
+      // 動態取得發送者資料（已快取，不會重複請求；對方傳入 chat hint）
+      const senderInfo = isMe ? myInfo : await getUserInfo(sender || peerId, chat);
 
       const div = document.createElement('div');
       div.className = `bubble-wrap ${isMe ? 'me' : ''}`;
