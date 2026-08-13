@@ -820,6 +820,49 @@
   }
 
   /* ══════════════════════════════
+     發布頁：Radio 選項卡片樣式
+  ══════════════════════════════ */
+  .radio-card-label {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+  }
+  .radio-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 18px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+    background: #fff;
+    transition: all .15s;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .radio-card:hover {
+    border-color: #5B8DB8;
+    color: #5B8DB8;
+    background: #EDF4FB;
+  }
+  /* input:checked 的兄弟 .radio-card 高亮 */
+  .radio-card-label input:checked + .radio-card {
+    background: #5B8DB8;
+    border-color: #5B8DB8;
+    color: #fff;
+  }
+  .radio-card-label input:checked + .radio-card.urgent-card {
+    background: #dc2626;
+    border-color: #dc2626;
+  }
+  .radio-card-label input:checked + .radio-card.normal-card {
+    background: #0284c7;
+    border-color: #0284c7;
+  }
+
+  /* ══════════════════════════════
      卡片緊急度 / 回饋方式徽章
   ══════════════════════════════ */
   .urgency-badge {
@@ -1483,73 +1526,75 @@
         <div class="form-group">
           <label>需求類型（技能標籤，可多選）</label>
           <div id="post-skill-tags">
-            <div class="skill-category">
-              <span class="skill-category-title">🏠 家事清潔</span>
-              <div class="skill-tags">
-                <span class="skill-tag" data-skill="居家清潔">🧹 居家清潔</span>
-                <span class="skill-tag" data-skill="傳統烹飪">🍳 傳統烹飪</span>
-                <span class="skill-tag" data-skill="代購代辦">🛒 代購代辦</span>
+            <!-- 🟢 一般互助（對齊「編輯技能」Modal） -->
+            <div class="skill-category" style="margin-bottom:14px">
+              <div class="skill-cat-header green" style="margin-bottom:10px">🟢 一般互助</div>
+              <div class="skill-tags" id="post-general-tags">
+                <span class="skill-tag" data-skill="搬運">🪜 搬運</span>
+                <span class="skill-tag" data-skill="代買">🛒 代買</span>
+                <span class="skill-tag" data-skill="代領">📦 代領</span>
+                <span class="skill-tag" data-skill="陪伴">💚 陪伴</span>
+                <span class="skill-tag" data-skill="外出協助">🚶 外出協助</span>
+                <span class="skill-tag" data-skill="居家整理">🧹 居家整理</span>
+                <span class="skill-tag" data-skill="寵物照顧">🐾 寵物照顧</span>
+                <span class="skill-tag" data-skill="其他(一般)" data-other-wrap="post-general-other">➕ 其他</span>
+              </div>
+              <div class="skill-other-input-wrap" id="post-general-other">
+                <input class="skill-other-input" id="post-general-other-input"
+                  placeholder="請輸入自訂一般幫助，多個以逗號分隔…" />
               </div>
             </div>
-            <div class="skill-category">
-              <span class="skill-category-title">📱 數位教學</span>
-              <div class="skill-tags">
-                <span class="skill-tag" data-skill="智慧手機教學">📱 智慧手機教學</span>
-                <span class="skill-tag" data-skill="電腦維修">💻 電腦維修</span>
-              </div>
-            </div>
-            <div class="skill-category">
-              <span class="skill-category-title">🔧 修繕維護</span>
-              <div class="skill-tags">
-                <span class="skill-tag" data-skill="水電修繕">🔧 水電修繕</span>
-                <span class="skill-tag" data-skill="家具組裝">🪑 家具組裝</span>
-                <span class="skill-tag" data-skill="接送服務">🚗 接送服務</span>
-              </div>
-            </div>
-            <div class="skill-category">
-              <span class="skill-category-title">❤️ 長照陪伴</span>
-              <div class="skill-tags">
-                <span class="skill-tag" data-skill="陪伴聊天">💬 陪伴聊天</span>
-                <span class="skill-tag" data-skill="就醫陪伴">🏥 就醫陪伴</span>
-              </div>
-            </div>
+            <!-- 🔵 技能互助（對齊「編輯技能」Modal） -->
             <div class="skill-category" style="margin-bottom:0">
-              <span class="skill-category-title">✏️ 自訂技能</span>
-              <input type="text" id="post-custom-skill-input" placeholder="輸入技能名稱後按 Enter"
-                style="width:100%;padding:8px 12px;border:1.5px solid #d0e4f5;border-radius:10px;font-size:13px;outline:none"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();window.addCustomSkill('post')}" />
+              <div class="skill-cat-header blue" style="margin-bottom:10px">🔵 技能互助</div>
+              <div class="skill-tags" id="post-skill-modal-tags">
+                <span class="skill-tag" data-skill="簡單修繕">🔧 簡單修繕</span>
+                <span class="skill-tag" data-skill="基礎電器">💡 基礎電器</span>
+                <span class="skill-tag" data-skill="電腦">💻 電腦</span>
+                <span class="skill-tag" data-skill="手機/3C">📱 手機/3C</span>
+                <span class="skill-tag" data-skill="腳踏車維修">🚲 腳踏車維修</span>
+                <span class="skill-tag" data-skill="課業">📚 課業</span>
+                <span class="skill-tag" data-skill="設計">🎨 設計</span>
+                <span class="skill-tag" data-skill="攝影">📷 攝影</span>
+                <span class="skill-tag" data-skill="程式設計">👨‍💻 程式設計</span>
+                <span class="skill-tag" data-skill="其他(技能)" data-other-wrap="post-skill-other">➕ 其他</span>
+              </div>
+              <div class="skill-other-input-wrap" id="post-skill-other">
+                <input class="skill-other-input" id="post-skill-other-input"
+                  placeholder="請輸入自訂技能，多個以逗號分隔…" />
+              </div>
             </div>
           </div>
         </div>
         <!-- 緊急度 -->
         <div class="form-group">
           <label>緊急程度</label>
-          <div style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:12px">
-            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
-              <input type="radio" name="post-urgency" id="urgency-urgent" value="urgent" style="accent-color:#5B8DB8;flex-shrink:0">
-              <span class="urgency-badge urgent" style="white-space:nowrap">🚨 急件</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+            <label class="radio-card-label">
+              <input type="radio" name="post-urgency" id="urgency-urgent" value="urgent" style="position:absolute;opacity:0;width:0;height:0">
+              <span class="radio-card urgent-card">🚨 急件</span>
             </label>
-            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
-              <input type="radio" name="post-urgency" id="urgency-normal" value="normal" checked style="accent-color:#5B8DB8;flex-shrink:0">
-              <span class="urgency-badge normal" style="white-space:nowrap">☕ 一般</span>
+            <label class="radio-card-label">
+              <input type="radio" name="post-urgency" id="urgency-normal" value="normal" checked style="position:absolute;opacity:0;width:0;height:0">
+              <span class="radio-card normal-card">☕ 一般</span>
             </label>
           </div>
         </div>
         <!-- 回饋方式 -->
         <div class="form-group">
           <label>回饋方式</label>
-          <div style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:16px">
-            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
-              <input type="radio" name="post-reward" id="reward-volunteer" value="volunteer" checked style="accent-color:#5B8DB8;flex-shrink:0">
-              <span style="white-space:nowrap">🤝 免費志工</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+            <label class="radio-card-label">
+              <input type="radio" name="post-reward" id="reward-volunteer" value="volunteer" checked style="position:absolute;opacity:0;width:0;height:0">
+              <span class="radio-card">🤝 免費志工</span>
             </label>
-            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
-              <input type="radio" name="post-reward" id="reward-drink" value="drink" style="accent-color:#5B8DB8;flex-shrink:0">
-              <span style="white-space:nowrap">🥤 請喝飲料</span>
+            <label class="radio-card-label">
+              <input type="radio" name="post-reward" id="reward-drink" value="drink" style="position:absolute;opacity:0;width:0;height:0">
+              <span class="radio-card">🥤 請喝飲料</span>
             </label>
-            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
-              <input type="radio" name="post-reward" id="reward-points" value="points" style="accent-color:#5B8DB8;flex-shrink:0">
-              <span style="white-space:nowrap">⭐ 點數回饋</span>
+            <label class="radio-card-label">
+              <input type="radio" name="post-reward" id="reward-points" value="points" style="position:absolute;opacity:0;width:0;height:0">
+              <span class="radio-card">⭐ 點數回饋</span>
             </label>
           </div>
         </div>
@@ -3529,14 +3574,29 @@ window.sendInvite = async () => {
 window.postNeed = async () => {
   // 訪客守衛
   if (_isGuest || !currentUser) { window.showLoginPrompt('post'); return; }
-  const skills = [...document.querySelectorAll('#post-skill-tags .skill-tag.selected')].map(t=>t.dataset.skill);
-  const desc   = document.getElementById('post-desc').value.trim();
-  const time   = document.getElementById('post-time').value.trim();
+
+  // 收集已選標籤（排除「其他」佔位標籤，其內容由輸入框另外讀取）
+  const baseSkills = [...document.querySelectorAll('#post-skill-tags .skill-tag.selected')]
+    .map(t => t.dataset.skill)
+    .filter(s => s && !s.startsWith('其他'));
+
+  // 收集「+ 其他」輸入框的自訂技能
+  const rawGenOther = (document.getElementById('post-general-other-input')?.value || '').trim();
+  const rawSklOther = (document.getElementById('post-skill-other-input')?.value || '').trim();
+  const customSkillsFromInput = [
+    ...rawGenOther.split(/[、,，]+/).map(s => s.trim()).filter(Boolean),
+    ...rawSklOther.split(/[、,，]+/).map(s => s.trim()).filter(Boolean),
+  ];
+  const skills = [...baseSkills, ...customSkillsFromInput];
+
+  const desc    = document.getElementById('post-desc').value.trim();
+  const time    = document.getElementById('post-time').value.trim();
   const urgency = document.querySelector('input[name="post-urgency"]:checked')?.value || 'normal';
   const reward  = document.querySelector('input[name="post-reward"]:checked')?.value  || 'volunteer';
   if (!skills.length) return showToast('請選擇至少一個技能標籤');
   if (!desc)  return showToast('請填寫需求描述');
   if (!time)  return showToast('請填寫希望時間');
+
   // 讀取自訂點數（若有填則用，否則自動計算）
   const customPts = parseInt(document.getElementById('post-required-points')?.value || '');
   const pts = (customPts > 0) ? customPts : calcPoints(skills);
@@ -3546,25 +3606,32 @@ window.postNeed = async () => {
     const locPayload = (currentLocation.lat && currentLocation.lng)
       ? { lat: currentLocation.lat, lng: currentLocation.lng }
       : {};
-    // 若有手動選區，記錄 area
     const manualArea = document.getElementById('manual-area')?.value || '';
     await addDoc(collection(db,'needs'), {
       uid: currentUser.uid, name: currentUserData.name,
       age: currentUserData.age, gender: currentUserData.gender,
       emoji: currentUserData.emoji||'🙋',
       skills, desc, time, urgency, reward,
-      points: pts,
-      fee,
-      helperReceive,
+      points: pts, fee, helperReceive,
       status: '開放中',
       ...(manualArea ? { area: manualArea } : {}),
       ...locPayload,
       createdAt: serverTimestamp()
     });
+    // 重置表單
     document.getElementById('post-desc').value = '';
     document.getElementById('post-time').value = '';
     document.getElementById('post-required-points').value = '';
-    document.querySelectorAll('#post-skill-tags .skill-tag').forEach(t=>t.classList.remove('selected'));
+    document.querySelectorAll('#post-skill-tags .skill-tag').forEach(t => t.classList.remove('selected'));
+    // 收合並清空「其他」輸入框
+    ['post-general-other', 'post-skill-other'].forEach(id => {
+      const wrap = document.getElementById(id);
+      if (wrap) wrap.classList.remove('open');
+    });
+    ['post-general-other-input', 'post-skill-other-input'].forEach(id => {
+      const inp = document.getElementById(id);
+      if (inp) inp.value = '';
+    });
     showToast(`需求已發布！此任務 ${pts} 點（幫助者獲得 ${helperReceive} 點）${locPayload.lat ? ' 📍 已附上位置' : urgency==='urgent' ? ' 🚨 急件' : ''}。`);
     window.switchMainPage('home');
     window.switchTab('need');
@@ -4632,6 +4699,32 @@ document.getElementById('complete-modal').addEventListener('click', e => {
     if (!tag) return;
     if (tag.dataset.skill === '其他(一般)' || tag.dataset.skill === '其他(技能)') return;
     tag.classList.toggle('selected');
+  });
+});
+// 發布頁技能標籤：統一委派（支援 data-other-wrap 展開輸入框）
+['post-general-tags', 'post-skill-modal-tags'].forEach(containerId => {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.addEventListener('click', e => {
+    const tag = e.target.closest('.skill-tag');
+    if (!tag) return;
+    const otherWrapId = tag.dataset.otherWrap;
+    if (otherWrapId) {
+      const wrap = document.getElementById(otherWrapId);
+      if (!wrap) return;
+      const isOpen = wrap.classList.contains('open');
+      wrap.classList.toggle('open', !isOpen);
+      tag.classList.toggle('selected', !isOpen);
+      if (isOpen) {
+        const inp = wrap.querySelector('.skill-other-input');
+        if (inp) inp.value = '';
+      } else {
+        const inp = wrap.querySelector('.skill-other-input');
+        if (inp) setTimeout(() => inp.focus(), 50);
+      }
+    } else {
+      tag.classList.toggle('selected');
+    }
   });
 });
 // 訪客登入引導彈窗：點擊背景關閉
