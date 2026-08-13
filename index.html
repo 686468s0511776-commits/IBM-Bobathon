@@ -1820,11 +1820,18 @@ function renderOfferCards(users) {
   if (!users.length) { el.innerHTML = '<div style="text-align:center;padding:60px;color:#9ca3af"><div style="font-size:48px;margin-bottom:12px">💪</div><p>邀請朋友加入平台！</p></div>'; return; }
   el.innerHTML = users.map(d => {
     const data = JSON.stringify(d).replace(/"/g,'&quot;');
+    let distBadge = '';
+    if (d.lat && d.lng && currentLocation.lat && currentLocation.lng) {
+      const dist = calculateDistance(currentLocation.lat, currentLocation.lng, d.lat, d.lng);
+      distBadge = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">
+        📍 ${dist < 1 ? Math.round(dist * 1000) + 'm' : dist.toFixed(1) + 'km'}
+      </span>`;
+    }
     return `<div class="card">
       <div class="card-header"><div class="avatar">${d.emoji||'🙂'}</div>
-        <div><div class="card-name">${d.name}</div><div class="card-meta">${d.age} 歲・${d.gender}</div></div>
+        <div><div class="card-name">${d.name || d.displayName}</div><div class="card-meta">${d.age ? d.age + ' 歲・' + d.gender : ''}</div></div>
       </div>
-      <div class="tags">${tagsHTML(d.skills)}</div>
+      <div class="tags">${tagsHTML(d.skills)}${distBadge}</div>
       <div class="card-desc">具備：${(d.skills||[]).join('、')||'尚未設定技能'}</div>
       <button class="btn-card" onclick="window.openModal('offer','${data}')">尋求幫助 💬</button>
     </div>`;
