@@ -1723,15 +1723,34 @@ window.renderProfile = async function renderProfile() {
 // ─────────────────────────────────
 //  接受邀請 → 配對成功 Modal
 // ─────────────────────────────────
-window.acceptInvite = (id, btn) => {
+window.acceptInvite = async (id, btn) => {
   btn.disabled = true; btn.textContent = '處理中...';
   const inv = recvInvites.find(r => r.id === id);
   if (!inv) return;
   inv.status = '已接受';
   activeMatchInv = inv;
-  if (!chatLogs[inv.id]) {
-    chatLogs[inv.id] = [{ from: 'peer', text: inv.msg, time: nowTime() }];
+
+  const isDemo = id.startsWith('r');
+
+  if (!isDemo) {
+    // 建立獨立 chat 文件（若尚未存在）
+    const chatId = [currentUser.uid, inv.fromUid || id].sort().join('_') + '_' + id;
+    inv.chatId = chatId;
+    try {
+      await setDoc(doc(db, 'chats', chatId), {
+        participants: [currentUser.uid, inv.fromUid || id],
+        inviteId: id,
+        createdAt: serverTimestamp()
+      }, { merge: true });
+      // 更新 invite 狀態
+      await setDoc(doc(db, 'invites', id), { status: '已接受', chatId }, { merge: true });
+    } catch(e) { /* 繼續 */ }
+  } else {
+    if (!chatLogs[inv.id]) {
+      chatLogs[inv.id] = [{ from: 'peer', text: inv.msg, time: nowTime() }];
+    }
   }
+
   document.getElementById('match-modal-sub').textContent = `你已接受來自 ${inv.fromName} 的邀請`;
   document.getElementById('match-modal-info').innerHTML = `
     <div class="match-info-row"><span class="label">👤 對象</span><span class="value">${inv.fromName}（${inv.fromMeta}）</span></div>
@@ -1771,8 +1790,9 @@ window.openChatModal = () => {
     // 示範資料：用本地 chatLogs
     renderChatMessages();
   } else {
-    // 真實邀請：Firestore 即時監聽
-    const msgCol = collection(db, 'invites', inv.id, 'messages');
+    // 真實邀請：從獨立 chats collection 即時監聽
+    const chatId = inv.chatId || ([currentUser.uid, inv.fromUid || inv.id].sort().join('_') + '_' + inv.id);
+    const msgCol = collection(db, 'chats', chatId, 'messages');
     const msgQ   = query(msgCol, orderBy('createdAt', 'asc'));
     if (chatUnsubscribe) chatUnsubscribe();
     chatUnsubscribe = onSnapshot(msgQ, snap => {
@@ -1781,14 +1801,15 @@ window.openChatModal = () => {
       el.innerHTML = snap.docs.map(d => {
         const m    = d.data();
         const isMe = m.senderUid === currentUser.uid;
-        const emoji = isMe ? (currentUserData.emoji || '🙂') : (inv.fromEmoji || '🙂');
+        const myEmoji   = currentUserData.emoji || '🙂';
+        const peerEmoji = inv.fromEmoji || '🙂';
         return `<div class="bubble-wrap ${isMe ? 'me' : ''}">
-          ${!isMe ? `<div class="bubble-avatar">${emoji}</div>` : ''}
+          ${!isMe ? `<div class="bubble-avatar">${peerEmoji}</div>` : ''}
           <div>
             <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time || ''}</div>
             <div class="bubble">${m.text}</div>
           </div>
-          ${isMe ? `<div class="bubble-avatar" style="background:#fff7ed">${emoji}</div>` : ''}
+          ${isMe ? `<div class="bubble-avatar" style="background:#fff7ed">${myEmoji}</div>` : ''}
         </div>`;
       }).join('');
       el.scrollTop = el.scrollHeight;
@@ -1851,9 +1872,11 @@ window.sendChatMsg = async () => {
       renderChatMessages();
     }, 1200);
   } else {
-    // 真實邀請：寫入 Firestore subcollection
+    // 真實邀請：寫入獨立 chats collection
+    const inv    = recvInvites.find(r => r.id === activeChatInviteId) || activeMatchInv;
+    const chatId = inv?.chatId || ([currentUser.uid, inv?.fromUid || activeChatInviteId].sort().join('_') + '_' + activeChatInviteId);
     try {
-      await addDoc(collection(db, 'invites', activeChatInviteId, 'messages'), {
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
         senderUid:  currentUser.uid,
         senderName: currentUserData.name,
         text,
@@ -1861,7 +1884,7 @@ window.sendChatMsg = async () => {
         createdAt: serverTimestamp()
       });
     } catch(e) {
-      showToast('訊息送出失敗');
+      showToast('訊息送出失敗：' + e.message);
     }
   }
 };
