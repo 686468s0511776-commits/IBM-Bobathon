@@ -4772,7 +4772,8 @@ async function loadCards() {
   const _needQ = query(collection(db, 'needs'), orderBy('createdAt', 'desc'));
   window._needCardsUnsub = onSnapshot(_needQ, snap => {
     const allCards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const _inactiveStatuses = new Set(['completed', '已完成', 'canceled', '已取消', 'closed']);
+    // 只顯示 open 狀態：排除 completed/in_progress/canceled/closed/下架
+    const _inactiveStatuses = new Set(['completed', '已完成', 'canceled', '已取消', 'closed', 'in_progress']);
     const activeCards = allCards.filter(c =>
       !c.isArchived && !_inactiveStatuses.has(c.status)
     );
@@ -6522,9 +6523,10 @@ function ensureChatDoc(chatId, inv, peerId) {
     peerEmoji:    inv.fromEmoji || null,
     peerMeta:     inv.fromMeta  || '',
     peerId,
-    inviteId:     inv.id        || null,
-    taskTitle:    inv.taskTitle || inv.msg || '',
-    points:       inv.points    || 0,
+    inviteId:     inv.id           || null,
+    needId:       inv.needId       || inv.taskId || null,   // ← 讓 _finalizeCompletion 能找到 needs 文件
+    taskTitle:    inv.taskTitle    || inv.msg    || '',
+    points:       inv.points       || 0,
     taskStatus:   'active',
     createdAt:    serverTimestamp()
   }, { merge: true });
@@ -7199,7 +7201,14 @@ async function _finalizeCompletion(chat) {
     });
 
     // ── 自動下架：標記已完成 + 三層移除（DOM / 本地快取 / fallback loadCards）──
-    const needId = chat.needId || chat.taskId || null;
+    // chat.needId 可能為空（舊聊天室文件），fallback 從 invites 反查
+    let needId = chat.needId || chat.taskId || null;
+    if (!needId && inviteId) {
+      try {
+        const _invSnap = await getDoc(doc(db, 'invites', inviteId));
+        needId = _invSnap.data()?.needId || _invSnap.data()?.taskId || null;
+      } catch(_) {}
+    }
     if (needId) {
       try {
         await setDoc(doc(db, 'needs', needId), {
@@ -7217,7 +7226,7 @@ async function _finalizeCompletion(chat) {
       _allNeedCards = (_allNeedCards || []).filter(c => c.id !== needId);
       renderNeedCards(_filterCardsByDist(_allNeedCards, _needFilterDist));
     }
-    // 3. Fallback：重新從 Firestore 載入首頁（確保其他用戶側也清除）
+    // 3. Fallback：重新從 Firestore 載入首頁（因 onSnapshot 已監聽，此處確保本地快取同步）
     setTimeout(() => loadCards(), 1500);
 
     // 系統訊息
