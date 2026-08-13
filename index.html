@@ -1558,6 +1558,13 @@
           <label>希望時間</label>
           <input type="text" id="post-time" placeholder="例如：本週六下午 2–4 點" />
         </div>
+        <!-- 自訂點數 -->
+        <div class="form-group">
+          <label>服務所需點數（選填，預設自動計算）</label>
+          <input type="number" id="post-required-points" placeholder="例如：100" min="1" max="9999"
+            style="width:100%;padding:11px 14px;border:1.5px solid #d0e4f5;border-radius:10px;font-size:14px;outline:none" />
+          <div style="font-size:12px;color:#9ca3af;margin-top:5px">⭐ 平台收取 10% 手續費，提供幫助者實際獲得 90%。例如設定 100 點，幫助者收到 90 點。</div>
+        </div>
         <!-- 定位狀態提示 -->
         <div id="location-status" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:#EDF4FB;font-size:13px;color:#6b7280;margin-bottom:12px">
           <span id="location-icon">📍</span>
@@ -2599,18 +2606,75 @@ function enterApp() {
       .then(() => { currentUserData.points = REGISTER_BONUS; updateSidebarUser(); })
       .catch(() => {});
   }
-  // 初始化示範收到的邀請（讓「收到的邀請」Tab 有內容可展示）
-  if (recvInvites.length === 0) {
-    recvInvites = [
-      { id:'r1', fromName:'志明', fromEmoji:'👷', fromMeta:'32 歲・男', contact:'0912-345-678', time:'本週日下午 3 點', msg:'你好，我看到你需要家具組裝的幫助，我剛好有空可以過去！', status:'等待回覆' },
-      { id:'r2', fromName:'小梅', fromEmoji:'👩‍💻', fromMeta:'25 歲・女', contact:'LINE: mei_helper', time:'週六上午 10 點', msg:'我可以幫你教手機，方便的話我到你家去。', status:'等待回覆' },
-    ];
-  }
   updateSidebarUser();
   switchMainPage('home');
   loadCards();
   // 登入後非同步取得定位（不阻塞畫面）
   window.requestLocation(false);
+  // ── 即時監聽新邀請（receiverId == currentUser.uid）──
+  _startInviteListener();
+}
+
+// 即時監聽收到的邀請
+let _inviteListenerUnsub = null;
+function _startInviteListener() {
+  if (!currentUser) return;
+  if (_inviteListenerUnsub) { _inviteListenerUnsub(); _inviteListenerUnsub = null; }
+
+  const qInvite = query(
+    collection(db, 'invites'),
+    where('receiverId', '==', currentUser.uid)
+  );
+
+  // 記錄上次已知邀請 ID，避免第一次載入時全部觸發通知
+  let _knownInviteIds = null;
+
+  _inviteListenerUnsub = onSnapshot(qInvite, snap => {
+    console.log('收到即時邀請快照，數量:', snap.size);
+    const ids = snap.docs.map(d => d.id);
+
+    if (_knownInviteIds === null) {
+      // 第一次載入：記錄現有 ID，不彈通知
+      _knownInviteIds = new Set(ids);
+      return;
+    }
+
+    // 找出新增的邀請
+    const newDocs = snap.docs.filter(d => !_knownInviteIds.has(d.id));
+    newDocs.forEach(d => {
+      const data = d.data();
+      console.log('收到新邀請：', data);
+      _knownInviteIds.add(d.id);
+
+      // 更新本地快取
+      if (!recvInvites.find(r => r.id === d.id)) {
+        recvInvites.push({
+          id:        d.id,
+          fromUid:   data.fromUid,
+          fromName:  data.fromName,
+          fromEmoji: data.fromEmoji || '🙂',
+          fromMeta:  data.fromMeta  || '',
+          contact:   data.contact   || '',
+          time:      data.time,
+          msg:       data.msg,
+          status:    data.status || '等待回覆',
+        });
+      }
+
+      // 更新收到邀請 badge
+      const badge = document.getElementById('recv-badge');
+      if (badge) {
+        const cnt = recvInvites.filter(r => r.status === '等待回覆').length;
+        badge.textContent = cnt ? `(${cnt})` : '';
+      }
+
+      // 彈出通知提示
+      showToast(`📥 收到來自「${data.fromName}」的新邀請！請至「我的 → 收到的邀請」查看。`);
+    });
+  }, err => {
+    console.error('邀請監聽失敗:', err.message);
+    alert('邀請即時監聽發生錯誤：' + err.message);
+  });
 }
 
 // ── 訪客模式進入點 ──
@@ -2661,6 +2725,10 @@ window.doLogout = () => {
   localStorage.removeItem('mockUser');
   sentInvites = []; recvInvites = []; chatLogs = {};
   currentUser = null; currentUserData = null;
+  // 清除監聽器
+  if (_inviteListenerUnsub)  { _inviteListenerUnsub();  _inviteListenerUnsub  = null; }
+  if (window._chatListUnsub) { window._chatListUnsub(); window._chatListUnsub = null; }
+  if (window._roomUnsubscribe){ window._roomUnsubscribe(); window._roomUnsubscribe = null; }
   if (!IS_LOCAL) {
     signOut(auth);
     showAuthPage();  // signOut 是非同步，不等它，直接切換畫面
@@ -2870,11 +2938,16 @@ window.confirmComplete = async () => {
   const { inviteId, toUid, toName, points } = activeCompleteData;
   if (!points || points <= 0) return showToast('此任務無點數可轉移');
 
+  // 計算 10% 手續費
+  const fee = Math.floor(points * 0.1);
+  const providerGain = points - fee;   // 提供者實際獲得
+
   // 我送出的邀請 type=need → 我是提供者，toUid 是需求者
   const requesterUid  = toUid;
   const providerUid   = currentUser.uid;
   const requesterRef  = doc(db, 'users', requesterUid);
   const providerRef   = doc(db, 'users', providerUid);
+  const treasuryRef   = doc(db, 'system', 'treasury');
   const inviteRef     = doc(db, 'invites', inviteId);
 
   try {
@@ -2883,27 +2956,37 @@ window.confirmComplete = async () => {
       const curPts  = reqSnap.data()?.points ?? 0;
       if (curPts < points) throw new Error('點數不足');
       t.update(requesterRef, { points: increment(-points) });
-      t.update(providerRef,  { points: increment(points) });
+      t.update(providerRef,  { points: increment(providerGain) });
+      // 寫入平台金庫
+      t.set(treasuryRef, { totalFees: increment(fee) }, { merge: true });
       t.update(inviteRef, { status: '已完成' });
     });
+    // 寫入點數交易日誌
     await addDoc(collection(db,'point_transactions'), {
       uid: requesterUid, name: toName,
       type: 'spend', delta: -points,
-      reason: `任務完成 — 支付給 ${currentUserData.name}`,
+      reason: `任務完成 — 支付給 ${currentUserData.name}（含 ${fee} 點平台費）`,
       counterpart: currentUserData.name,
       createdAt: serverTimestamp()
     });
     await addDoc(collection(db,'point_transactions'), {
       uid: providerUid, name: currentUserData.name,
-      type: 'earn', delta: points,
-      reason: `任務完成 — 收到來自 ${toName}`,
+      type: 'earn', delta: providerGain,
+      reason: `任務完成 — 收到來自 ${toName}（扣除 ${fee} 點手續費）`,
       counterpart: toName,
       createdAt: serverTimestamp()
     });
-    currentUserData.points = (currentUserData.points ?? 0) + points;
+    await addDoc(collection(db,'points_history'), {
+      inviteId, requesterUid, providerUid: providerUid,
+      providerName: currentUserData.name, requesterName: toName,
+      totalPoints: points, fee, providerGain,
+      type: 'service_complete',
+      createdAt: serverTimestamp()
+    });
+    currentUserData.points = (currentUserData.points ?? 0) + providerGain;
     updateSidebarUser();
     window.closeCompleteModal();
-    showToast(`✅ 任務完成！獲得 ${points} 點！`);
+    showToast(`✅ 任務完成！獲得 ${providerGain} 點（扣除 ${fee} 點手續費）！`);
     renderProfile();
   } catch(e) {
     window.closeCompleteModal();
@@ -3083,6 +3166,7 @@ function renderNeedCards(cards) {
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${urgencyBadge}${rewardBadge}</div>
       <div class="card-need-title">${d.skills.join('・') || '求助需求'}</div>
       <div class="card-desc">${d.desc}${d.time ? `<br><small style="color:#9ca3af;font-size:11px">⏰ ${d.time}</small>` : ''}</div>
+      ${(()=>{const pts=d.points??0;if(!pts)return'';const fee=d.fee??Math.floor(pts*0.1);const hr=d.helperReceive??(pts-fee);return `<div style="font-size:11px;color:#7a7930;background:#f5f4dc;border:1px solid #cccb85;border-radius:8px;padding:4px 10px;margin-bottom:8px">⭐ 此服務需要 ${pts} 點（幫助者獲得 ${hr} 點）</div>`})()}
       ${bottomBtn}
     </div>`;
   }).join('');
@@ -3220,12 +3304,14 @@ window.openModal = (type, dataStr) => {
   document.getElementById('modal-detail-text').textContent = d.desc || `具備技能：${(d.skills||[]).join('、')}`;
   document.getElementById('modal-msg').value  = '';
   document.getElementById('modal-time').value = '';
-  // 顯示點數說明
+  // 顯示點數說明（含手續費）
   const ptsInfo = document.getElementById('modal-points-info');
   if (ptsInfo) {
     if (type === 'need') {
       const pts = d.points ?? calcPoints(d.skills);
-      ptsInfo.textContent = `⭐ 完成此任務後，你將獲得 ${pts} 點；需求者將扣除 ${pts} 點。`;
+      const fee = d.fee ?? Math.floor(pts * 0.1);
+      const helperReceive = d.helperReceive ?? (pts - fee);
+      ptsInfo.innerHTML = `⭐ 此服務需要 <strong>${pts} 點</strong>（完成後扣除 10% 手續費 ${fee} 點，提供者實際獲得 <strong>${helperReceive} 點</strong>）。`;
       ptsInfo.style.display = 'block';
     } else {
       ptsInfo.style.display = 'none';
@@ -3258,6 +3344,11 @@ window.sendInvite = async () => {
   const providerUid   = type === 'need' ? currentUser.uid : (d.uid || d.id);
   const providerName  = type === 'need' ? currentUserData.name : d.name;
 
+  // 嚴格校驗：receiverId / toUid 必須是真實 UID，不能是 'demo' 或 undefined
+  if (!toUid || toUid === 'demo') {
+    showToast('無法送出邀請：找不到對方的帳號 ID');
+    return;
+  }
   try {
     const ref = await addDoc(collection(db,'invites'), {
       fromUid:      currentUser.uid,
@@ -3266,15 +3357,17 @@ window.sendInvite = async () => {
       fromMeta:     `${currentUserData.age} 歲・${currentUserData.gender}`,
       contact:      currentUserData.email || '',
       toName, toUid,
+      receiverId:   toUid,    // 同時存 receiverId 供即時監聽 query 使用
       requesterUid, requesterName,
       providerUid,  providerName,
       needId:       type === 'need' ? (d.id || null) : null,
       type,
       points:       pts,
-      msg, time, status: '進行中',
+      msg, time,
+      status: '進行中',
       createdAt: serverTimestamp()
     });
-    console.log('✅ 邀請寫入成功 id:', ref.id, '| toUid:', toUid, '| pts:', pts);
+    console.log('✅ 邀請寫入成功 id:', ref.id, '| toUid:', toUid, '| receiverId:', toUid, '| pts:', pts);
     sentInvites.push({ id: ref.id, toName, time, msg, status: '進行中' });
     window.closeModal();
     showToast(`邀請已送出！任務完成後可確認轉移 ${pts} 點。`);
@@ -3298,7 +3391,11 @@ window.postNeed = async () => {
   if (!skills.length) return showToast('請選擇至少一個技能標籤');
   if (!desc)  return showToast('請填寫需求描述');
   if (!time)  return showToast('請填寫希望時間');
-  const pts = calcPoints(skills);
+  // 讀取自訂點數（若有填則用，否則自動計算）
+  const customPts = parseInt(document.getElementById('post-required-points')?.value || '');
+  const pts = (customPts > 0) ? customPts : calcPoints(skills);
+  const fee = Math.floor(pts * 0.1);
+  const helperReceive = pts - fee;
   try {
     const locPayload = (currentLocation.lat && currentLocation.lng)
       ? { lat: currentLocation.lat, lng: currentLocation.lng }
@@ -3311,6 +3408,8 @@ window.postNeed = async () => {
       emoji: currentUserData.emoji||'🙋',
       skills, desc, time, urgency, reward,
       points: pts,
+      fee,
+      helperReceive,
       status: '開放中',
       ...(manualArea ? { area: manualArea } : {}),
       ...locPayload,
@@ -3318,8 +3417,9 @@ window.postNeed = async () => {
     });
     document.getElementById('post-desc').value = '';
     document.getElementById('post-time').value = '';
+    document.getElementById('post-required-points').value = '';
     document.querySelectorAll('#post-skill-tags .skill-tag').forEach(t=>t.classList.remove('selected'));
-    showToast(`需求已發布！此任務價值 ${pts} 點${locPayload.lat ? ' 📍 已附上位置' : urgency==='urgent' ? ' 🚨 急件' : ''}。`);
+    showToast(`需求已發布！此任務 ${pts} 點（幫助者獲得 ${helperReceive} 點）${locPayload.lat ? ' 📍 已附上位置' : urgency==='urgent' ? ' 🚨 急件' : ''}。`);
     window.switchMainPage('home');
     window.switchTab('need');
     loadCards();
@@ -3462,6 +3562,16 @@ window.renderProfile = renderProfile;
 // ─────────────────────────────────
 window.openSkillEditModal = () => {
   if (!currentUserData) return;
+
+  // 防護性預設值：避免 undefined 造成 JS 錯誤
+  const safeData = {
+    ...currentUserData,
+    generalTasks:       currentUserData.generalTasks       || [],
+    skills:             currentUserData.skills             || [],
+    customGeneralTasks: currentUserData.customGeneralTasks || [],
+    customSkills:       currentUserData.customSkills       || [],
+  };
+
   // 重置所有勾選與輸入框
   document.querySelectorAll('#edit-general-tags .skill-tag, #edit-skill-modal-tags .skill-tag')
     .forEach(t => t.classList.remove('selected'));
@@ -3471,14 +3581,21 @@ window.openSkillEditModal = () => {
   });
   ['edit-general-other-input','edit-skill-other-input'].forEach(id => {
     const inp = document.getElementById(id);
-    if (inp) inp.value = '';
+    if (inp) { inp.value = ''; inp.disabled = false; inp.readOnly = false; }
   });
+
+  // 確保所有技能標籤可點擊（解除任何可能的鎖定）
+  document.querySelectorAll('#skill-edit-modal-overlay .skill-tag').forEach(t => {
+    t.style.pointerEvents = '';
+    t.style.opacity = '';
+  });
+
   // 預載使用者現有技能（含其他自訂）
   applySkillsToContainer(
     'edit-general-tags','edit-skill-modal-tags',
     'edit-general-other','edit-general-other-input',
     'edit-skill-other', 'edit-skill-other-input',
-    currentUserData
+    safeData
   );
   document.getElementById('skill-edit-modal-overlay').classList.add('open');
 };
@@ -3495,20 +3612,27 @@ window.saveSkillEdit = async () => {
       'edit-general-other-input','edit-skill-other-input'
     );
 
+  // 防護：確保都是陣列
+  const safeGeneralTasks       = generalTasks       || [];
+  const safeSkills             = skills             || [];
+  const safeCustomGeneralTasks = customGeneralTasks || [];
+  const safeCustomSkills       = customSkills       || [];
+
   // ── 歷史紀錄保護：只更新 users 文件，invites/history 完全不動 ──
   try {
     await setDoc(doc(db, 'users', currentUser.uid), {
-      generalTasks, skills, customGeneralTasks, customSkills,
-      skillsCompat: [...generalTasks, ...skills, ...customGeneralTasks, ...customSkills],
+      generalTasks: safeGeneralTasks, skills: safeSkills,
+      customGeneralTasks: safeCustomGeneralTasks, customSkills: safeCustomSkills,
+      skillsCompat: [...safeGeneralTasks, ...safeSkills, ...safeCustomGeneralTasks, ...safeCustomSkills],
       skillsConfigured: true,
     }, { merge: true });
 
     // 同步更新本地快取
-    currentUserData.generalTasks       = generalTasks;
-    currentUserData.skills             = skills;
-    currentUserData.customGeneralTasks = customGeneralTasks;
-    currentUserData.customSkills       = customSkills;
-    currentUserData.skillsCompat       = [...generalTasks, ...skills, ...customGeneralTasks, ...customSkills];
+    currentUserData.generalTasks       = safeGeneralTasks;
+    currentUserData.skills             = safeSkills;
+    currentUserData.customGeneralTasks = safeCustomGeneralTasks;
+    currentUserData.customSkills       = safeCustomSkills;
+    currentUserData.skillsCompat       = [...safeGeneralTasks, ...safeSkills, ...safeCustomGeneralTasks, ...safeCustomSkills];
 
     window.closeSkillEditModal();
     updateSidebarUser();
