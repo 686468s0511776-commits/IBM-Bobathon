@@ -2888,7 +2888,7 @@
         </div>
         <!-- 安全提醒橫幅（首次開啟對話時顯示） -->
         <div class="safety-banner" id="cr-safety-banner" style="display:none">
-          <span class="safety-banner-text">💡 <strong>社區安全提醒：</strong>建議首次見面選擇公開場所，請勿隨意透露家中地址或給予鑰匙。如遇可疑狀況請立即聯繫警方（110）。</span>
+          <span class="safety-banner-text">💡 <strong>社區安全提醒：</strong>建議首次見面選擇公開場所，請勿隨意給予房屋鑰匙。如遇可疑狀況請立即聯繫警方（110）。</span>
           <button class="safety-banner-close" onclick="window.closeSafetyBanner()" title="關閉">✕</button>
         </div>
         <!-- 對話狀態流程列（Pipeline） -->
@@ -6780,6 +6780,11 @@ window.setChatStatus = async (status) => {
     _updateChatPipeline(chat || { chatStatus: status });
     const statusLabels = { discussing:'💬 討論中', scheduled:'📅 已約定' };
     showToast(`對話狀態已更新：${statusLabels[status] || status}`);
+    // 雙方約定成功時，重新顯示安全提醒（無論是否看過）
+    if (status === 'scheduled') {
+      const banner = document.getElementById('cr-safety-banner');
+      if (banner) banner.style.display = 'flex';
+    }
   } catch(e) { showToast('更新失敗：' + e.message); }
 };
 
