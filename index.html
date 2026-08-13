@@ -1119,6 +1119,161 @@
     box-shadow: 0 8px 48px rgba(0,0,0,.6);
   }
 
+  /* ══════════════════════════════
+     管理者後台 Modal
+  ══════════════════════════════ */
+  .admin-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .admin-overlay.open { display: flex; }
+  .admin-panel {
+    background: #fff;
+    border-radius: 18px;
+    width: min(860px, 96vw);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 16px 64px rgba(0,0,0,.28);
+  }
+  .admin-header {
+    background: linear-gradient(135deg, #4a3a8c, #6b52c8);
+    color: #fff;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .admin-header h2 { font-size: 18px; font-weight: 700; }
+  .admin-header .admin-close {
+    background: rgba(255,255,255,.2);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .admin-tabs {
+    display: flex;
+    border-bottom: 2px solid #e5e7eb;
+    background: #f9fafb;
+  }
+  .admin-tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+  }
+  .admin-tab-btn.active {
+    color: #6b52c8;
+    border-bottom-color: #6b52c8;
+    background: #fff;
+  }
+  .admin-tab-btn:hover { background: #f0edff; }
+  .admin-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+  }
+  .admin-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2328;
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .admin-kpi-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .admin-kpi {
+    flex: 1;
+    background: #f0edff;
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .admin-kpi .kpi-num {
+    font-size: 28px;
+    font-weight: 800;
+    color: #4a3a8c;
+  }
+  .admin-kpi .kpi-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .admin-table th {
+    background: #f3f4f6;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .admin-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #374151;
+    vertical-align: middle;
+  }
+  .admin-table tr:hover td { background: #f9fafb; }
+  .admin-user-row td:last-child { display: flex; align-items: center; gap: 6px; }
+  .admin-pts-input {
+    width: 70px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    text-align: center;
+  }
+  .admin-pts-btn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .admin-pts-btn:hover { opacity: .8; }
+  .admin-pts-btn.add  { background: #22c55e; color: #fff; }
+  .admin-pts-btn.sub  { background: #ef4444; color: #fff; }
+  .admin-loading {
+    text-align: center;
+    padding: 48px 0;
+    color: #9ca3af;
+    font-size: 14px;
+  }
+  .admin-empty {
+    text-align: center;
+    padding: 32px 0;
+    color: #9ca3af;
+    font-size: 14px;
+  }
+
 </style>
 
 <!-- Mock 登入/註冊：獨立 script，不依賴 Firebase module -->
@@ -1277,6 +1432,7 @@
     <button class="nav-btn"       onclick="switchMainPage('shop')" title="點數兌換">⭐ 點數</button>
     <button class="nav-btn"       onclick="switchMainPage('chatroom')" title="聊天室">💬 聊天室 <span id="chat-unread-badge" style="background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:3px;display:none"></span></button>
     <button class="nav-btn"       onclick="switchMainPage('profile')" title="我的">👤 我的</button>
+    <button class="nav-btn" id="admin-nav-btn" onclick="window.openAdminPanel()" title="管理者後台" style="display:none;background:rgba(255,220,50,.25);border:1px solid rgba(255,220,50,.6)">👑 管理者</button>
   </div>
   <div class="navbar-user" id="navbar-user">
     <span style="font-size:13px;opacity:.85">請先登入</span>
@@ -2103,6 +2259,26 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- ════════════════════════════════
+     管理者後台 Modal
+════════════════════════════════ -->
+<div class="admin-overlay" id="admin-overlay">
+  <div class="admin-panel">
+    <div class="admin-header">
+      <h2>👑 管理者後台</h2>
+      <button class="admin-close" onclick="window.closeAdminPanel()">✕</button>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" id="admin-tab-treasury" onclick="window.switchAdminTab('treasury')">🏦 平台庫房</button>
+      <button class="admin-tab-btn"        id="admin-tab-history"  onclick="window.switchAdminTab('history')">📋 抽成明細</button>
+      <button class="admin-tab-btn"        id="admin-tab-users"    onclick="window.switchAdminTab('users')">👥 用戶管理</button>
+    </div>
+    <div class="admin-body" id="admin-body">
+      <div class="admin-loading" id="admin-loading">⏳ 載入中…</div>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 // ═══════════════════════════════════════
 //  Firebase 初始化
@@ -2171,6 +2347,8 @@ const SKILL_POINTS = {
 };
 const DEFAULT_POINTS = 3;
 const REGISTER_BONUS = 50;
+// ── 管理者 Email 白名單（多位管理者可加逗號分隔）──
+const ADMIN_EMAILS = ['taihung.air@gmail.com'];
 
 function calcPoints(skills) {
   if (!skills || !skills.length) return DEFAULT_POINTS;
@@ -2245,12 +2423,14 @@ onAuthStateChanged(auth, async user => {
     try {
       // 每次登入都確保 displayName / email / photoURL 寫入（merge 不覆蓋其他欄位）
       const derivedName = user.displayName || user.email.split('@')[0] || '社區鄰居';
+      const isAdmin = ADMIN_EMAILS.includes(user.email);
       await setDoc(doc(db, 'users', user.uid), {
         uid:         user.uid,
         displayName: derivedName,
         email:       user.email,
         photoURL:    user.photoURL || '',
-        lastSeen:    serverTimestamp()
+        lastSeen:    serverTimestamp(),
+        ...(isAdmin ? { role: 'admin' } : {})
       }, { merge: true });
 
       const snap = await getDoc(doc(db, 'users', user.uid));
@@ -2673,6 +2853,11 @@ function enterApp() {
   // ── 請求瀏覽器通知權限（非阻塞）──
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
+  }
+  // ── 管理者按鈕顯示 ──
+  const adminBtn = document.getElementById('admin-nav-btn');
+  if (adminBtn && currentUserData && currentUserData.role === 'admin') {
+    adminBtn.style.display = 'inline-flex';
   }
 }
 
@@ -4790,6 +4975,219 @@ window.setChatStatus = async (status) => {
   const statusLabels = { discussing:'💬 討論中', scheduled:'📅 已約定', done:'✅ 服務完成' };
   showToast(`對話狀態已更新：${statusLabels[status] || status}`);
 };
+
+// ═══════════════════════════════════════
+//  管理者後台
+// ═══════════════════════════════════════
+
+let _adminCurrentTab = 'treasury';  // 當前分頁
+
+// ── 開啟管理者後台 ──
+window.openAdminPanel = async () => {
+  // 權限守衛
+  if (!currentUserData || currentUserData.role !== 'admin') {
+    alert('⚠️ 權限不足：僅管理者可使用此功能');
+    return;
+  }
+  const overlay = document.getElementById('admin-overlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  _adminCurrentTab = 'treasury';
+  // 重設 tab 樣式
+  ['treasury','history','users'].forEach(t => {
+    const btn = document.getElementById('admin-tab-' + t);
+    if (btn) btn.classList.toggle('active', t === _adminCurrentTab);
+  });
+  await _adminLoadTab('treasury');
+};
+
+// ── 關閉管理者後台 ──
+window.closeAdminPanel = () => {
+  const overlay = document.getElementById('admin-overlay');
+  if (overlay) overlay.classList.remove('open');
+};
+
+// ── 切換分頁 ──
+window.switchAdminTab = async (tab) => {
+  _adminCurrentTab = tab;
+  ['treasury','history','users'].forEach(t => {
+    const btn = document.getElementById('admin-tab-' + t);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  await _adminLoadTab(tab);
+};
+
+// ── 載入分頁資料 ──
+async function _adminLoadTab(tab) {
+  const body = document.getElementById('admin-body');
+  if (!body) return;
+  body.innerHTML = '<div class="admin-loading">⏳ 載入中…</div>';
+  try {
+    if (tab === 'treasury')   await _adminRenderTreasury(body);
+    else if (tab === 'history') await _adminRenderHistory(body);
+    else if (tab === 'users')   await _adminRenderUsers(body);
+  } catch(e) {
+    body.innerHTML = `<div class="admin-empty">❌ 載入失敗：${e.message}</div>`;
+  }
+}
+
+// ── 分頁 1：平台庫房 ──
+async function _adminRenderTreasury(body) {
+  const [treasurySnap, historySnap] = await Promise.all([
+    getDoc(doc(db, 'system', 'treasury')),
+    getDocs(query(collection(db, 'points_history'), orderBy('createdAt', 'desc')))
+  ]);
+  const treasury   = treasurySnap.exists() ? treasurySnap.data() : {};
+  const totalFees  = treasury.totalFees  || 0;
+  const totalDeals = historySnap.size;
+
+  body.innerHTML = `
+    <p class="admin-section-title">💰 平台收益總覽</p>
+    <div class="admin-kpi-row">
+      <div class="admin-kpi">
+        <div class="kpi-num">⭐ ${totalFees}</div>
+        <div class="kpi-label">累積抽成點數</div>
+      </div>
+      <div class="admin-kpi">
+        <div class="kpi-num">📦 ${totalDeals}</div>
+        <div class="kpi-label">總完成案件數</div>
+      </div>
+    </div>
+    <p style="color:#6b7280;font-size:13px;text-align:center">每筆服務完成後，平台收取 <strong>10%</strong> 手續費並累計至此庫房。</p>
+  `;
+}
+
+// ── 分頁 2：抽成明細 ──
+async function _adminRenderHistory(body) {
+  const snap = await getDocs(
+    query(collection(db, 'points_history'), orderBy('createdAt', 'desc'))
+  );
+
+  if (snap.empty) {
+    body.innerHTML = '<div class="admin-empty">目前尚無交易記錄</div>';
+    return;
+  }
+
+  const rows = snap.docs.map(d => {
+    const r = d.data();
+    const ts = r.createdAt?.toDate?.() || new Date();
+    const dateStr = ts.toLocaleString('zh-TW', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${r.requesterName || '—'}</td>
+        <td>${r.providerName  || '—'}</td>
+        <td style="text-align:center">${r.totalPoints ?? '—'}</td>
+        <td style="text-align:center;color:#6b52c8;font-weight:700">${r.fee ?? '—'}</td>
+        <td style="text-align:center;color:#22c55e;font-weight:700">${r.providerGain ?? '—'}</td>
+      </tr>
+    `;
+  }).join('');
+
+  body.innerHTML = `
+    <p class="admin-section-title">📋 抽成交易明細（最新 ${snap.size} 筆）</p>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>時間</th><th>求助者</th><th>提供者</th>
+          <th style="text-align:center">原始點數</th>
+          <th style="text-align:center">平台抽成</th>
+          <th style="text-align:center">提供者獲得</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// ── 分頁 3：用戶管理 ──
+async function _adminRenderUsers(body) {
+  const snap = await getDocs(
+    query(collection(db, 'users'), orderBy('displayName'))
+  );
+
+  if (snap.empty) {
+    body.innerHTML = '<div class="admin-empty">尚無用戶資料</div>';
+    return;
+  }
+
+  const rows = snap.docs.map(d => {
+    const u   = d.data();
+    const uid = d.id;
+    const pts = u.points ?? 0;
+    const badge = u.role === 'admin'
+      ? '<span style="background:#f0edff;color:#6b52c8;border-radius:8px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:6px">管理者</span>'
+      : '';
+    return `
+      <tr class="admin-user-row">
+        <td>${u.displayName || u.name || '—'}${badge}</td>
+        <td style="color:#6b7280">${u.email || '—'}</td>
+        <td style="text-align:center;font-weight:700">⭐ ${pts}</td>
+        <td>
+          <input class="admin-pts-input" id="admin-pts-inp-${uid}" type="number" min="1" value="10" />
+          <button class="admin-pts-btn add" onclick="window.adminAdjustPoints('${uid}','${(u.displayName||u.name||'').replace(/'/g,'').slice(0,20)}', 1)">發放</button>
+          <button class="admin-pts-btn sub" onclick="window.adminAdjustPoints('${uid}','${(u.displayName||u.name||'').replace(/'/g,'').slice(0,20)}', -1)">扣除</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  body.innerHTML = `
+    <p class="admin-section-title">👥 用戶列表（共 ${snap.size} 人）</p>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>姓名</th><th>Email</th>
+          <th style="text-align:center">點數</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// ── 手動撥款 / 扣款（runTransaction）──
+window.adminAdjustPoints = async (uid, displayName, dir) => {
+  if (!currentUserData || currentUserData.role !== 'admin') return;
+  const inp = document.getElementById('admin-pts-inp-' + uid);
+  const amount = parseInt(inp?.value || '10', 10);
+  if (!amount || amount <= 0) { showToast('請輸入有效點數'); return; }
+
+  const delta  = dir * amount;  // dir: +1 發放 / -1 扣除
+  const action = dir > 0 ? '發放' : '扣除';
+
+  try {
+    const userRef = doc(db, 'users', uid);
+    await runTransaction(db, async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists()) throw new Error('找不到用戶');
+      const curPts = snap.data().points ?? 0;
+      if (dir < 0 && curPts < amount) throw new Error('用戶點數不足');
+      t.update(userRef, { points: increment(delta) });
+    });
+    // 寫入管理者操作日誌
+    await addDoc(collection(db, 'point_transactions'), {
+      uid,
+      name:       displayName,
+      type:       dir > 0 ? 'admin_add' : 'admin_sub',
+      delta,
+      reason:     `管理者手動${action} ${amount} 點`,
+      counterpart: currentUserData.displayName || '管理者',
+      createdAt:  serverTimestamp()
+    });
+    showToast(`✅ 已為「${displayName}」${action} ${amount} 點`);
+    // 重新載入用戶列表
+    await _adminLoadTab('users');
+  } catch(e) {
+    showToast(`❌ 操作失敗：${e.message}`);
+  }
+};
+
+// ── 點擊背景關閉 ──
+document.getElementById('admin-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('admin-overlay')) window.closeAdminPanel();
+});
 </script>
 </body>
 </html>
