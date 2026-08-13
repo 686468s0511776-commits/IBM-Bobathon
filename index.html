@@ -652,7 +652,7 @@
     height: 260px; overflow-y: auto; padding: 16px 0;
     display: flex; flex-direction: column; gap: 10px;
   }
-  .bubble-wrap { display: flex; align-items: flex-end; gap: 8px; }
+  .bubble-wrap { display: flex; align-items: flex-end; gap: 8px; position: relative; }
   .bubble-wrap.me { flex-direction: row-reverse; }
   .bubble {
     max-width: 72%; padding: 10px 14px; border-radius: 18px;
@@ -660,6 +660,29 @@
   }
   .bubble-wrap.me .bubble { background: #5B8DB8; color: #fff; border-bottom-right-radius: 4px; }
   .bubble-wrap:not(.me) .bubble { background: #EDF4FB; color: #3D3D3D; border-bottom-left-radius: 4px; }
+  /* 收回訊息：三點按鈕 & 選單 */
+  .bubble-more-btn {
+    background: none; border: none; cursor: pointer; padding: 2px 6px;
+    color: #9ca3af; font-size: 16px; line-height: 1; border-radius: 6px;
+    opacity: 0; transition: opacity .15s; align-self: center; flex-shrink: 0;
+  }
+  .bubble-wrap:hover .bubble-more-btn { opacity: 1; }
+  .bubble-more-menu {
+    display: none; position: absolute; bottom: 36px;
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    z-index: 100; min-width: 96px; overflow: hidden;
+  }
+  .bubble-wrap.me .bubble-more-menu { right: 40px; }
+  .bubble-wrap:not(.me) .bubble-more-menu { left: 40px; }
+  .bubble-more-menu.open { display: block; }
+  .bubble-menu-item {
+    padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; color: #374151;
+  }
+  .bubble-menu-item:hover { background: #f9fafb; }
+  .bubble-menu-item.danger { color: #ef4444; }
+  .bubble-recalled { font-style: italic; color: #9ca3af; font-size: 13px; }
   .bubble-avatar {
     width: 30px; height: 30px; border-radius: 50%; background: #EDF4FB;
     display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
@@ -3235,11 +3258,12 @@ window.doLogout = () => {
 // ─────────────────────────────────
 //  技能標籤互動（註冊頁）
 // ─────────────────────────────────
-// 全域技能標籤點擊：只作用在「非編輯 Modal」內的 .skill-tags
+// 全域技能標籤點擊：只作用在「非編輯 Modal、非發布頁」內的 .skill-tags
 // 編輯 Modal 內部有獨立的精確事件委派（下方 ~4352），避免雙重觸發互相抵消
+// 發布頁（#post-skill-tags 下的容器）也有專屬綁定（底部），此處跳過，避免兩次 toggle 互消
 document.querySelectorAll('.skill-tags').forEach(container => {
-  // 跳過編輯技能 Modal 內部的容器（由下方專屬委派處理）
-  if (container.closest('#skill-edit-modal-overlay')) return;
+  if (container.closest('#skill-edit-modal-overlay')) return; // 編輯 Modal：跳過
+  if (container.closest('#post-skill-tags')) return;          // 發布頁：跳過（底部有專屬綁定）
   container.addEventListener('click', e => {
     const tag = e.target.closest('.skill-tag');
     if (!tag) return;
@@ -3308,14 +3332,18 @@ function updateSidebarUser() {
     if (n) n.textContent = currentUserData.name;
     if (m) m.textContent = `${currentUserData.age} 歲・${currentUserData.gender}`;
   });
+  // 管理員顯示 ∞，一般用戶顯示實際點數
+  const _isAdminAcc = currentUserData.role === 'admin'
+    || (currentUser && ADMIN_EMAILS.includes(currentUser.email));
+  const ptsDisplay  = _isAdminAcc ? '∞' : (currentUserData.points ?? '—');
   ['', '4'].forEach(s => {
     const pts = document.getElementById('sb-user-points' + s);
-    if (pts) pts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
+    if (pts) pts.textContent = `⭐ ${ptsDisplay} 點`;
   });
   const shopPts = document.getElementById('shop-points-display');
-  if (shopPts) shopPts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
+  if (shopPts) shopPts.textContent = `⭐ ${ptsDisplay} 點`;
   const profilePts = document.getElementById('profile-points');
-  if (profilePts) profilePts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
+  if (profilePts) profilePts.textContent = `⭐ ${ptsDisplay} 點`;
   // Sidebar 技能標籤：顯示所有類別（新結構 + 舊結構向下相容）
   const allLabels = getAllSkillLabels(currentUserData);
   const tagsEl = document.getElementById('sb-user-tags');
@@ -4712,6 +4740,22 @@ window.openChatRoom = async (chatId) => {
   // ── 更新任務行動列（雙方確認完成 / 取消）──
   _updateChatActionBar(chat);
 
+  // ── 雙方互評：若對方已完成任務並等待我評價，自動彈出評價視窗 ──
+  if (chat.pendingReviewFor === currentUser.uid && chat.pendingReviewTarget) {
+    const targetName = chat.pendingReviewTargetName || '對方';
+    const taskId     = chat.inviteId || chatId;
+    // 延遲 1.2 秒，讓對話畫面先渲染完
+    setTimeout(() => {
+      _openReviewModal(chat.pendingReviewTarget, targetName, taskId);
+    }, 1200);
+    // 清除 pending 標記，避免每次開啟都重複彈出
+    setDoc(doc(db, 'chats', chatId), {
+      pendingReviewFor: null,
+      pendingReviewTarget: null,
+      pendingReviewTargetName: null
+    }, { merge: true }).catch(() => {});
+  }
+
   // 解除舊監聽器
   if (window._roomUnsubscribe) { window._roomUnsubscribe(); window._roomUnsubscribe = null; }
 
@@ -4727,6 +4771,20 @@ window.openChatRoom = async (chatId) => {
     const existingCount = msgEl.querySelectorAll('.bubble-wrap').length;
     const newDocs = snap.docs.slice(existingCount);
 
+    // ── 處理已修改的訊息（收回）──
+    snap.docChanges().forEach(change => {
+      if (change.type !== 'modified') return;
+      const m   = change.doc.data();
+      if (!m.recalled) return;
+      // 找到對應的 bubble-wrap（用 data-msg-id 屬性）
+      const el = msgEl.querySelector(`[data-msg-id="${change.doc.id}"]`);
+      if (!el) return;
+      const bubble = el.querySelector('.bubble');
+      if (bubble) bubble.innerHTML = '<span class="bubble-recalled">此訊息已收回</span>';
+      el.querySelector('.bubble-more-btn')?.remove();
+      el.querySelector('.bubble-more-menu')?.remove();
+    });
+
     for (const d of newDocs) {
       const m      = d.data();
       const sender = m.senderId || m.senderUid || '';
@@ -4735,13 +4793,23 @@ window.openChatRoom = async (chatId) => {
 
       const div = document.createElement('div');
       div.className = `bubble-wrap ${isMe ? 'me' : ''}`;
+      div.dataset.msgId = d.id;   // 供收回訊息 onSnapshot 定位用
+      const docId = d.id;
       const bubbleContent = renderBubbleContent(m);
+      // 三點按鈕（僅自己的訊息 & 未被收回）
+      const moreBtn = (isMe && m.type !== 'system' && !m.recalled)
+        ? `<button class="bubble-more-btn" title="更多" onclick="window.toggleBubbleMenu(this)">⋯</button>
+           <div class="bubble-more-menu">
+             <div class="bubble-menu-item danger" onclick="window.recallMessage('${chatId}','${docId}',this)">🗑 收回</div>
+           </div>`
+        : '';
       div.innerHTML = `
         ${!isMe ? avatarHtml(senderInfo, 36) : ''}
-        <div>
+        <div style="position:relative">
           <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time||''}</div>
           ${bubbleContent}
         </div>
+        ${moreBtn}
         ${isMe ? avatarHtml(senderInfo, 36, '#EDF4FB') : ''}`;
       msgEl.appendChild(div);
     }
@@ -4785,6 +4853,10 @@ async function _markChatAsRead(chatId) {
 //  renderBubbleContent：依訊息類型產生氣泡 HTML
 // ─────────────────────────────────
 function renderBubbleContent(m) {
+  // 已收回的訊息
+  if (m.recalled) {
+    return `<div class="bubble"><span class="bubble-recalled">此訊息已收回</span></div>`;
+  }
   if (m.type === 'image' && m.mediaUrl) {
     return `<div class="bubble-media">
       <img src="${m.mediaUrl}" alt="圖片" loading="lazy"
@@ -4799,6 +4871,47 @@ function renderBubbleContent(m) {
   // 純文字（預設）
   return `<div class="bubble">${m.text || ''}</div>`;
 }
+
+// ── 展開 / 收起三點選單 ──
+window.toggleBubbleMenu = (btn) => {
+  // 點擊時關閉所有其他選單
+  document.querySelectorAll('.bubble-more-menu.open').forEach(m => {
+    if (m !== btn.nextElementSibling) m.classList.remove('open');
+  });
+  btn.nextElementSibling?.classList.toggle('open');
+};
+
+// 點擊其他地方關閉選單
+document.addEventListener('click', e => {
+  if (!e.target.closest('.bubble-more-btn') && !e.target.closest('.bubble-more-menu')) {
+    document.querySelectorAll('.bubble-more-menu.open').forEach(m => m.classList.remove('open'));
+  }
+});
+
+// ── 收回訊息 ──
+window.recallMessage = async (chatId, msgId, el) => {
+  if (!currentUser) return;
+  // 關閉選單
+  el.closest('.bubble-more-menu')?.classList.remove('open');
+  try {
+    await setDoc(doc(db, 'chats', chatId, 'messages', msgId), {
+      recalled: true,
+      text: '此訊息已收回',
+      mediaUrl: null
+    }, { merge: true });
+    // 立即更新 UI（不等 onSnapshot）
+    const wrap = el.closest('.bubble-wrap');
+    if (wrap) {
+      const bubble = wrap.querySelector('.bubble');
+      if (bubble) bubble.innerHTML = '<span class="bubble-recalled">此訊息已收回</span>';
+      // 移除三點按鈕
+      wrap.querySelector('.bubble-more-btn')?.remove();
+      wrap.querySelector('.bubble-more-menu')?.remove();
+    }
+  } catch(e) {
+    showToast('收回失敗：' + e.message);
+  }
+};
 
 // 圖片全螢幕預覽
 window.openImgPreview = (url) => {
@@ -5245,6 +5358,10 @@ async function _finalizeCompletion(chat) {
   const fee         = Math.floor(points * 0.1);
   const providerGain= points - fee;
 
+  // 取得雙方名稱（transaction 外預先查好）
+  const reqName  = (await getUserInfo(requesterUid)).displayName || '求助者';
+  const provName = peerInfo.displayName || '提供者';
+
   try {
     if (points > 0) {
       const reqRef      = doc(db, 'users', requesterUid);
@@ -5252,12 +5369,15 @@ async function _finalizeCompletion(chat) {
       const treasuryRef = doc(db, 'system', 'treasury');
 
       await runTransaction(db, async (t) => {
-        const reqSnap = await t.get(reqRef);
-        const curPts  = reqSnap.data()?.points ?? 0;
-        if (curPts < points) throw new Error('點數不足');
+        const reqSnap   = await t.get(reqRef);
+        const curPts    = reqSnap.data()?.points ?? 0;
+        // 管理員帳號跳過點數檢查
+        const reqIsAdmin = reqSnap.data()?.role === 'admin'
+          || ADMIN_EMAILS.includes(reqSnap.data()?.email || '');
+        if (!reqIsAdmin && curPts < points) throw new Error('點數不足');
         t.update(reqRef,      { points: increment(-points) });
         t.update(provRef,     { points: increment(providerGain) });
-        t.set(treasuryRef,    { totalFees: increment(fee) }, { merge: true });
+        t.set(treasuryRef,    { totalFees: increment(fee), totalDeals: increment(1) }, { merge: true });
         if (inviteId) t.update(doc(db, 'invites', inviteId), { status: '已完成' });
         t.update(doc(db, 'chats', activeChatId), {
           taskStatus: 'completed',
@@ -5266,8 +5386,6 @@ async function _finalizeCompletion(chat) {
       });
 
       // 點數記錄
-      const reqName  = (await getUserInfo(requesterUid)).displayName || '求助者';
-      const provName = peerInfo.displayName || '提供者';
       await addDoc(collection(db,'point_transactions'), {
         uid: requesterUid, userId: requesterUid, name: reqName,
         type:'deduct', delta:-points, amount:points,
@@ -5284,12 +5402,6 @@ async function _finalizeCompletion(chat) {
         counterpart: reqName,
         createdAt: serverTimestamp(), timestamp: serverTimestamp()
       });
-      await addDoc(collection(db,'points_history'), {
-        inviteId, requesterUid, providerUid,
-        providerName: provName, requesterName: reqName,
-        totalPoints: points, fee, providerGain,
-        type:'service_complete', createdAt: serverTimestamp()
-      });
 
       // 更新本地點數
       if (currentUser.uid === providerUid) {
@@ -5299,14 +5411,27 @@ async function _finalizeCompletion(chat) {
       }
       updateSidebarUser();
     } else {
-      // 無點數任務，僅更新狀態
+      // 無點數任務，僅更新 chat / invite 狀態
       await setDoc(doc(db, 'chats', activeChatId), {
         taskStatus: 'completed', completedAt: serverTimestamp()
       }, { merge: true });
       if (inviteId) {
         await setDoc(doc(db, 'invites', inviteId), { status: '已完成' }, { merge: true });
       }
+      // 即便無點數，也要更新 treasury 的案件計數 & 寫入 points_history
+      await setDoc(doc(db, 'system', 'treasury'), {
+        totalFees: increment(0),
+        totalDeals: increment(1)
+      }, { merge: true });
     }
+
+    // 不論有無點數，都寫入 points_history（後台才能顯示案件數）
+    await addDoc(collection(db,'points_history'), {
+      inviteId, requesterUid, providerUid,
+      providerName: provName, requesterName: reqName,
+      totalPoints: points, fee, providerGain,
+      type:'service_complete', createdAt: serverTimestamp()
+    });
 
     // 系統訊息
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
@@ -5324,8 +5449,16 @@ async function _finalizeCompletion(chat) {
       ? `✅ 任務完成！${currentUser.uid === providerUid ? `獲得 ${providerGain} 點（扣除 ${fee} 點手續費）` : `已支付 ${points} 點`}`
       : '✅ 任務已完成！感謝本次互助！');
 
-    // 觸發雙方評價
+    // ── 雙方互評：當事人立即跳出評價 Modal；對方在下次進入聊天室時由 onSnapshot 觸發 ──
+    // 先讓我方評「對方」
     _openReviewModal(peerId, peerInfo.displayName, inviteId || activeChatId);
+    // 把「對方需要評我」的資訊存到 chats 文件，讓對方下次開啟時看到
+    await setDoc(doc(db, 'chats', activeChatId), {
+      pendingReviewFor: peerId,          // 對方 uid 需要評價我（currentUser）
+      pendingReviewTarget: currentUser.uid,
+      pendingReviewTargetName: currentUserData.displayName || currentUserData.name || '—'
+    }, { merge: true });
+
     renderProfile();
   } catch(e) {
     showToast(e.message === '點數不足' ? '點數不足，無法完成結算' : `操作失敗：${e.message}`);
@@ -5523,7 +5656,7 @@ async function _adminRenderTreasury(body) {
   ]);
   const treasury   = treasurySnap.exists() ? treasurySnap.data() : {};
   const totalFees  = treasury.totalFees  || 0;
-  const totalDeals = historySnap.size;
+  const totalDeals = treasury.totalDeals || historySnap.size;  // 優先用 treasury 的即時計數
 
   body.innerHTML = `
     <p class="admin-section-title">💰 平台收益總覽</p>
