@@ -689,8 +689,9 @@
   }
   .chat-room-input-row {
     display: flex;
-    gap: 10px;
-    padding: 14px 20px;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
     background: #fff;
     border-top: 1.5px solid #e5e7eb;
     flex-shrink: 0;
@@ -705,8 +706,23 @@
     transition: border-color .2s;
   }
   .chat-room-input:focus { border-color: #F97316; }
+  .chat-room-input:disabled { background: #f3f4f6; color: #9ca3af; }
+
+  /* 附件按鈕 */
+  .btn-attach {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s; flex-shrink: 0;
+  }
+  .btn-attach:hover { background: #fff7ed; }
+
   .chat-room-send {
-    padding: 11px 22px;
+    padding: 11px 20px;
     background: #F97316;
     color: #fff;
     border: none;
@@ -715,8 +731,23 @@
     font-weight: 700;
     cursor: pointer;
     transition: background .2s;
+    flex-shrink: 0;
   }
-  .chat-room-send:hover { background: #ea6c0a; }
+  .chat-room-send:hover    { background: #ea6c0a; }
+  .chat-room-send:disabled { background: #e5e7eb; color: #9ca3af; cursor: default; }
+
+  /* 上傳進度條 */
+  .upload-bar {
+    height: 3px; background: #fff7ed;
+    border-radius: 0; overflow: hidden;
+    display: none; flex-shrink: 0;
+  }
+  .upload-bar.active { display: block; }
+  .upload-bar-fill {
+    height: 100%; width: 0%;
+    background: #F97316;
+    transition: width .3s ease;
+  }
 
   .bubble-time { font-size: 11px; color: #9ca3af; margin-bottom: 3px; }
   .bubble {
@@ -726,6 +757,37 @@
     font-size: 14px;
     line-height: 1.5;
     word-break: break-word;
+  }
+  /* 圖片 / 影片氣泡 */
+  .bubble-media {
+    max-width: 260px;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .bubble-media img {
+    width: 100%; display: block;
+    border-radius: 14px;
+    transition: opacity .2s;
+  }
+  .bubble-media img:hover { opacity: .9; }
+  .bubble-media video {
+    width: 100%; display: block;
+    border-radius: 14px;
+    max-height: 240px;
+  }
+  /* 全螢幕預覽 overlay */
+  #img-preview-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.85);
+    display: none; align-items: center; justify-content: center;
+    z-index: 500; cursor: zoom-out;
+  }
+  #img-preview-overlay.open { display: flex; }
+  #img-preview-overlay img {
+    max-width: 90vw; max-height: 90vh;
+    border-radius: 10px;
+    box-shadow: 0 8px 48px rgba(0,0,0,.6);
   }
 
 </style>
@@ -1202,12 +1264,18 @@
         </div>
         <!-- 訊息列表 -->
         <div class="cr-messages" id="cr-messages"></div>
+        <!-- 上傳進度條 -->
+        <div class="upload-bar" id="upload-bar"><div class="upload-bar-fill" id="upload-bar-fill"></div></div>
         <!-- 輸入區 -->
         <div class="chat-room-input-row">
+          <!-- 隱藏的 file input -->
+          <input type="file" id="cr-file-input" accept="image/*,video/*" style="display:none"
+            onchange="window.handleFileSelect(this)" />
+          <button class="btn-attach" title="傳送圖片或影片" onclick="document.getElementById('cr-file-input').click()">📎</button>
           <input class="chat-room-input" id="cr-input" type="text"
             placeholder="輸入訊息…"
             onkeydown="if(event.key==='Enter') window.sendRoomMsg()" />
-          <button class="chat-room-send" onclick="window.sendRoomMsg()">送出</button>
+          <button class="chat-room-send" id="cr-send-btn" onclick="window.sendRoomMsg()">送出</button>
         </div>
       </div>
 
@@ -1329,6 +1397,11 @@
   </div>
 </div>
 
+<!-- 圖片全螢幕預覽 Overlay -->
+<div id="img-preview-overlay" onclick="window.closeImgPreview()">
+  <img src="" alt="預覽圖片" />
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -1344,6 +1417,8 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, getDocs,
          query, orderBy, serverTimestamp, where, onSnapshot, deleteDoc }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCPUgN5iMSdnU-Ofzjs_MmXbwidj4r_ar8",
@@ -1353,9 +1428,10 @@ const firebaseConfig = {
   messagingSenderId: "861511578301",
   appId: "1:861511578301:web:e6c69895e4fe80f5e1bdd4"
 };
-const app    = initializeApp(firebaseConfig);
-const auth   = getAuth(app);
-const db     = getFirestore(app);
+const app     = initializeApp(firebaseConfig);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 // ─────────────────────────────────
@@ -2583,7 +2659,6 @@ window.openChatRoom = async (chatId) => {
     const msgEl = document.getElementById('cr-messages');
     if (!msgEl) return;
 
-    // 增量 append：只處理新增的訊息
     const existingCount = msgEl.querySelectorAll('.bubble-wrap').length;
     const newDocs = snap.docs.slice(existingCount);
 
@@ -2591,17 +2666,17 @@ window.openChatRoom = async (chatId) => {
       const m      = d.data();
       const sender = m.senderId || m.senderUid || '';
       const isMe   = sender === currentUser.uid;
-
-      // 動態取得發送者資料（已快取，不會重複請求；對方傳入 chat hint）
       const senderInfo = isMe ? myInfo : await getUserInfo(sender || peerId, chat);
 
       const div = document.createElement('div');
       div.className = `bubble-wrap ${isMe ? 'me' : ''}`;
+      // 依 type 決定氣泡內容
+      const bubbleContent = renderBubbleContent(m);
       div.innerHTML = `
         ${!isMe ? avatarHtml(senderInfo, 36) : ''}
         <div>
           <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time||''}</div>
-          <div class="bubble">${m.text}</div>
+          ${bubbleContent}
         </div>
         ${isMe ? avatarHtml(senderInfo, 36, '#fff7ed') : ''}`;
       msgEl.appendChild(div);
@@ -2612,22 +2687,52 @@ window.openChatRoom = async (chatId) => {
 };
 
 // ─────────────────────────────────
-//  sendRoomMsg：送出訊息
+//  renderBubbleContent：依訊息類型產生氣泡 HTML
+// ─────────────────────────────────
+function renderBubbleContent(m) {
+  if (m.type === 'image' && m.mediaUrl) {
+    return `<div class="bubble-media">
+      <img src="${m.mediaUrl}" alt="圖片" loading="lazy"
+        onclick="window.openImgPreview('${m.mediaUrl}')" />
+    </div>`;
+  }
+  if (m.type === 'video' && m.mediaUrl) {
+    return `<div class="bubble-media">
+      <video controls preload="metadata" src="${m.mediaUrl}"></video>
+    </div>`;
+  }
+  // 純文字（預設）
+  return `<div class="bubble">${m.text || ''}</div>`;
+}
+
+// 圖片全螢幕預覽
+window.openImgPreview = (url) => {
+  const ov = document.getElementById('img-preview-overlay');
+  ov.querySelector('img').src = url;
+  ov.classList.add('open');
+};
+window.closeImgPreview = () => {
+  document.getElementById('img-preview-overlay').classList.remove('open');
+};
+
+// ─────────────────────────────────
+//  sendRoomMsg：送出純文字訊息
 // ─────────────────────────────────
 window.sendRoomMsg = async () => {
   const input = document.getElementById('cr-input');
   const text  = input.value.trim();
   if (!text || !activeChatId) return;
   input.value = '';
-  const t     = nowTime();
-  const chat  = myChats.find(c => c.chatId === activeChatId);
-  const peerId = chat?.peerId || '';
+  const t      = nowTime();
+  const chat   = myChats.find(c => c.chatId === activeChatId);
+  const peerId = chat?.peerId || otherUid(chat || {});
 
   try {
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
       senderId:   currentUser.uid,
       receiverId: peerId,
       text,
+      type:       'text',
       time:       t,
       timestamp:  serverTimestamp()
     });
@@ -2640,6 +2745,92 @@ window.sendRoomMsg = async () => {
     showToast('訊息送出失敗：' + e.message);
   }
 };
+
+// ─────────────────────────────────
+//  handleFileSelect & uploadMediaAndSend：上傳媒體後寫 Firestore
+// ─────────────────────────────────
+window.handleFileSelect = async (input) => {
+  const file = input.files[0];
+  if (!file || !activeChatId) { input.value = ''; return; }
+
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  if (!isImage && !isVideo) { showToast('只支援圖片或影片檔案'); input.value = ''; return; }
+
+  const MAX_MB = isVideo ? 50 : 10;
+  if (file.size > MAX_MB * 1024 * 1024) {
+    showToast(`檔案過大，最大 ${MAX_MB}MB`);
+    input.value = '';
+    return;
+  }
+
+  // UI：禁用輸入、顯示進度條
+  const crInput   = document.getElementById('cr-input');
+  const sendBtn   = document.getElementById('cr-send-btn');
+  const uploadBar = document.getElementById('upload-bar');
+  const barFill   = document.getElementById('upload-bar-fill');
+  crInput.disabled  = true;
+  crInput.placeholder = '上傳中…';
+  sendBtn.disabled  = true;
+  uploadBar.classList.add('active');
+  barFill.style.width = '0%';
+
+  const ext      = file.name.split('.').pop();
+  const fileName = `${Date.now()}_${currentUser.uid}.${ext}`;
+  const path     = `chat_media/${activeChatId}/${fileName}`;
+  const fileRef  = storageRef(storage, path);
+
+  const task = uploadBytesResumable(fileRef, file);
+
+  task.on('state_changed',
+    (snapshot) => {
+      const pct = Math.round(snapshot.bytesTransferred / snapshot.totalBytes * 100);
+      barFill.style.width = pct + '%';
+    },
+    (err) => {
+      showToast('上傳失敗：' + err.message);
+      _resetUploadUI(crInput, sendBtn, uploadBar, barFill);
+      input.value = '';
+    },
+    async () => {
+      const url   = await getDownloadURL(task.snapshot.ref);
+      const t     = nowTime();
+      const chat  = myChats.find(c => c.chatId === activeChatId);
+      const peerId = chat?.peerId || otherUid(chat || {});
+      const type  = isImage ? 'image' : 'video';
+      const preview = isImage ? '📷 圖片' : '🎬 影片';
+
+      try {
+        await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+          senderId:   currentUser.uid,
+          receiverId: peerId,
+          text:       preview,
+          type,
+          mediaUrl:   url,
+          time:       t,
+          timestamp:  serverTimestamp()
+        });
+        await setDoc(doc(db, 'chats', activeChatId), {
+          lastMsg:       preview,
+          lastTime:      t,
+          lastSenderUid: currentUser.uid
+        }, { merge: true });
+      } catch(e) {
+        showToast('訊息寫入失敗：' + e.message);
+      }
+      _resetUploadUI(crInput, sendBtn, uploadBar, barFill);
+      input.value = '';
+    }
+  );
+};
+
+function _resetUploadUI(crInput, sendBtn, uploadBar, barFill) {
+  crInput.disabled    = false;
+  crInput.placeholder = '輸入訊息…';
+  sendBtn.disabled    = false;
+  uploadBar.classList.remove('active');
+  barFill.style.width = '0%';
+}
 
 // ─────────────────────────────────
 //  ensureChatDoc：接受邀請時建立/更新 chats 文件
