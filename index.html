@@ -1053,6 +1053,12 @@
           <label>希望時間</label>
           <input type="text" id="post-time" placeholder="例如：本週六下午 2–4 點" />
         </div>
+        <!-- 定位狀態提示 -->
+        <div id="location-status" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:#f3f4f6;font-size:13px;color:#6b7280;margin-bottom:12px">
+          <span id="location-icon">📍</span>
+          <span id="location-text">取得定位中…</span>
+          <button id="location-retry-btn" onclick="window.requestLocation(true)" style="display:none;margin-left:auto;background:#F97316;color:#fff;border:none;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">重新定位</button>
+        </div>
         <button class="btn-primary" onclick="postNeed()">發布求助需求 🚀</button>
       </div>
     </main>
@@ -1573,6 +1579,69 @@ function showErr(id, msg) {
 // ─────────────────────────────────
 //  進入 App / 登出
 // ─────────────────────────────────
+// ─────────────────────────────────
+//  GPS 定位
+// ─────────────────────────────────
+let currentLocation = { lat: null, lng: null };   // 全域：當前使用者座標
+
+// Haversine 公式：計算兩點距離（單位：公里）
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R    = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a    = Math.sin(dLat/2) * Math.sin(dLat/2)
+             + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180)
+             * Math.sin(dLon/2) * Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// 更新發布頁的定位狀態列
+function _setLocationUI(icon, text, showRetry) {
+  const iconEl  = document.getElementById('location-icon');
+  const textEl  = document.getElementById('location-text');
+  const retryEl = document.getElementById('location-retry-btn');
+  if (iconEl)  iconEl.textContent         = icon;
+  if (textEl)  textEl.textContent         = text;
+  if (retryEl) retryEl.style.display      = showRetry ? 'inline-block' : 'none';
+}
+
+// 請求定位。showToastOnDeny=true 時顯示提示 toast
+window.requestLocation = (showToastOnDeny) => {
+  if (!navigator.geolocation) {
+    _setLocationUI('❌', '瀏覽器不支援定位', true);
+    return;
+  }
+  _setLocationUI('⏳', '定位中…', false);
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      _setLocationUI('✅', `已定位（精確度 ${Math.round(pos.coords.accuracy)}m）`, false);
+      // 同步寫入 Firestore（不等待，不影響主流程）
+      if (currentUser) {
+        setDoc(doc(db, 'users', currentUser.uid), {
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          locationUpdatedAt: serverTimestamp()
+        }, { merge: true }).catch(() => {});
+      }
+      // 重新渲染卡片以顯示距離
+      loadCards();
+    },
+    (err) => {
+      currentLocation = { lat: null, lng: null };
+      if (err.code === err.PERMISSION_DENIED) {
+        _setLocationUI('🚫', '已拒絕定位', true);
+        if (showToastOnDeny) {
+          showToast('請允許定位權限以取得附近的社區互助需求');
+        }
+      } else {
+        _setLocationUI('❌', '定位失敗，請重試', true);
+      }
+    },
+    { timeout: 10000, maximumAge: 5 * 60 * 1000 }   // 10s 逾時，5 分鐘內快取
+  );
+};
+
 function enterApp() {
   document.getElementById('main-nav').style.display = 'flex';
   document.getElementById('navbar-user').innerHTML =
@@ -1588,6 +1657,8 @@ function enterApp() {
   updateSidebarUser();
   switchMainPage('home');
   loadCards();
+  // 登入後非同步取得定位（不阻塞畫面）
+  window.requestLocation(false);
 }
 
 function showAuthPage() {
@@ -1723,11 +1794,19 @@ function renderNeedCards(cards) {
   el.innerHTML = cards.map(d => {
     const isMe = d.uid === currentUser?.uid;
     const data = JSON.stringify(d).replace(/"/g,'&quot;');
+    // 距離標籤
+    let distBadge = '';
+    if (d.lat && d.lng && currentLocation.lat && currentLocation.lng) {
+      const dist = calculateDistance(currentLocation.lat, currentLocation.lng, d.lat, d.lng);
+      distBadge = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">
+        📍 ${dist < 1 ? Math.round(dist * 1000) + 'm' : dist.toFixed(1) + 'km'}
+      </span>`;
+    }
     return `<div class="card">
       <div class="card-header"><div class="avatar">${d.emoji||'🙋'}</div>
         <div><div class="card-name">${d.name}</div><div class="card-meta">${d.age} 歲・${d.gender}</div></div>
       </div>
-      <div class="tags">${tagsHTML(d.skills)}</div>
+      <div class="tags">${tagsHTML(d.skills)}${distBadge}</div>
       <div class="card-desc">${d.desc}${d.time?`<br><small style="color:#9ca3af">⏰ ${d.time}</small>`:''}
       </div>
       <button class="btn-card ${isMe?'mine':''}" ${isMe?'disabled':'onclick="window.openModal(\'need\',\''+data+'\')"'}>
@@ -1818,16 +1897,21 @@ window.postNeed = async () => {
   if (!desc)  return showToast('請填寫需求描述');
   if (!time)  return showToast('請填寫希望時間');
   try {
+    const locPayload = (currentLocation.lat && currentLocation.lng)
+      ? { lat: currentLocation.lat, lng: currentLocation.lng }
+      : {};
     await addDoc(collection(db,'needs'), {
       uid: currentUser.uid, name: currentUserData.name,
       age: currentUserData.age, gender: currentUserData.gender,
       emoji: currentUserData.emoji||'🙋',
-      skills, desc, time, createdAt: serverTimestamp()
+      skills, desc, time,
+      ...locPayload,
+      createdAt: serverTimestamp()
     });
     document.getElementById('post-desc').value = '';
     document.getElementById('post-time').value = '';
     document.querySelectorAll('#post-skill-tags .skill-tag').forEach(t=>t.classList.remove('selected'));
-    showToast('需求已發布！');
+    showToast('需求已發布！' + (locPayload.lat ? ' 📍 已附上位置' : ''));
     window.switchMainPage('home');
     window.switchTab('need');
     loadCards();
