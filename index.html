@@ -1471,14 +1471,14 @@
         </div>
         <!-- 訊息列表 -->
         <div class="cr-messages" id="cr-messages"></div>
-        <!-- 上傳進度條 -->
+        <!-- 壓縮處理狀態列 -->
         <div class="upload-bar" id="upload-bar"><div class="upload-bar-fill" id="upload-bar-fill"></div></div>
         <!-- 輸入區 -->
         <div class="chat-room-input-row">
-          <!-- 隱藏的 file input -->
-          <input type="file" id="cr-file-input" accept="image/*,video/*" style="display:none"
+          <!-- 隱藏的 file input（僅接受圖片） -->
+          <input type="file" id="cr-file-input" accept="image/*" style="display:none"
             onchange="window.handleFileSelect(this)" />
-          <button class="btn-attach" title="傳送圖片或影片" onclick="document.getElementById('cr-file-input').click()">📎</button>
+          <button class="btn-attach" title="傳送圖片" onclick="document.getElementById('cr-file-input').click()">📎</button>
           <input class="chat-room-input" id="cr-input" type="text"
             placeholder="輸入訊息…"
             onkeydown="if(event.key==='Enter') window.sendRoomMsg()" />
@@ -1669,8 +1669,7 @@ import { getFirestore, collection, doc, setDoc, getDoc, addDoc, getDocs,
          query, orderBy, serverTimestamp, where, onSnapshot, deleteDoc,
          runTransaction, increment }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL }
-  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
+// Firebase Storage 已移除 — 改用 Base64 Canvas 壓縮
 
 const firebaseConfig = {
   apiKey: "AIzaSyCPUgN5iMSdnU-Ofzjs_MmXbwidj4r_ar8",
@@ -1683,7 +1682,6 @@ const firebaseConfig = {
 const app     = initializeApp(firebaseConfig);
 const auth    = getAuth(app);
 const db      = getFirestore(app);
-const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 // ─────────────────────────────────
@@ -3287,90 +3285,126 @@ window.sendRoomMsg = async () => {
 };
 
 // ─────────────────────────────────
-//  handleFileSelect & uploadMediaAndSend：上傳媒體後寫 Firestore
+//  handleFileSelect：Base64 Canvas 壓縮後寫 Firestore（無 Storage）
 // ─────────────────────────────────
+
+// Canvas 壓縮圖片 → Base64 字串
+function _compressImageToBase64(file, maxSide = 800, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('讀取檔案失敗'));
+    reader.onload  = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('圖片解析失敗'));
+      img.onload  = () => {
+        // 等比例縮放，最大邊不超過 maxSide
+        let { width, height } = img;
+        if (width > maxSide || height > maxSide) {
+          if (width > height) {
+            height = Math.round(height * maxSide / width);
+            width  = maxSide;
+          } else {
+            width  = Math.round(width * maxSide / height);
+            height = maxSide;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width  = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 window.handleFileSelect = async (input) => {
   const file = input.files[0];
   if (!file || !activeChatId) { input.value = ''; return; }
 
-  const isImage = file.type.startsWith('image/');
-  const isVideo = file.type.startsWith('video/');
-  if (!isImage && !isVideo) { showToast('只支援圖片或影片檔案'); input.value = ''; return; }
-
-  const MAX_MB = isVideo ? 50 : 10;
-  if (file.size > MAX_MB * 1024 * 1024) {
-    showToast(`檔案過大，最大 ${MAX_MB}MB`);
+  // 影片不支援
+  if (file.type.startsWith('video/')) {
+    showToast('由於未啟用雲端儲存，目前僅支援傳送圖片喔！');
     input.value = '';
     return;
   }
 
-  // UI：禁用輸入、顯示進度條
+  // 非圖片也擋掉
+  if (!file.type.startsWith('image/')) {
+    showToast('只支援圖片檔案');
+    input.value = '';
+    return;
+  }
+
+  // UI：禁用輸入、顯示壓縮中狀態
   const crInput   = document.getElementById('cr-input');
   const sendBtn   = document.getElementById('cr-send-btn');
   const uploadBar = document.getElementById('upload-bar');
   const barFill   = document.getElementById('upload-bar-fill');
-  crInput.disabled  = true;
-  crInput.placeholder = '上傳中…';
-  sendBtn.disabled  = true;
+
+  const _resetUI = () => {
+    crInput.disabled    = false;
+    crInput.placeholder = '輸入訊息…';
+    sendBtn.disabled    = false;
+    uploadBar.classList.remove('active');
+    barFill.style.width = '0%';
+    input.value = '';
+  };
+
+  crInput.disabled    = true;
+  crInput.placeholder = '壓縮圖片中…';
+  sendBtn.disabled    = true;
   uploadBar.classList.add('active');
-  barFill.style.width = '0%';
+  barFill.style.width = '30%';   // 壓縮中：30%
 
-  const ext      = file.name.split('.').pop();
-  const fileName = `${Date.now()}_${currentUser.uid}.${ext}`;
-  const path     = `chat_media/${activeChatId}/${fileName}`;
-  const fileRef  = storageRef(storage, path);
+  try {
+    // Step 1：Canvas 壓縮 → Base64
+    const base64 = await _compressImageToBase64(file, 800, 0.7);
 
-  const task = uploadBytesResumable(fileRef, file);
+    barFill.style.width = '70%';   // 壓縮完成：70%
 
-  task.on('state_changed',
-    (snapshot) => {
-      const pct = Math.round(snapshot.bytesTransferred / snapshot.totalBytes * 100);
-      barFill.style.width = pct + '%';
-    },
-    (err) => {
-      showToast('上傳失敗：' + err.message);
-      _resetUploadUI(crInput, sendBtn, uploadBar, barFill);
-      input.value = '';
-    },
-    async () => {
-      const url   = await getDownloadURL(task.snapshot.ref);
-      const t     = nowTime();
-      const chat  = myChats.find(c => c.chatId === activeChatId);
-      const peerId = chat?.peerId || otherUid(chat || {});
-      const type  = isImage ? 'image' : 'video';
-      const preview = isImage ? '📷 圖片' : '🎬 影片';
-
-      try {
-        await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
-          senderId:   currentUser.uid,
-          receiverId: peerId,
-          text:       preview,
-          type,
-          mediaUrl:   url,
-          time:       t,
-          timestamp:  serverTimestamp()
-        });
-        await setDoc(doc(db, 'chats', activeChatId), {
-          lastMsg:       preview,
-          lastTime:      t,
-          lastSenderUid: currentUser.uid
-        }, { merge: true });
-      } catch(e) {
-        showToast('訊息寫入失敗：' + e.message);
-      }
-      _resetUploadUI(crInput, sendBtn, uploadBar, barFill);
-      input.value = '';
+    // Step 2：大小驗證（800 KB 上限）
+    const MAX_BYTES = 800 * 1024;
+    // base64 字串每個字元 ≈ 0.75 bytes（去掉 header 估算）
+    const estimatedBytes = Math.round((base64.length - (base64.indexOf(',') + 1)) * 0.75);
+    if (estimatedBytes > MAX_BYTES) {
+      showToast('圖片檔案過大，請選擇較小的圖片');
+      _resetUI();
+      return;
     }
-  );
-};
 
-function _resetUploadUI(crInput, sendBtn, uploadBar, barFill) {
-  crInput.disabled    = false;
-  crInput.placeholder = '輸入訊息…';
-  sendBtn.disabled    = false;
-  uploadBar.classList.remove('active');
-  barFill.style.width = '0%';
-}
+    barFill.style.width = '90%';   // 寫入 Firestore：90%
+
+    // Step 3：寫入 Firestore
+    const t      = nowTime();
+    const chat   = myChats.find(c => c.chatId === activeChatId);
+    const peerId = chat?.peerId || otherUid(chat || {});
+
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderId:   currentUser.uid,
+      receiverId: peerId,
+      text:       '📷 圖片',
+      type:       'image',
+      mediaUrl:   base64,       // Base64 直接存 Firestore
+      time:       t,
+      timestamp:  serverTimestamp()
+    });
+    await setDoc(doc(db, 'chats', activeChatId), {
+      lastMsg:       '📷 圖片',
+      lastTime:      t,
+      lastSenderUid: currentUser.uid
+    }, { merge: true });
+
+    barFill.style.width = '100%';
+    setTimeout(_resetUI, 300);   // 短暫停留 100% 再收起
+
+  } catch(e) {
+    showToast('圖片傳送失敗：' + e.message);
+    _resetUI();
+  }
+};
 
 // ─────────────────────────────────
 //  ensureChatDoc：接受邀請時建立/更新 chats 文件
