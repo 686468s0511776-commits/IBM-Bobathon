@@ -4466,13 +4466,18 @@ window.confirmComplete = async () => {
     confirmBtn.textContent = '⏳ 處理中…';
   }
 
-  // ── 冪等性檢查：確認 invite 尚未結算 ──
+  // ── 冪等性檢查：確認 invite 尚未結算，同時取得 needId ──
+  let _inviteNeedId = null;
   try {
     const invSnap = await getDoc(doc(db, 'invites', inviteId));
-    if (invSnap.exists() && invSnap.data()?.status === '已完成') {
-      showToast('此任務已結算，無法重複操作');
-      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '確認完成，轉移點數 ⭐'; }
-      return;
+    if (invSnap.exists()) {
+      const invData = invSnap.data();
+      if (invData?.status === '已完成') {
+        showToast('此任務已結算，無法重複操作');
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '確認完成，轉移點數 ⭐'; }
+        return;
+      }
+      _inviteNeedId = invData?.needId || invData?.taskId || null;
     }
   } catch(e) { /* 讀取失敗繼續執行 */ }
 
@@ -4535,6 +4540,22 @@ window.confirmComplete = async () => {
     });
     currentUserData.points = (currentUserData.points ?? 0) + providerGain;
     updateSidebarUser();
+
+    // ── 自動下架：將 needs 文件標記為已完成/已下架，並即時從本地快取移除 ──
+    if (_inviteNeedId) {
+      try {
+        await setDoc(doc(db, 'needs', _inviteNeedId), {
+          status:     'completed',
+          isArchived: true,
+          completedAt: serverTimestamp()
+        }, { merge: true });
+        _allNeedCards = (_allNeedCards || []).filter(c => c.id !== _inviteNeedId);
+        renderNeedCards(_filterCardsByDist(_allNeedCards, _needFilterDist));
+      } catch(_e) {
+        console.warn('[archive needs] 下架失敗：', _e.message);
+      }
+    }
+
     window.closeCompleteModal();
     showToast(`✅ 任務完成！獲得 ${providerGain} 點（扣除 ${fee} 點手續費）！`);
     renderProfile();
@@ -4739,12 +4760,16 @@ async function loadCards() {
   document.getElementById('need-cards').innerHTML  = '<div style="text-align:center;padding:40px;color:#9ca3af">載入中...</div>';
   document.getElementById('offer-cards').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">載入中...</div>';
 
-  // 求助需求
+  // 求助需求（過濾掉已完成/已下架的卡片）
   try {
     const q = query(collection(db,'needs'), orderBy('createdAt','desc'));
     const snap = await getDocs(q);
-    const cards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    _allNeedCards = cards.length ? cards : demoNeeds;
+    const allCards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // 前端過濾：排除 isArchived=true 或 status='completed'/'canceled' 的項目
+    const activeCards = allCards.filter(c =>
+      !c.isArchived && c.status !== 'completed' && c.status !== 'canceled'
+    );
+    _allNeedCards = activeCards.length ? activeCards : (allCards.length ? [] : demoNeeds);
     renderNeedCards(_filterCardsByDist(_allNeedCards, _needFilterDist));
   } catch(e) {
     _allNeedCards = demoNeeds;
@@ -7130,6 +7155,23 @@ async function _finalizeCompletion(chat) {
       totalPoints: points, fee, providerGain,
       type:'service_complete', createdAt: serverTimestamp()
     });
+
+    // ── 自動下架：將 needs 文件標記為已完成/已下架，並從本地快取移除 ──
+    const needId = chat.needId || chat.taskId || null;
+    if (needId) {
+      try {
+        await setDoc(doc(db, 'needs', needId), {
+          status:     'completed',
+          isArchived: true,
+          completedAt: serverTimestamp()
+        }, { merge: true });
+        // 即時從本地快取移除，前端不需等下次 loadCards()
+        _allNeedCards = (_allNeedCards || []).filter(c => c.id !== needId);
+        renderNeedCards(_filterCardsByDist(_allNeedCards, _needFilterDist));
+      } catch(_archiveErr) {
+        console.warn('[archive needs] 下架失敗，但不影響結算：', _archiveErr.message);
+      }
+    }
 
     // 系統訊息
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
