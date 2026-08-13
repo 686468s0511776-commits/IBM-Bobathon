@@ -1927,10 +1927,10 @@
     <h3>💪 編輯我的技能</h3>
     <div class="modal-sub" style="margin-bottom:20px">選擇你可以提供的幫助，勾選「其他」可輸入自訂內容</div>
 
-    <!-- 🟢 一般互助 -->
+    <!-- 🟢 一般互助 — 無 inline onclick，全由 JS 管理 -->
     <div style="margin-bottom:18px">
       <div class="skill-cat-header green" style="margin-bottom:10px">🟢 一般互助</div>
-      <div class="skill-tags" id="edit-general-tags">
+      <div id="edit-general-tags">
         <span class="skill-tag" data-skill="搬運" data-cat="general">🪜 搬運</span>
         <span class="skill-tag" data-skill="代買" data-cat="general">🛒 代買</span>
         <span class="skill-tag" data-skill="代領" data-cat="general">📦 代領</span>
@@ -1938,19 +1938,18 @@
         <span class="skill-tag" data-skill="外出協助" data-cat="general">🚶 外出協助</span>
         <span class="skill-tag" data-skill="居家整理" data-cat="general">🧹 居家整理</span>
         <span class="skill-tag" data-skill="寵物照顧" data-cat="general">🐾 寵物照顧</span>
-        <span class="skill-tag" data-skill="其他(一般)" data-cat="general"
-          onclick="window.toggleOtherInput('edit-general-other', this)">➕ 其他</span>
+        <span class="skill-tag" data-skill="其他(一般)" data-cat="general" data-other-wrap="edit-general-other">➕ 其他</span>
       </div>
       <div class="skill-other-input-wrap" id="edit-general-other">
         <input class="skill-other-input" id="edit-general-other-input"
-          placeholder="請輸入你可以提供的其他一般幫助…" />
+          placeholder="請輸入你可以提供的其他一般幫助，多個以逗號分隔…" />
       </div>
     </div>
 
-    <!-- 🔵 技能互助 -->
+    <!-- 🔵 技能互助 — 無 inline onclick，全由 JS 管理 -->
     <div style="margin-bottom:20px">
       <div class="skill-cat-header blue" style="margin-bottom:10px">🔵 技能互助</div>
-      <div class="skill-tags" id="edit-skill-modal-tags">
+      <div id="edit-skill-modal-tags">
         <span class="skill-tag" data-skill="簡單修繕" data-cat="skill">🔧 簡單修繕</span>
         <span class="skill-tag" data-skill="基礎電器" data-cat="skill">💡 基礎電器</span>
         <span class="skill-tag" data-skill="電腦" data-cat="skill">💻 電腦</span>
@@ -1960,18 +1959,17 @@
         <span class="skill-tag" data-skill="設計" data-cat="skill">🎨 設計</span>
         <span class="skill-tag" data-skill="攝影" data-cat="skill">📷 攝影</span>
         <span class="skill-tag" data-skill="程式設計" data-cat="skill">👨‍💻 程式設計</span>
-        <span class="skill-tag" data-skill="其他(技能)" data-cat="skill"
-          onclick="window.toggleOtherInput('edit-skill-other', this)">➕ 其他</span>
+        <span class="skill-tag" data-skill="其他(技能)" data-cat="skill" data-other-wrap="edit-skill-other">➕ 其他</span>
       </div>
       <div class="skill-other-input-wrap" id="edit-skill-other">
         <input class="skill-other-input" id="edit-skill-other-input"
-          placeholder="請輸入你可以提供的其他技能幫助…" />
+          placeholder="請輸入你可以提供的其他技能幫助，多個以逗號分隔…" />
       </div>
     </div>
 
     <div class="btn-row">
-      <button class="btn-cancel" onclick="window.closeSkillEditModal()">取消</button>
-      <button class="btn-send" onclick="window.saveSkillEdit()">💾 儲存技能</button>
+      <button class="btn-cancel" id="skill-edit-cancel-btn">取消</button>
+      <button class="btn-send"   id="skill-edit-save-btn">💾 儲存技能</button>
     </div>
   </div>
 </div>
@@ -2102,6 +2100,10 @@ let chatLogs        = {};   // { inviteId: [{from, text, time}] }
 let activeChatInviteId = null;
 let activeMatchInv  = null;
 let activeRejectId  = null;
+
+// 未讀訊息監聽器
+let _unreadUnsub = null;    // onSnapshot 取消器
+let _unreadMap   = {};      // { chatId: Set<senderId> } — 以人為單位計算
 
 // ── 點數常數：技能 → 所需點數 ──
 const SKILL_POINTS = {
@@ -2613,6 +2615,122 @@ function enterApp() {
   window.requestLocation(false);
   // ── 即時監聽新邀請（receiverId == currentUser.uid）──
   _startInviteListener();
+  // ── 即時監聽未讀訊息（以人為單位更新紅點）──
+  _startUnreadListener();
+  // ── 請求瀏覽器通知權限（非阻塞）──
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+// ─────────────────────────────────
+//  _updateUnreadBadge：根據 _unreadMap 更新導覽列紅點
+// ─────────────────────────────────
+function _updateUnreadBadge() {
+  const badge = document.getElementById('chat-unread-badge');
+  if (!badge) return;
+  // 過濾掉內部用的 '_sub' 標記 key，只算真正有未讀的 chatId
+  const count = Object.keys(_unreadMap).filter(k => !k.endsWith('_sub')).length;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+    badge.textContent = '';
+  }
+}
+
+// ─────────────────────────────────
+//  _startUnreadListener：監聽所有我參與的對話中，對方傳給我的未讀訊息
+// ─────────────────────────────────
+let _unreadChatUnsubs = [];   // 每個 chatId 一個 unsub
+
+function _startUnreadListener() {
+  if (!currentUser) return;
+  // 先清除舊的
+  _unreadChatUnsubs.forEach(fn => fn());
+  _unreadChatUnsubs = [];
+  _unreadMap = {};
+
+  // 監聽 chats 集合，抓出我參與的房間清單
+  const chatsQ = query(
+    collection(db, 'chats'),
+    where('participants', 'array-contains', currentUser.uid)
+  );
+
+  // 在 chats 快照裡，為每個 chatId 各開一個 messages onSnapshot
+  const chatsUnsub = onSnapshot(chatsQ, async chatsSnap => {
+    // 為新出現的 chatId 啟動 messages 監聽
+    chatsSnap.docs.forEach(chatDoc => {
+      const chatId = chatDoc.id;
+      // 已有監聽的不重複啟動
+      if (_unreadMap[chatId + '_sub']) return;
+      _unreadMap[chatId + '_sub'] = true;  // 標記「已啟動監聽」
+
+      const msgQ = query(
+        collection(db, 'chats', chatId, 'messages'),
+        where('receiverId', '==', currentUser.uid),
+        where('isRead', '==', false)
+      );
+
+      let isFirstSnapshot = true;
+      const unsub = onSnapshot(msgQ, snap => {
+        const senders = new Set(snap.docs.map(d => d.data().senderId).filter(Boolean));
+
+        if (senders.size > 0) {
+          _unreadMap[chatId] = senders;
+        } else {
+          delete _unreadMap[chatId];
+        }
+        _updateUnreadBadge();
+
+        // 新訊息通知（非首次快照，且使用者不在此對話視窗）
+        if (!isFirstSnapshot) {
+          snap.docChanges().forEach(change => {
+            if (change.type !== 'added') return;
+            const msg = change.doc.data();
+            if (msg.senderId === currentUser.uid) return; // 自己送的不通知
+            if (activeChatId === chatId) return;          // 已在此對話視窗不通知
+
+            // 發送瀏覽器桌面通知
+            _sendBrowserNotification(chatId, msg);
+          });
+        }
+        isFirstSnapshot = false;
+      }, () => {});  // 靜默失敗
+
+      _unreadChatUnsubs.push(unsub);
+    });
+  }, () => {});
+
+  _unreadChatUnsubs.push(chatsUnsub);
+}
+
+// ─────────────────────────────────
+//  _sendBrowserNotification：送出瀏覽器桌面通知
+// ─────────────────────────────────
+function _sendBrowserNotification(chatId, msg) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  // 取對方名稱（從 myChats 快取）
+  const chat = myChats.find(c => c.chatId === chatId);
+  const senderName = chat?.peerName || msg.senderName || '新訊息';
+  const body = msg.type === 'image' ? '📷 傳送了一張圖片' : (msg.text || '傳送了一則訊息');
+
+  try {
+    const n = new Notification(`${senderName}`, {
+      body,
+      icon: '/favicon.ico',
+      tag:  chatId,   // 同一對話的通知自動覆蓋舊的
+    });
+    n.onclick = () => {
+      window.focus();
+      window.switchMainPage('chatroom');
+      setTimeout(() => window.openChatRoom(chatId), 600);
+      n.close();
+    };
+  } catch(e) { /* 通知建立失敗靜默忽略 */ }
 }
 
 // 即時監聽收到的邀請
@@ -2733,6 +2851,10 @@ window.doLogout = () => {
   if (_inviteListenerUnsub)  { _inviteListenerUnsub();  _inviteListenerUnsub  = null; }
   if (window._chatListUnsub) { window._chatListUnsub(); window._chatListUnsub = null; }
   if (window._roomUnsubscribe){ window._roomUnsubscribe(); window._roomUnsubscribe = null; }
+  _unreadChatUnsubs.forEach(fn => fn());
+  _unreadChatUnsubs = [];
+  _unreadMap = {};
+  _updateUnreadBadge();
   if (!IS_LOCAL) {
     signOut(auth);
     showAuthPage();  // signOut 是非同步，不等它，直接切換畫面
@@ -3592,40 +3714,60 @@ window.renderProfile = renderProfile;
 window.openSkillEditModal = () => {
   if (!currentUserData) return;
 
-  // 防護性預設值：避免 undefined 造成 JS 錯誤
-  const safeData = {
-    ...currentUserData,
-    generalTasks:       currentUserData.generalTasks       || [],
-    skills:             currentUserData.skills             || [],
-    customGeneralTasks: currentUserData.customGeneralTasks || [],
-    customSkills:       currentUserData.customSkills       || [],
-  };
+  // 防護性預設值
+  const generalTasks       = currentUserData.generalTasks       || [];
+  const skills             = currentUserData.skills             || [];
+  const customGeneralTasks = currentUserData.customGeneralTasks || [];
+  const customSkills       = currentUserData.customSkills       || [];
 
-  // 重置所有勾選與輸入框
+  // ── 完全重置 ──
+  // 1. 清除所有已選狀態
   document.querySelectorAll('#edit-general-tags .skill-tag, #edit-skill-modal-tags .skill-tag')
     .forEach(t => t.classList.remove('selected'));
-  ['edit-general-other','edit-skill-other'].forEach(id => {
+  // 2. 收合並清空所有「其他」輸入框
+  ['edit-general-other', 'edit-skill-other'].forEach(id => {
     const wrap = document.getElementById(id);
     if (wrap) wrap.classList.remove('open');
   });
-  ['edit-general-other-input','edit-skill-other-input'].forEach(id => {
+  ['edit-general-other-input', 'edit-skill-other-input'].forEach(id => {
     const inp = document.getElementById(id);
     if (inp) { inp.value = ''; inp.disabled = false; inp.readOnly = false; }
   });
 
-  // 確保所有技能標籤可點擊（解除任何可能的鎖定）
-  document.querySelectorAll('#skill-edit-modal-overlay .skill-tag').forEach(t => {
-    t.style.pointerEvents = '';
-    t.style.opacity = '';
+  // ── 預載已存的技能 ──
+  // 一般互助標籤
+  document.querySelectorAll('#edit-general-tags .skill-tag').forEach(tag => {
+    if (tag.dataset.otherWrap) return; // 「其他」標籤另外處理
+    if (generalTasks.includes(tag.dataset.skill)) tag.classList.add('selected');
   });
+  // 技能互助標籤
+  document.querySelectorAll('#edit-skill-modal-tags .skill-tag').forEach(tag => {
+    if (tag.dataset.otherWrap) return;
+    if (skills.includes(tag.dataset.skill)) tag.classList.add('selected');
+  });
+  // 一般互助「其他」自訂
+  if (customGeneralTasks.length) {
+    const otherTag = document.querySelector('#edit-general-tags [data-other-wrap="edit-general-other"]');
+    const wrap     = document.getElementById('edit-general-other');
+    const inp      = document.getElementById('edit-general-other-input');
+    if (otherTag && wrap && inp) {
+      otherTag.classList.add('selected');
+      wrap.classList.add('open');
+      inp.value = customGeneralTasks.join('、');
+    }
+  }
+  // 技能互助「其他」自訂
+  if (customSkills.length) {
+    const otherTag = document.querySelector('#edit-skill-modal-tags [data-other-wrap="edit-skill-other"]');
+    const wrap     = document.getElementById('edit-skill-other');
+    const inp      = document.getElementById('edit-skill-other-input');
+    if (otherTag && wrap && inp) {
+      otherTag.classList.add('selected');
+      wrap.classList.add('open');
+      inp.value = customSkills.join('、');
+    }
+  }
 
-  // 預載使用者現有技能（含其他自訂）
-  applySkillsToContainer(
-    'edit-general-tags','edit-skill-modal-tags',
-    'edit-general-other','edit-general-other-input',
-    'edit-skill-other', 'edit-skill-other-input',
-    safeData
-  );
   document.getElementById('skill-edit-modal-overlay').classList.add('open');
 };
 
@@ -3635,17 +3777,19 @@ window.closeSkillEditModal = () => {
 
 window.saveSkillEdit = async () => {
   if (!currentUser) return;
-  const { generalTasks, skills, customGeneralTasks, customSkills } =
-    readSkillsFromContainer(
-      'edit-general-tags','edit-skill-modal-tags',
-      'edit-general-other-input','edit-skill-other-input'
-    );
 
-  // 防護：確保都是陣列
-  const safeGeneralTasks       = generalTasks       || [];
-  const safeSkills             = skills             || [];
-  const safeCustomGeneralTasks = customGeneralTasks || [];
-  const safeCustomSkills       = customSkills       || [];
+  // 直接從 DOM 讀取（不依賴 .skill-tags class，僅依賴 data-skill 屬性）
+  const safeGeneralTasks = [...document.querySelectorAll('#edit-general-tags .skill-tag.selected')]
+    .map(t => t.dataset.skill).filter(s => s && !s.startsWith('其他'));
+  const safeSkills = [...document.querySelectorAll('#edit-skill-modal-tags .skill-tag.selected')]
+    .map(t => t.dataset.skill).filter(s => s && !s.startsWith('其他'));
+
+  const rawGenOther = (document.getElementById('edit-general-other-input')?.value || '').trim();
+  const rawSklOther = (document.getElementById('edit-skill-other-input')?.value || '').trim();
+  const safeCustomGeneralTasks = rawGenOther
+    ? rawGenOther.split(/[、,，]+/).map(s => s.trim()).filter(Boolean) : [];
+  const safeCustomSkills = rawSklOther
+    ? rawSklOther.split(/[、,，]+/).map(s => s.trim()).filter(Boolean) : [];
 
   // ── 歷史紀錄保護：只更新 users 文件，invites/history 完全不動 ──
   try {
@@ -4124,7 +4268,6 @@ window.openChatRoom = async (chatId) => {
 
       const div = document.createElement('div');
       div.className = `bubble-wrap ${isMe ? 'me' : ''}`;
-      // 依 type 決定氣泡內容
       const bubbleContent = renderBubbleContent(m);
       div.innerHTML = `
         ${!isMe ? avatarHtml(senderInfo, 36) : ''}
@@ -4137,8 +4280,37 @@ window.openChatRoom = async (chatId) => {
     }
 
     if (newDocs.length > 0) msgEl.scrollTop = msgEl.scrollHeight;
+
+    // ── 進入對話時：批次標記對方訊息為已讀 ──
+    _markChatAsRead(chatId);
   });
 };
+
+// ─────────────────────────────────
+//  _markChatAsRead：批次更新未讀訊息 isRead=true，並清除紅點
+// ─────────────────────────────────
+async function _markChatAsRead(chatId) {
+  if (!currentUser || !chatId) return;
+  try {
+    const unreadQ = query(
+      collection(db, 'chats', chatId, 'messages'),
+      where('receiverId', '==', currentUser.uid),
+      where('isRead', '==', false)
+    );
+    const snap = await getDocs(unreadQ);
+    if (snap.empty) return;
+
+    // 分批 batch write（Firestore 每批最多 500 筆）
+    const { writeBatch } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.update(d.ref, { isRead: true }));
+    await batch.commit();
+
+    // 清除本 chatId 的未讀計數，更新紅點
+    delete _unreadMap[chatId];
+    _updateUnreadBadge();
+  } catch(e) { /* 標記已讀失敗不影響主流程 */ }
+}
 
 // ─────────────────────────────────
 //  renderBubbleContent：依訊息類型產生氣泡 HTML
@@ -4188,6 +4360,7 @@ window.sendRoomMsg = async () => {
       text,
       type:       'text',
       time:       t,
+      isRead:     false,   // 預設未讀，收訊方開啟對話時標為已讀
       timestamp:  serverTimestamp()
     });
     await setDoc(doc(db, 'chats', activeChatId), {
@@ -4373,26 +4546,55 @@ document.getElementById('buy-points-modal').addEventListener('click', e => {
 document.getElementById('complete-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('complete-modal')) window.closeCompleteModal();
 });
-// 編輯 Modal 內的技能標籤點擊
-document.getElementById('edit-skill-tags').addEventListener('click', e => {
-  const tag = e.target.closest('.skill-tag');
-  if (tag) tag.classList.toggle('selected');
-});
-// 編輯技能 Modal 標籤點擊（排除「其他」—已由 onclick 處理）
-['edit-general-tags','edit-skill-modal-tags'].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener('click', e => {
-    const tag = e.target.closest('.skill-tag');
-    if (!tag) return;
-    if (tag.dataset.skill === '其他(一般)' || tag.dataset.skill === '其他(技能)') return;
-    tag.classList.toggle('selected');
+// ─────────────────────────────────
+//  編輯技能 Modal：純 JS 統一管理（無任何 inline onclick）
+//  唯一事件來源：在 #skill-edit-modal-overlay 上以事件委派處理所有點擊
+// ─────────────────────────────────
+(function initSkillEditModal() {
+  const overlay = document.getElementById('skill-edit-modal-overlay');
+  if (!overlay) return;
+
+  // 1. Overlay 背景點擊關閉
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) window.closeSkillEditModal();
   });
-});
-// 編輯技能 Modal 背景點擊關閉
-document.getElementById('skill-edit-modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('skill-edit-modal-overlay')) window.closeSkillEditModal();
-});
+
+  // 2. 統一標籤點擊委派（覆蓋 #edit-general-tags 和 #edit-skill-modal-tags）
+  ['edit-general-tags', 'edit-skill-modal-tags'].forEach(containerId => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.addEventListener('click', e => {
+      const tag = e.target.closest('.skill-tag');
+      if (!tag) return;
+
+      const otherWrapId = tag.dataset.otherWrap;
+      if (otherWrapId) {
+        // 「其他」標籤：切換輸入框展開/收合
+        const wrap = document.getElementById(otherWrapId);
+        if (!wrap) return;
+        const isOpen = wrap.classList.contains('open');
+        wrap.classList.toggle('open', !isOpen);
+        tag.classList.toggle('selected', !isOpen);
+        if (isOpen) {
+          // 收合時清空輸入框
+          const inp = wrap.querySelector('.skill-other-input');
+          if (inp) inp.value = '';
+        } else {
+          // 展開後自動 focus
+          const inp = wrap.querySelector('.skill-other-input');
+          if (inp) setTimeout(() => inp.focus(), 50);
+        }
+      } else {
+        // 普通技能標籤：toggle selected
+        tag.classList.toggle('selected');
+      }
+    });
+  });
+
+  // 3. 取消 / 儲存按鈕
+  document.getElementById('skill-edit-cancel-btn')?.addEventListener('click', () => window.closeSkillEditModal());
+  document.getElementById('skill-edit-save-btn')?.addEventListener('click',   () => window.saveSkillEdit());
+})();
 // 註冊頁技能標籤（排除「其他」）
 ['reg-general-tags','reg-skill-tags'].forEach(id => {
   const el = document.getElementById(id);
