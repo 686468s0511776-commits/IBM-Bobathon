@@ -966,14 +966,55 @@
   .filter-btn.active { background: #5B8DB8; border-color: #5B8DB8; color: #fff; }
 
   /* ══════════════════════════════
-     聊天室狀態標籤列
+     聊天室案件狀態流程列 Pipeline
   ══════════════════════════════ */
   .chat-status-bar {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 24px; background: #f0f9ff;
-    border-bottom: 1.5px solid #bae6fd;
+    display: flex; align-items: center; gap: 0;
+    padding: 10px 20px; background: #f8fafc;
+    border-bottom: 1.5px solid #e2e8f0;
     flex-shrink: 0; flex-wrap: wrap;
   }
+  body.dark .chat-status-bar { background: #1a2535; border-bottom-color: #2d3748; }
+
+  /* Pipeline 外層容器 */
+  .chat-pipeline {
+    display: flex; align-items: center; gap: 0; flex: 1; min-width: 0;
+  }
+  /* 每個步驟 */
+  .pipeline-step {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; white-space: nowrap;
+    color: #9ca3af; background: transparent;
+    border: 1.5px solid transparent;
+    transition: all .2s; cursor: default;
+  }
+  .pipeline-step.active {
+    background: #eff6ff; border-color: #93c5fd; color: #1d4ed8;
+  }
+  .pipeline-step.done {
+    background: #f0fdf4; border-color: #86efac; color: #15803d;
+  }
+  body.dark .pipeline-step.active { background: rgba(59,130,246,.12); border-color: #3b82f6; color: #93c5fd; }
+  body.dark .pipeline-step.done  { background: rgba(34,197,94,.1);  border-color: #22c55e;  color: #4ade80; }
+  /* 箭頭連接線 */
+  .pipeline-arrow {
+    width: 28px; text-align: center; font-size: 12px; color: #d1d5db;
+    flex-shrink: 0;
+  }
+  /* Pipeline 右側操作按鈕區 */
+  .pipeline-actions {
+    display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0;
+  }
+  .btn-pipeline-action {
+    padding: 5px 14px; border-radius: 8px;
+    border: 1.5px solid #5B8DB8; background: #5B8DB8;
+    color: #fff; font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-pipeline-action:hover { background: #4a7aa3; border-color: #4a7aa3; }
+  .btn-pipeline-action:disabled { background: #9ca3af; border-color: #9ca3af; cursor: not-allowed; opacity: .6; }
+  /* 保留舊的 chat-status-btn / label（向下相容） */
   .chat-status-label { font-size: 12px; color: #6b7280; font-weight: 600; }
   .chat-status-btn {
     padding: 4px 14px; border-radius: 20px;
@@ -1490,28 +1531,28 @@
   /* ══════════════════════════════
      懸浮深色/淺色模式切換按鈕
   ══════════════════════════════ */
+  /* 深淺模式切換按鈕（navbar 登出左邊）— 純黑色線條風格 */
   #theme-toggle-btn {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: none;
-    background: var(--bg-surface);
-    box-shadow: 0 4px 20px var(--shadow), 0 0 0 1.5px var(--border);
-    font-size: 22px;
-    cursor: pointer;
-    display: flex;
+    background: #fff;
+    border: 1.5px solid #1a1a1a;
+    color: #1a1a1a;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform .2s, box-shadow .2s, background .25s;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+    flex-shrink: 0;
   }
-  #theme-toggle-btn:hover {
-    transform: scale(1.12);
-    box-shadow: 0 8px 28px rgba(0,0,0,.2), 0 0 0 2px var(--border);
+  #theme-toggle-btn:hover { background: #f0f0f0; }
+  body.dark #theme-toggle-btn {
+    background: #111;
+    border-color: #e5e7eb;
+    color: #e5e7eb;
   }
+  body.dark #theme-toggle-btn:hover { background: #222; }
 
   /* ══════════════════════════════
      聊天室任務資訊列（任務標題 + 點數）
@@ -1562,6 +1603,151 @@
     cursor: pointer; transition: opacity .15s;
   }
   .btn-task-review:hover { opacity: .85; }
+
+  /* ══════════════════════════════
+     點數協商相關 UI
+  ══════════════════════════════ */
+  /* 任務資訊列：設定點數按鈕 */
+  .btn-set-points {
+    padding: 4px 12px; border-radius: 20px; border: none;
+    background: #8b5cf6; color: #fff; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: opacity .15s; white-space: nowrap;
+  }
+  .btn-set-points:hover { opacity: .85; }
+
+  /* 報價確認按鈕組 */
+  .btn-agree-points {
+    padding: 4px 12px; border-radius: 20px; border: none;
+    background: #22c55e; color: #fff; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: opacity .15s; white-space: nowrap;
+  }
+  .btn-agree-points:hover { opacity: .85; }
+  .btn-renegotiate {
+    padding: 4px 12px; border-radius: 20px;
+    border: 1.5px solid #6b7280; background: transparent;
+    color: #6b7280; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .btn-renegotiate:hover { border-color: #374151; color: #374151; }
+  body.dark .btn-renegotiate { color: #9ca3af; border-color: #4b5563; }
+  body.dark .btn-renegotiate:hover { color: #e5e7eb; border-color: #9ca3af; }
+
+  /* 點數協商 Modal */
+  .points-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 4000;
+    align-items: center; justify-content: center;
+  }
+  .points-modal-overlay.open { display: flex; }
+  .points-modal-box {
+    background: var(--bg-surface); color: var(--text-primary);
+    border-radius: 16px; padding: 28px 24px;
+    width: min(340px, 92vw);
+    box-shadow: 0 12px 48px rgba(0,0,0,.25);
+  }
+  .points-modal-box h4 {
+    font-size: 16px; font-weight: 800; margin-bottom: 6px;
+  }
+  .points-modal-box p {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 16px;
+  }
+  .points-modal-input {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 16px; font-weight: 700; text-align: center;
+    background: var(--bg-input); color: var(--text-primary);
+    margin-bottom: 14px; outline: none;
+  }
+  .points-modal-input:focus { border-color: #8b5cf6; }
+  .points-modal-btn-row { display: flex; gap: 10px; }
+  .points-modal-btn-row button { flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; }
+  .btn-pm-cancel { background: var(--bg-surface2); color: var(--text-muted); }
+  .btn-pm-submit { background: #8b5cf6; color: #fff; }
+  .btn-pm-submit:hover { opacity: .88; }
+
+  /* 聊天室系統報價卡片 */
+  .bubble-quote-card {
+    background: linear-gradient(135deg, #f0edff, #ede9fe);
+    border: 1.5px solid #c4b5fd;
+    border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #4c1d95;
+    max-width: 80%;
+  }
+  body.dark .bubble-quote-card {
+    background: linear-gradient(135deg, #2d1f4e, #3b2a6e);
+    border-color: #7c3aed; color: #ddd6fe;
+  }
+  .bubble-quote-card .quote-amount {
+    font-size: 22px; font-weight: 800; color: #7c3aed;
+    margin: 6px 0 4px;
+  }
+  body.dark .bubble-quote-card .quote-amount { color: #c4b5fd; }
+  .bubble-quote-card .quote-note {
+    font-size: 11px; color: #6d28d9; margin-top: 4px;
+  }
+  body.dark .bubble-quote-card .quote-note { color: #a78bfa; }
+
+  /* ══════════════════════════════
+     Portfolio & Rating（個人頁）
+  ══════════════════════════════ */
+  .portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .portfolio-item {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: var(--bg-surface2);
+  }
+  .portfolio-item img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+    transition: transform .2s;
+  }
+  .portfolio-item:hover img { transform: scale(1.04); }
+  .portfolio-item .del-btn {
+    position: absolute; top: 4px; right: 4px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0,0,0,.55); color: #fff;
+    border: none; font-size: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .15s;
+  }
+  .portfolio-item:hover .del-btn { opacity: 1; }
+  .portfolio-add-btn {
+    aspect-ratio: 1; border-radius: 10px;
+    border: 2px dashed var(--border); background: var(--bg-surface2);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 6px;
+    cursor: pointer; transition: border-color .2s, background .2s;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .portfolio-add-btn:hover { border-color: #5B8DB8; background: #EDF4FB; color: #5B8DB8; }
+  .portfolio-add-btn svg { opacity: .5; }
+  .portfolio-add-btn:hover svg { opacity: 1; }
+
+  /* 評價列表 */
+  .review-list-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .review-list-item:last-child { border-bottom: none; }
+  .review-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #EDF4FB; display: flex; align-items: center;
+    justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .review-stars { color: #f59e0b; font-size: 13px; margin-bottom: 3px; }
+  .review-comment { font-size: 13px; color: var(--text-primary); line-height: 1.5; }
+  .review-from { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  body.dark .portfolio-add-btn:hover { background: rgba(91,141,184,.15); }
 
 </style>
 
@@ -1707,18 +1893,11 @@
 </head>
 <body>
 
-<!-- 深色/淺色模式切換按鈕（右下角懸浮） -->
-<button id="theme-toggle-btn" title="切換深色/淺色模式" onclick="window.toggleTheme()">☀️</button>
-
 <!-- 主題初始化（立即執行，防閃爍） -->
 <script>
 (function(){
   var t = localStorage.getItem('theme');
   if (t === 'dark') document.body.classList.add('dark');
-  document.addEventListener('DOMContentLoaded', function(){
-    var btn = document.getElementById('theme-toggle-btn');
-    if (btn) btn.textContent = (t === 'dark') ? '🌙' : '☀️';
-  });
 })();
 </script>
 
@@ -2166,6 +2345,7 @@
           <div class="profile-tabs">
             <button class="profile-tab active" onclick="window.switchProfileTab('invites')">📋 互助紀錄</button>
             <button class="profile-tab" onclick="window.switchProfileTab('transactions')">⭐ 點數記錄</button>
+            <button class="profile-tab" onclick="window.switchProfileTab('portfolio')">📸 作品集</button>
           </div>
           <!-- 互助紀錄 Panel -->
           <div id="profile-tab-invites">
@@ -2188,6 +2368,26 @@
           <div id="profile-tab-transactions" style="display:none">
             <div id="tx-list">
               <div class="empty-state"><span class="empty-icon">⭐</span><p>尚無點數記錄</p></div>
+            </div>
+          </div>
+          <!-- 作品集 + 評價 Panel -->
+          <div id="profile-tab-portfolio" style="display:none">
+            <!-- 隱藏的圖片上傳 input -->
+            <input type="file" id="portfolio-file-input" accept="image/*" style="display:none"
+              onchange="window.handlePortfolioFileSelect(this)" />
+            <h4 style="margin:14px 0 6px;font-size:14px;font-weight:700">📸 作品集照片</h4>
+            <div class="portfolio-grid" id="portfolio-grid">
+              <!-- 新增按鈕（常駐顯示） -->
+              <button class="portfolio-add-btn" onclick="document.getElementById('portfolio-file-input').click()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                新增照片
+              </button>
+            </div>
+            <h4 style="margin:20px 0 8px;font-size:14px;font-weight:700">⭐ 獲得的評價</h4>
+            <div id="review-list-display">
+              <div class="empty-state"><span class="empty-icon">⭐</span><p>尚無評價</p></div>
             </div>
           </div>
         </div>
@@ -2279,11 +2479,18 @@
           <button class="btn-show-phone" id="cr-show-phone-btn" onclick="window.togglePhoneReveal()" title="顯示對方聯絡電話">📞 顯示電話</button>
           <div class="phone-reveal-box" id="cr-phone-reveal"></div>
         </div>
-        <!-- 對話狀態列（討論中 / 已約定） -->
+        <!-- 對話狀態流程列（Pipeline） -->
         <div class="chat-status-bar" id="cr-status-bar">
-          <span class="chat-status-label">對話狀態：</span>
-          <button class="chat-status-btn active" data-status="discussing" onclick="window.setChatStatus('discussing')">💬 討論中</button>
-          <button class="chat-status-btn" data-status="scheduled" onclick="window.setChatStatus('scheduled')">📅 已約定</button>
+          <div class="chat-pipeline" id="cr-pipeline">
+            <div class="pipeline-step active" id="pipe-step-discussing">💬 討論中</div>
+            <div class="pipeline-arrow">›</div>
+            <div class="pipeline-step" id="pipe-step-scheduled">📅 已約定</div>
+            <div class="pipeline-arrow">›</div>
+            <div class="pipeline-step" id="pipe-step-completed">✅ 完成確認</div>
+          </div>
+          <div class="pipeline-actions" id="cr-pipeline-actions">
+            <!-- 按鈕由 _updateChatPipeline() 動態更新 -->
+          </div>
         </div>
         <!-- 任務資訊列（任務標題 + 點數，常駐顯示） -->
         <div class="chat-task-info-bar" id="cr-task-info-bar">
@@ -2291,6 +2498,11 @@
           <span class="chat-task-title" id="cr-task-title">任務</span>
           <span class="chat-task-pts" id="cr-task-pts" style="display:none"></span>
           <span class="chat-task-done-badge" id="cr-task-done-badge" style="display:none">🎉 任務已完成</span>
+          <!-- 點數協商按鈕：Helper 視角 - 設定點數 -->
+          <button class="btn-set-points" id="cr-set-points-btn" style="display:none" onclick="window.openSetPointsModal()">💰 設定服務點數</button>
+          <!-- 點數協商按鈕：Requester 視角 - 同意或重新協商 -->
+          <button class="btn-agree-points" id="cr-agree-points-btn" style="display:none" onclick="window.agreeQuotedPoints()">✅ 同意此點數</button>
+          <button class="btn-renegotiate" id="cr-renegotiate-btn" style="display:none" onclick="window.renegotiatePoints()">🔄 重新協商</button>
           <button class="btn-task-review" id="cr-task-review-btn" style="display:none" onclick="window.openChatReview()">⭐ 評價對方</button>
         </div>
         <!-- 任務行動列（確認完成 / 取消任務） -->
@@ -2310,8 +2522,7 @@
             onchange="window.handleFileSelect(this)" />
           <button class="btn-attach" title="傳送圖片" onclick="document.getElementById('cr-file-input').click()">📎</button>
           <input class="chat-room-input" id="cr-input" type="text"
-            placeholder="輸入訊息…"
-            onkeydown="if(event.key==='Enter') window.sendRoomMsg()" />
+            placeholder="輸入訊息…" />
           <button class="chat-room-send" id="cr-send-btn" onclick="window.sendRoomMsg()">送出</button>
         </div>
       </div>
@@ -2370,7 +2581,7 @@
     </div>
     <div class="chat-messages" id="chat-messages"></div>
     <div class="chat-input-row">
-      <input class="chat-input" id="chat-input" type="text" placeholder="輸入訊息…" onkeydown="if(event.key==='Enter')window.sendChatMsg()" />
+      <input class="chat-input" id="chat-input" type="text" placeholder="輸入訊息…" />
       <button class="btn-chat-send" onclick="window.sendChatMsg()">送出</button>
     </div>
   </div>
@@ -2552,7 +2763,7 @@
     <div class="modal-detail" id="complete-modal-detail"></div>
     <div class="btn-row">
       <button class="btn-cancel" onclick="window.closeCompleteModal()">取消</button>
-      <button class="btn-send" onclick="window.confirmComplete()">確認完成，轉移點數 ⭐</button>
+      <button class="btn-send" id="btn-confirm-complete" onclick="window.confirmComplete()">確認完成，轉移點數 ⭐</button>
     </div>
   </div>
 </div>
@@ -2571,6 +2782,22 @@
     <button class="login-prompt-btn" onclick="window.closeLoginPrompt(true)">立即登入 / 註冊 →</button>
     <br>
     <button class="login-prompt-cancel" onclick="window.closeLoginPrompt(false)">繼續瀏覽（訪客模式）</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     點數協商 Modal（Helper 設定報價）
+════════════════════════════════ -->
+<div class="points-modal-overlay" id="points-modal-overlay">
+  <div class="points-modal-box">
+    <h4>💰 設定服務點數</h4>
+    <p>請輸入此次服務所需的點數（求助者需支付此點數；平台收取 10%，你實際獲得 90%）</p>
+    <input class="points-modal-input" id="points-modal-input" type="number" min="1" max="9999" placeholder="例如：150" />
+    <div id="points-modal-preview" style="font-size:12px;color:#6b7280;margin-bottom:14px;text-align:center"></div>
+    <div class="points-modal-btn-row">
+      <button class="btn-pm-cancel" onclick="window.closeSetPointsModal()">取消</button>
+      <button class="btn-pm-submit" onclick="window.submitSetPoints()">送出報價</button>
+    </div>
   </div>
 </div>
 
@@ -3176,8 +3403,15 @@ function enterApp() {
   document.getElementById('main-nav').style.display = 'flex';
   const hamburger = document.getElementById('hamburger-btn');
   if (hamburger) hamburger.style.display = 'inline-flex';
+  const _isDark = document.body.classList.contains('dark');
   document.getElementById('navbar-user').innerHTML =
-    `<button onclick="window.doLogout()" title="登出" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer"><svg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/><polyline points='16 17 21 12 16 7'/><line x1='21' y1='12' x2='9' y2='12'/></svg></button>`;
+    `<button id="theme-toggle-btn" onclick="window.toggleTheme()" title="切換深色/淺色模式">
+       ${_isDark
+         ? `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='#e5e7eb' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>`
+         : `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='#1a1a1a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='5'/><line x1='12' y1='1' x2='12' y2='3'/><line x1='12' y1='21' x2='12' y2='23'/><line x1='4.22' y1='4.22' x2='5.64' y2='5.64'/><line x1='18.36' y1='18.36' x2='19.78' y2='19.78'/><line x1='1' y1='12' x2='3' y2='12'/><line x1='21' y1='12' x2='23' y2='12'/><line x1='4.22' y1='19.78' x2='5.64' y2='18.36'/><line x1='18.36' y1='5.64' x2='19.78' y2='4.22'/></svg>`
+       }
+     </button>
+     <button onclick="window.doLogout()" title="登出" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer"><svg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/><polyline points='16 17 21 12 16 7'/><line x1='21' y1='12' x2='9' y2='12'/></svg></button>`;
   // 確保 users/{uid} 有 points 欄位（舊帳號補初始點數）
   if (currentUser && currentUserData && currentUserData.points === undefined) {
     setDoc(doc(db, 'users', currentUser.uid), { points: REGISTER_BONUS }, { merge: true })
@@ -3492,8 +3726,9 @@ document.querySelectorAll('.skill-tags').forEach(container => {
 //  頁面 / Tab 切換
 // ─────────────────────────────────
 window.switchMainPage = (name) => {
-  // 訪客守衛：這些頁面需要登入
-  const guestBlocked = { post:'post', profile:'profile', shop:'shop', chatroom:'chat' };
+  // 訪客守衛：僅 post（發布）和 chatroom（聊天室）強制擋；
+  // profile / shop 允許進入但顯示引導 banner（不阻斷瀏覽體驗）
+  const guestBlocked = { post:'post', chatroom:'chat' };
   if (_isGuest && guestBlocked[name]) {
     window.showLoginPrompt(guestBlocked[name]);
     return;
@@ -3567,22 +3802,53 @@ function updateSidebarUser() {
     : '<span style="font-size:11px;color:#9ca3af">尚未設定技能</span>';
 }
 
+// ── 訪客引導 Banner HTML（兌換中心 / 個人頁頂部） ──
+function _guestBannerHTML(context) {
+  const msgs = {
+    shop:    { icon:'⭐', title:'登入後即可兌換好禮', body:'累積互助點數，兌換超值商品！' },
+    profile: { icon:'👤', title:'登入後查看完整資料', body:'登入後可查看互助紀錄、點數與評價。' },
+  };
+  const m = msgs[context] || msgs.shop;
+  return `<div style="background:linear-gradient(135deg,#5B8DB8,#4a7aa3);border-radius:16px;padding:20px 24px;margin-bottom:24px;text-align:center;color:#fff">
+    <div style="font-size:32px;margin-bottom:8px">${m.icon}</div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:6px">${m.title}</div>
+    <div style="font-size:13px;opacity:.85;margin-bottom:16px">${m.body}</div>
+    <button onclick="window.showLoginPrompt('general')" style="background:#fff;color:#5B8DB8;border:none;border-radius:20px;padding:9px 28px;font-size:14px;font-weight:800;cursor:pointer">🔐 立即登入 / 註冊</button>
+  </div>`;
+}
+
 // ── 兌換中心 ──
 function renderShop() {
   updateSidebarUser();
   const grid = document.getElementById('shop-grid');
   if (!grid) return;
+
+  // 訪客模式：顯示引導 banner + 可預覽商品（按鈕 disabled）
+  const shopContainer = grid.parentElement;
+  const existingBanner = shopContainer?.querySelector('.guest-shop-banner');
+  if (_isGuest) {
+    if (!existingBanner) {
+      const banner = document.createElement('div');
+      banner.className = 'guest-shop-banner';
+      banner.innerHTML = _guestBannerHTML('shop');
+      shopContainer?.insertBefore(banner, grid);
+    }
+  } else {
+    existingBanner?.remove();
+  }
+
   const userPts = currentUserData?.points ?? 0;
   grid.innerHTML = SHOP_ITEMS.map(item => {
-    const canRedeem = userPts >= item.price;
+    const canRedeem = !_isGuest && userPts >= item.price;
+    const btnLabel  = _isGuest ? '登入後兌換' : (canRedeem ? '立即兌換' : '點數不足');
     return `<div class="shop-card">
       <div class="shop-card-icon">${item.icon}</div>
       <div class="shop-card-name">${item.name}</div>
       <div class="shop-card-desc">${item.desc}</div>
       <div class="shop-card-price">⭐ ${item.price} 點</div>
-      <button class="btn-redeem" ${canRedeem?'':'disabled'}
-        onclick="window.redeemItem('${item.id}')">
-        ${canRedeem ? '立即兌換' : '點數不足'}
+      <button class="btn-redeem" ${(!_isGuest && canRedeem)?'':'disabled'}
+        onclick="${_isGuest ? `window.showLoginPrompt('shop')` : `window.redeemItem('${item.id}')`}">
+        ${btnLabel}
       </button>
     </div>`;
   }).join('');
@@ -3691,6 +3957,24 @@ window.confirmComplete = async () => {
   const { inviteId, toUid, toName, points } = activeCompleteData;
   if (!points || points <= 0) return showToast('此任務無點數可轉移');
 
+  // ── 按鈕防鎖死：立刻 disabled 防重複點擊 ──
+  const confirmBtn = document.getElementById('btn-confirm-complete');
+  if (confirmBtn) {
+    if (confirmBtn.disabled) return;  // 已在處理中
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '⏳ 處理中…';
+  }
+
+  // ── 冪等性檢查：確認 invite 尚未結算 ──
+  try {
+    const invSnap = await getDoc(doc(db, 'invites', inviteId));
+    if (invSnap.exists() && invSnap.data()?.status === '已完成') {
+      showToast('此任務已結算，無法重複操作');
+      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '確認完成，轉移點數 ⭐'; }
+      return;
+    }
+  } catch(e) { /* 讀取失敗繼續執行 */ }
+
   // 計算 10% 手續費
   const fee = Math.floor(points * 0.1);
   const providerGain = points - fee;   // 提供者實際獲得
@@ -3756,16 +4040,140 @@ window.confirmComplete = async () => {
   } catch(e) {
     window.closeCompleteModal();
     showToast(e.message === '點數不足' ? '需求者點數不足，請提醒對方購買點數' : '操作失敗，請稍後再試');
+  } finally {
+    const btn = document.getElementById('btn-confirm-complete');
+    if (btn) { btn.disabled = false; btn.textContent = '確認完成，轉移點數 ⭐'; }
   }
 };
 
 // Profile Tab 切換
 window.switchProfileTab = (tab) => {
-  document.querySelectorAll('.profile-tab').forEach((t,i) =>
-    t.classList.toggle('active', (i===0&&tab==='invites')||(i===1&&tab==='transactions')));
+  const tabs = ['invites', 'transactions', 'portfolio'];
+  document.querySelectorAll('.profile-tab').forEach((t, i) =>
+    t.classList.toggle('active', tabs[i] === tab));
   document.getElementById('profile-tab-invites').style.display      = tab==='invites'      ? 'block' : 'none';
   document.getElementById('profile-tab-transactions').style.display = tab==='transactions' ? 'block' : 'none';
+  document.getElementById('profile-tab-portfolio').style.display    = tab==='portfolio'    ? 'block' : 'none';
   if (tab === 'transactions') renderTransactions();
+  if (tab === 'portfolio')    renderPortfolio();
+};
+
+// ═══════════════════════════════════════
+//  Portfolio（作品集照片）+ 評價列表
+// ═══════════════════════════════════════
+
+// ── 壓縮圖片 Base64（max 600px, 0.75 品質）──
+function _compressImageBase64(file, maxPx = 600, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const w = Math.round(img.width  * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── 讀取並渲染作品集 + 評價 ──
+async function renderPortfolio() {
+  if (!currentUser) return;
+  const grid = document.getElementById('portfolio-grid');
+  const reviewEl = document.getElementById('review-list-display');
+
+  // 先保留「新增」按鈕，其餘清除
+  if (grid) {
+    const addBtn = grid.querySelector('.portfolio-add-btn');
+    grid.innerHTML = '';
+    if (addBtn) grid.appendChild(addBtn);
+  }
+
+  // 載入作品集照片
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'users', currentUser.uid, 'portfolio'), orderBy('createdAt', 'desc'))
+    );
+    if (grid) {
+      snap.docs.forEach(d => {
+        const { url } = d.data();
+        const item = document.createElement('div');
+        item.className = 'portfolio-item';
+        item.innerHTML = `
+          <img src="${url}" loading="lazy" alt="作品集照片" />
+          <button class="del-btn" title="刪除" onclick="window.deletePortfolioPhoto('${d.id}')">✕</button>`;
+        // 確保新增按鈕在最後
+        const addBtn2 = grid.querySelector('.portfolio-add-btn');
+        grid.insertBefore(item, addBtn2 || null);
+      });
+    }
+  } catch(e) { /* 靜默失敗 */ }
+
+  // 載入評價列表
+  try {
+    const rSnap = await getDocs(
+      query(collection(db, 'reviews'), where('toUserId','==',currentUser.uid), orderBy('createdAt','desc'))
+    );
+    if (reviewEl) {
+      if (rSnap.empty) {
+        reviewEl.innerHTML = '<div class="empty-state"><span class="empty-icon">⭐</span><p>尚無評價</p></div>';
+      } else {
+        reviewEl.innerHTML = rSnap.docs.map(d => {
+          const r = d.data();
+          const stars = '★'.repeat(Math.round(r.rating || 0)) + '☆'.repeat(5 - Math.round(r.rating || 0));
+          return `<div class="review-list-item">
+            <div class="review-avatar">${(r.fromName||'？')[0]}</div>
+            <div style="flex:1;min-width:0">
+              <div class="review-stars">${stars}</div>
+              <div class="review-comment">${r.comment || '（無留言）'}</div>
+              <div class="review-from">— ${r.fromName || '匿名'}・${r.createdAt?.toDate?.().toLocaleDateString('zh-TW') || ''}</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+  } catch(e) { /* 靜默失敗 */ }
+}
+
+// ── 使用者選取照片後上傳 ──
+window.handlePortfolioFileSelect = async (input) => {
+  const file = input.files?.[0];
+  if (!file || !currentUser) return;
+  input.value = ''; // reset，允許重複選同一張
+  try {
+    showToast('壓縮上傳中…');
+    const base64 = await _compressImageBase64(file);
+    await addDoc(collection(db, 'users', currentUser.uid, 'portfolio'), {
+      url:       base64,
+      createdAt: serverTimestamp()
+    });
+    await renderPortfolio();
+    showToast('✅ 照片已上傳至作品集');
+  } catch(e) {
+    showToast('上傳失敗：' + e.message);
+  }
+};
+
+// ── 刪除作品集照片 ──
+window.deletePortfolioPhoto = async (docId) => {
+  if (!currentUser) return;
+  if (!confirm('確定要刪除這張照片嗎？')) return;
+  try {
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'portfolio', docId));
+    await renderPortfolio();
+    showToast('照片已刪除');
+  } catch(e) {
+    showToast('刪除失敗：' + e.message);
+  }
 };
 
 // ─────────────────────────────────
@@ -4235,7 +4643,22 @@ function nowTime() {
 }
 
 async function renderProfile() {
-  if (!currentUserData) return;
+  // ── 訪客模式：顯示空白預覽 + 引導 banner ──
+  if (_isGuest || !currentUserData) {
+    const layout = document.querySelector('.profile-layout');
+    if (layout) {
+      layout.innerHTML = `<div style="grid-column:1/-1">${_guestBannerHTML('profile')}</div>`;
+    }
+    return;
+  }
+
+  // 確保 profile-layout 在正式登入後是完整結構（防止訪客後登入畫面殘缺）
+  const layout = document.querySelector('.profile-layout');
+  if (layout && !document.getElementById('profile-avatar')) {
+    location.reload();  // 結構被訪客模式清除 → 重整恢復完整 DOM
+    return;
+  }
+
   const avatarEl = document.getElementById('profile-avatar');
   if (avatarEl) avatarEl.textContent = currentUserData.emoji || '🙂';
   document.getElementById('profile-name').textContent = currentUserData.name;
@@ -4947,10 +5370,8 @@ window.openChatRoom = async (chatId) => {
   // 從 chats 文件讀取 peerContact（若有存）或從 _activeChatContact 取
   _activeChatContact = chat.peerContact || _activeChatContact || '';
 
-  // 重置對話狀態標籤
-  const storedStatus = chat.chatStatus || 'discussing';
-  document.querySelectorAll('.chat-status-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.status === storedStatus));
+  // ── 更新 Pipeline 狀態列 ──
+  _updateChatPipeline(chat);
 
   // ── 更新任務行動列（雙方確認完成 / 取消）──
   _updateChatActionBar(chat);
@@ -5072,6 +5493,18 @@ function renderBubbleContent(m) {
   if (m.recalled) {
     return `<div class="bubble"><span class="bubble-recalled">此訊息已收回</span></div>`;
   }
+  // 報價卡片（點數協商）
+  if (m.type === 'quote') {
+    const pts  = m.quotedPoints || 0;
+    const fee  = m.fee  || Math.floor(pts * 0.1);
+    const gain = m.gain || (pts - fee);
+    return `<div class="bubble-quote-card">
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px">💰 服務報價</div>
+      <div class="quote-amount">${pts} 點</div>
+      <div class="quote-note">提供者獲得：${gain} 點 ／ 平台手續費：${fee} 點</div>
+      <div class="quote-note" style="margin-top:4px;font-weight:600">${m.quoteStatus === 'pending' ? '⏳ 等待求助者確認' : '✅ 已確認'}</div>
+    </div>`;
+  }
   if (m.type === 'image' && m.mediaUrl) {
     return `<div class="bubble-media">
       <img src="${m.mediaUrl}" alt="圖片" loading="lazy"
@@ -5139,13 +5572,22 @@ window.closeImgPreview = () => {
 };
 
 // ─────────────────────────────────
-//  sendRoomMsg：送出純文字訊息
+//  sendRoomMsg：送出純文字訊息（含 IME 防護 + isSending flag）
 // ─────────────────────────────────
+let _isSendingMsg = false;  // 防重複送出 flag
+
 window.sendRoomMsg = async () => {
+  if (_isSendingMsg) return;   // 防重複觸發
   const input = document.getElementById('cr-input');
+  const sendBtn = document.getElementById('cr-send-btn');
   const text  = input.value.trim();
   if (!text || !activeChatId) return;
-  input.value = '';
+
+  // 立刻上鎖 + 禁用輸入
+  _isSendingMsg = true;
+  input.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
+
   const t      = nowTime();
   const chat   = myChats.find(c => c.chatId === activeChatId);
   const peerId = chat?.peerId || otherUid(chat || {});
@@ -5165,10 +5607,40 @@ window.sendRoomMsg = async () => {
       lastTime:      t,
       lastSenderUid: currentUser.uid
     }, { merge: true });
+    input.value = '';   // 送出成功後才清空
   } catch(e) {
     showToast('訊息送出失敗：' + e.message);
+  } finally {
+    // 解鎖
+    _isSendingMsg = false;
+    input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
   }
 };
+
+// ── 聊天室 Enter 鍵監聽（含 IME + preventDefault）──
+;(function _initChatRoomInputKey() {
+  // 等 DOM ready（module script 執行時 DOM 已就緒）
+  const crInput = document.getElementById('cr-input');
+  if (crInput) {
+    crInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();  // 阻止換行與表單重複提交
+        window.sendRoomMsg();
+      }
+    });
+  }
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        window.sendChatMsg();
+      }
+    });
+  }
+})();
 
 // ─────────────────────────────────
 //  handleFileSelect：Base64 Canvas 壓縮後寫 Firestore（無 Storage）
@@ -5457,16 +5929,65 @@ window.togglePhoneReveal = () => {
   }
 };
 
-window.setChatStatus = async (status) => {
-  document.querySelectorAll('.chat-status-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.status === status));
-  if (activeChatId) {
-    try {
-      await setDoc(doc(db, 'chats', activeChatId), { chatStatus: status }, { merge: true });
-    } catch(e) { /* 靜默失敗 */ }
+// ── Pipeline 視覺狀態更新 ──
+function _updateChatPipeline(chat) {
+  const ts         = chat.taskStatus  || 'active';
+  const chatStatus = chat.chatStatus  || 'discussing';
+
+  const stepDiscussing = document.getElementById('pipe-step-discussing');
+  const stepScheduled  = document.getElementById('pipe-step-scheduled');
+  const stepCompleted  = document.getElementById('pipe-step-completed');
+  const actionsEl      = document.getElementById('cr-pipeline-actions');
+  if (!stepDiscussing) return;
+
+  // 重置所有步驟
+  [stepDiscussing, stepScheduled, stepCompleted].forEach(s => {
+    s.classList.remove('active', 'done');
+  });
+
+  if (ts === 'completed' || ts === 'canceled') {
+    // 全部 done
+    stepDiscussing.classList.add('done');
+    stepScheduled.classList.add('done');
+    stepCompleted.classList.add(ts === 'completed' ? 'done' : 'active');
+  } else if (ts === 'pending_completion') {
+    stepDiscussing.classList.add('done');
+    stepScheduled.classList.add('done');
+    stepCompleted.classList.add('active');
+  } else if (chatStatus === 'scheduled') {
+    stepDiscussing.classList.add('done');
+    stepScheduled.classList.add('active');
+  } else {
+    stepDiscussing.classList.add('active');
   }
-  const statusLabels = { discussing:'💬 討論中', scheduled:'📅 已約定' };
-  showToast(`對話狀態已更新：${statusLabels[status] || status}`);
+
+  // 更新右側操作按鈕
+  if (actionsEl) {
+    if (ts !== 'completed' && ts !== 'canceled') {
+      if (chatStatus === 'discussing') {
+        actionsEl.innerHTML = `<button class="btn-pipeline-action" onclick="window.setChatStatus('scheduled')">📅 確認約定</button>`;
+      } else if (chatStatus === 'scheduled') {
+        actionsEl.innerHTML = `<button class="btn-pipeline-action" style="background:#f0fdf4;border-color:#22c55e;color:#15803d" onclick="window.setChatStatus('discussing')">↩ 重新討論</button>`;
+      } else {
+        actionsEl.innerHTML = '';
+      }
+    } else {
+      actionsEl.innerHTML = '';
+    }
+  }
+}
+
+window.setChatStatus = async (status) => {
+  if (!activeChatId) return;
+  try {
+    await setDoc(doc(db, 'chats', activeChatId), { chatStatus: status }, { merge: true });
+    // 更新本地快取
+    const chat = myChats.find(c => c.chatId === activeChatId);
+    if (chat) { chat.chatStatus = status; }
+    _updateChatPipeline(chat || { chatStatus: status });
+    const statusLabels = { discussing:'💬 討論中', scheduled:'📅 已約定' };
+    showToast(`對話狀態已更新：${statusLabels[status] || status}`);
+  } catch(e) { showToast('更新失敗：' + e.message); }
 };
 
 // ═══════════════════════════════════════
@@ -5484,25 +6005,55 @@ function _updateChatActionBar(chat) {
   const confirmedBy = chat.completionConfirmedBy || null;
 
   // ── 更新任務資訊列 ──
-  const infoBar    = document.getElementById('cr-task-info-bar');
-  const titleEl    = document.getElementById('cr-task-title');
-  const ptsEl      = document.getElementById('cr-task-pts');
-  const doneBadge  = document.getElementById('cr-task-done-badge');
-  const reviewBtn  = document.getElementById('cr-task-review-btn');
+  const infoBar       = document.getElementById('cr-task-info-bar');
+  const titleEl       = document.getElementById('cr-task-title');
+  const ptsEl         = document.getElementById('cr-task-pts');
+  const doneBadge     = document.getElementById('cr-task-done-badge');
+  const reviewBtn     = document.getElementById('cr-task-review-btn');
+  const setPointsBtn  = document.getElementById('cr-set-points-btn');
+  const agreeBtn      = document.getElementById('cr-agree-points-btn');
+  const renegotiateBtn= document.getElementById('cr-renegotiate-btn');
 
   if (infoBar && titleEl) {
-    const title  = chat.taskTitle || chat.peerName || '任務';
-    const points = chat.points    || 0;
+    const title         = chat.taskTitle || chat.peerName || '任務';
+    const points        = chat.points    || 0;
+    const quotedPoints  = chat.quotedPoints || 0;
+    const quoteStatus   = chat.quoteStatus  || '';  // 'pending_quote' | 'agreed'
+    const isHelper      = chat.providerUid === currentUser.uid;
+    const isRequester   = chat.requesterUid === currentUser.uid;
+
     titleEl.textContent = title;
     infoBar.classList.add('show');
 
+    // ── 點數顯示（使用協議點數 quotedPoints，若有的話）──
     if (ptsEl) {
-      if (points > 0) {
-        ptsEl.textContent = `⭐ ${points} 點`;
+      const displayPts = points > 0 ? points : quotedPoints;
+      if (displayPts > 0) {
+        ptsEl.textContent = `⭐ ${displayPts} 點`;
         ptsEl.style.display = 'inline';
       } else {
         ptsEl.style.display = 'none';
       }
+    }
+
+    // ── 點數協商按鈕顯示邏輯 ──
+    // Helper（提供者）在尚無點數且非已完成時，顯示「設定點數」
+    if (setPointsBtn) {
+      setPointsBtn.style.display = (
+        isHelper && ts !== 'completed' && ts !== 'canceled' &&
+        quoteStatus !== 'agreed' && points === 0
+      ) ? 'inline' : 'none';
+    }
+    // Requester 在 quoteStatus=pending_quote 時顯示同意/重新協商
+    if (agreeBtn) {
+      agreeBtn.style.display = (
+        isRequester && quoteStatus === 'pending_quote' && ts !== 'completed'
+      ) ? 'inline' : 'none';
+    }
+    if (renegotiateBtn) {
+      renegotiateBtn.style.display = (
+        isRequester && quoteStatus === 'pending_quote' && ts !== 'completed'
+      ) ? 'inline' : 'none';
     }
 
     if (ts === 'completed') {
@@ -5523,6 +6074,7 @@ function _updateChatActionBar(chat) {
   // ── 更新行動列 ──
   if (ts === 'completed' || ts === 'canceled') {
     actionBar.style.display = 'none';
+    _updateChatPipeline(chat);
     return;
   }
 
@@ -5543,6 +6095,9 @@ function _updateChatActionBar(chat) {
     completeBtn.disabled = false;
     completeBtn.textContent = '✅ 已完成';
   }
+
+  // 同步更新 Pipeline 視覺
+  _updateChatPipeline(chat);
 }
 
 // ── 第一方或第二方按「已完成」──
@@ -5551,13 +6106,29 @@ window.requestCompletion = async () => {
   const chat = myChats.find(c => c.chatId === activeChatId);
   if (!chat) return;
 
+  // ── 按鈕防鎖：立刻 disabled 防重複點擊 ──
+  const completeBtn = document.getElementById('btn-task-complete');
+  if (completeBtn) {
+    if (completeBtn.disabled) return;
+    completeBtn.disabled = true;
+    completeBtn.textContent = '⏳ 處理中…';
+  }
+
   const ts           = chat.taskStatus || 'active';
   const confirmedBy  = chat.completionConfirmedBy || null;
   const peerId       = otherUid(chat);
 
+  // ── 冪等性：若 taskStatus 已是 completed/canceled，拒絕重複執行 ──
+  if (ts === 'completed' || ts === 'canceled') {
+    showToast('此任務已結算，無法重複操作');
+    if (completeBtn) { completeBtn.disabled = false; _updateChatActionBar(chat); }
+    return;
+  }
+
   if (ts === 'pending_completion' && confirmedBy !== currentUser.uid) {
     // 第二方確認 → 觸發點數轉帳 + 評價
     await _finalizeCompletion(chat);
+    // _finalizeCompletion 結束後按鈕狀態由 _updateChatActionBar 更新
   } else if (ts === 'active') {
     // 第一方送出確認
     try {
@@ -5583,7 +6154,12 @@ window.requestCompletion = async () => {
       });
     } catch(e) {
       showToast('操作失敗，請稍後再試');
+      // 失敗時解鎖按鈕
+      if (completeBtn) { completeBtn.disabled = false; completeBtn.textContent = '✅ 已完成'; }
     }
+  } else {
+    // 其他狀態解鎖
+    if (completeBtn) { completeBtn.disabled = false; _updateChatActionBar(chat); }
   }
 };
 
@@ -5592,12 +6168,28 @@ async function _finalizeCompletion(chat) {
   const peerId      = otherUid(chat);
   const peerInfo    = await getUserInfo(peerId, chat);
 
+  // ── 冪等性：從 Firestore 讀取最新 taskStatus，防止重複結算 ──
+  try {
+    const latestChatSnap = await getDoc(doc(db, 'chats', activeChatId));
+    const latestStatus   = latestChatSnap.data()?.taskStatus;
+    if (latestStatus === 'completed' || latestStatus === 'canceled') {
+      showToast('此任務已結算，無法重複操作');
+      _updateChatActionBar({ ...chat, taskStatus: latestStatus });
+      return;
+    }
+  } catch(e) { /* 讀取失敗繼續執行 */ }
+
   // 取得 invite 資料（points, inviteId）
   let points = 0;
   let inviteId = chat.inviteId || '';
   if (inviteId) {
     try {
       const invSnap = await getDoc(doc(db, 'invites', inviteId));
+      // ── 冪等性：若 invite 已完成，中斷 ──
+      if (invSnap.exists() && invSnap.data()?.status === '已完成') {
+        showToast('此任務已結算，無法重複操作');
+        return;
+      }
       points = invSnap.data()?.points || 0;
     } catch(e) {}
   }
@@ -5623,6 +6215,12 @@ async function _finalizeCompletion(chat) {
       const treasuryRef = doc(db, 'system', 'treasury');
 
       await runTransaction(db, async (t) => {
+        // ── Transaction 內再次確認 taskStatus（最終防護）──
+        const chatSnap  = await t.get(doc(db, 'chats', activeChatId));
+        const chatStatus = chatSnap.data()?.taskStatus;
+        if (chatStatus === 'completed' || chatStatus === 'canceled') {
+          throw new Error('__already_completed__');
+        }
         const reqSnap   = await t.get(reqRef);
         const curPts    = reqSnap.data()?.points ?? 0;
         // 管理員帳號跳過點數檢查
@@ -5702,6 +6300,7 @@ async function _finalizeCompletion(chat) {
     showToast(points > 0
       ? `✅ 任務完成！${currentUser.uid === providerUid ? `獲得 ${providerGain} 點（扣除 ${fee} 點手續費）` : `已支付 ${points} 點`}`
       : '✅ 任務已完成！感謝本次互助！');
+    // 解鎖行動按鈕（已完成狀態由 _updateChatActionBar 隱藏）
 
     // ── 雙方互評：當事人立即跳出評價 Modal；對方在下次進入聊天室時由 onSnapshot 觸發 ──
     // 先讓我方評「對方」
@@ -5715,7 +6314,15 @@ async function _finalizeCompletion(chat) {
 
     renderProfile();
   } catch(e) {
-    showToast(e.message === '點數不足' ? '點數不足，無法完成結算' : `操作失敗：${e.message}`);
+    if (e.message === '__already_completed__') {
+      showToast('此任務已結算，無法重複操作');
+      _updateChatActionBar({ ...chat, taskStatus: 'completed' });
+    } else {
+      showToast(e.message === '點數不足' ? '點數不足，無法完成結算' : `操作失敗：${e.message}`);
+      // 失敗時解鎖行動按鈕
+      const completeBtn = document.getElementById('btn-task-complete');
+      if (completeBtn) { completeBtn.disabled = false; _updateChatActionBar(chat); }
+    }
   }
 }
 
@@ -5928,7 +6535,7 @@ async function _adminRenderTreasury(body) {
   `;
 }
 
-// ── 分頁 2：抽成明細 ──
+// ── 分頁 2：抽成明細（含前端去重）──
 async function _adminRenderHistory(body) {
   const snap = await getDocs(
     query(collection(db, 'points_history'), orderBy('createdAt', 'desc'))
@@ -5939,7 +6546,18 @@ async function _adminRenderHistory(body) {
     return;
   }
 
-  const rows = snap.docs.map(d => {
+  // ── 前端去重：以 inviteId + requesterUid + 5秒時間窗 為唯一鍵 ──
+  const seenKeys = new Set();
+  const dedupedDocs = snap.docs.filter(d => {
+    const r = d.data();
+    const ts = r.createdAt?.seconds ?? 0;
+    const key = `${r.inviteId || d.id}_${r.requesterUid || ''}_${Math.floor(ts / 5)}`;
+    if (seenKeys.has(key)) return false;
+    seenKeys.add(key);
+    return true;
+  });
+
+  const rows = dedupedDocs.map(d => {
     const r = d.data();
     const ts = r.createdAt?.toDate?.() || new Date();
     const dateStr = ts.toLocaleString('zh-TW', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
@@ -5956,7 +6574,7 @@ async function _adminRenderHistory(body) {
   }).join('');
 
   body.innerHTML = `
-    <p class="admin-section-title">📋 抽成交易明細（最新 ${snap.size} 筆）</p>
+    <p class="admin-section-title">📋 抽成交易明細（共 ${dedupedDocs.length} 筆${dedupedDocs.length < snap.size ? `，已過濾 ${snap.size - dedupedDocs.length} 筆重複` : ''}）</p>
     <table class="admin-table">
       <thead>
         <tr>
@@ -6070,11 +6688,176 @@ document.getElementById('admin-overlay').addEventListener('click', e => {
 window.toggleTheme = () => {
   const isDark = document.body.classList.toggle('dark');
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  // 更新 navbar 內的 SVG 圖示 — 深色：白色月亮；淺色：黑色太陽
   const btn = document.getElementById('theme-toggle-btn');
-  if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+  if (btn) {
+    btn.innerHTML = isDark
+      ? `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='#e5e7eb' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>`
+      : `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='#1a1a1a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='5'/><line x1='12' y1='1' x2='12' y2='3'/><line x1='12' y1='21' x2='12' y2='23'/><line x1='4.22' y1='4.22' x2='5.64' y2='5.64'/><line x1='18.36' y1='18.36' x2='19.78' y2='19.78'/><line x1='1' y1='12' x2='3' y2='12'/><line x1='21' y1='12' x2='23' y2='12'/><line x1='4.22' y1='19.78' x2='5.64' y2='18.36'/><line x1='18.36' y1='5.64' x2='19.78' y2='4.22'/></svg>`;
+  }
 };
 
-// ── 任務資訊列「⭐ 評價對方」按鈕 ──
+// ═══════════════════════════════════════
+//  點數協商功能（Helper 設定報價 → Requester 確認）
+// ═══════════════════════════════════════
+
+// ── 開啟設定點數 Modal（Helper 端）──
+window.openSetPointsModal = () => {
+  const input   = document.getElementById('points-modal-input');
+  const preview = document.getElementById('points-modal-preview');
+  if (input) input.value = '';
+  if (preview) preview.textContent = '';
+  document.getElementById('points-modal-overlay').classList.add('open');
+
+  // 即時預覽手續費
+  if (input) {
+    input.oninput = () => {
+      const p = parseInt(input.value) || 0;
+      if (p > 0) {
+        const fee = Math.floor(p * 0.1);
+        const gain = p - fee;
+        preview.textContent = `平台手續費：${fee} 點 ／ 你實際獲得：${gain} 點`;
+      } else {
+        preview.textContent = '';
+      }
+    };
+  }
+};
+
+// ── 關閉設定點數 Modal ──
+window.closeSetPointsModal = () => {
+  document.getElementById('points-modal-overlay').classList.remove('open');
+};
+
+// ── 送出報價（Helper 端）──
+window.submitSetPoints = async () => {
+  const input = document.getElementById('points-modal-input');
+  const pts   = parseInt(input?.value || '0');
+  if (!pts || pts <= 0) return showToast('請輸入有效點數');
+  if (!activeChatId || !currentUser) return;
+
+  const fee  = Math.floor(pts * 0.1);
+  const gain = pts - fee;
+  const chat = myChats.find(c => c.chatId === activeChatId);
+  const peerId = chat ? otherUid(chat) : '';
+
+  try {
+    // 更新 chat 文件：紀錄 quotedPoints + quoteStatus
+    await setDoc(doc(db, 'chats', activeChatId), {
+      quotedPoints: pts,
+      quoteStatus:  'pending_quote',
+      quotedBy:     currentUser.uid,
+      quotedAt:     serverTimestamp()
+    }, { merge: true });
+
+    // 傳送系統報價卡片訊息
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderId:   currentUser.uid,
+      receiverId: peerId,
+      type:       'quote',
+      quotedPoints: pts,
+      fee,
+      gain,
+      text:       `💰 服務報價：${pts} 點（你獲得 ${gain} 點，平台手續費 ${fee} 點）`,
+      quoteStatus: 'pending',
+      time:       nowTime(),
+      timestamp:  serverTimestamp(),
+      isRead:     false
+    });
+
+    // 更新本地 chat 快取
+    if (chat) {
+      chat.quotedPoints = pts;
+      chat.quoteStatus  = 'pending_quote';
+    }
+    _updateChatActionBar(chat || {});
+    window.closeSetPointsModal();
+    showToast(`✅ 報價 ${pts} 點已送出，等待對方確認`);
+  } catch(e) {
+    showToast('報價送出失敗：' + e.message);
+  }
+};
+
+// ── 求助者同意報價 ──
+window.agreeQuotedPoints = async () => {
+  if (!activeChatId || !currentUser) return;
+  const chat  = myChats.find(c => c.chatId === activeChatId);
+  const pts   = chat?.quotedPoints || 0;
+  if (!pts) return showToast('找不到報價資訊');
+
+  const peerId = chat ? otherUid(chat) : '';
+
+  try {
+    // 鎖定點數，更新 quoteStatus + 任務 points
+    await setDoc(doc(db, 'chats', activeChatId), {
+      quoteStatus: 'agreed',
+      points:      pts,
+      taskStatus:  'active'
+    }, { merge: true });
+
+    // 若有 inviteId，同步更新 invite 的 points
+    if (chat.inviteId) {
+      await setDoc(doc(db, 'invites', chat.inviteId), { points: pts }, { merge: true });
+    }
+
+    // 傳送系統確認訊息
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderId:   currentUser.uid,
+      receiverId: peerId,
+      type:       'system',
+      text:       `✅ 求助者已同意報價 ${pts} 點，任務正式開始！`,
+      time:       nowTime(),
+      timestamp:  serverTimestamp(),
+      isRead:     false
+    });
+
+    // 更新本地快取
+    if (chat) { chat.quoteStatus = 'agreed'; chat.points = pts; }
+    _updateChatActionBar(chat || {});
+    showToast(`✅ 已同意 ${pts} 點報價，任務正式開始！`);
+  } catch(e) {
+    showToast('操作失敗：' + e.message);
+  }
+};
+
+// ── 求助者要求重新協商 ──
+window.renegotiatePoints = async () => {
+  if (!activeChatId || !currentUser) return;
+  const chat   = myChats.find(c => c.chatId === activeChatId);
+  const peerId = chat ? otherUid(chat) : '';
+
+  try {
+    // 清除 quotedPoints，重回 Helper 設定
+    await setDoc(doc(db, 'chats', activeChatId), {
+      quoteStatus:  'renegotiate',
+      quotedPoints: 0
+    }, { merge: true });
+
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderId:   currentUser.uid,
+      receiverId: peerId,
+      type:       'system',
+      text:       '🔄 求助者希望重新協商服務點數，請提供方重新報價。',
+      time:       nowTime(),
+      timestamp:  serverTimestamp(),
+      isRead:     false
+    });
+
+    if (chat) { chat.quoteStatus = 'renegotiate'; chat.quotedPoints = 0; }
+    _updateChatActionBar(chat || {});
+    showToast('已通知對方重新協商點數');
+  } catch(e) {
+    showToast('操作失敗：' + e.message);
+  }
+};
+
+// ── 點數協商 Modal：overlay 背景點擊關閉 ──
+document.getElementById('points-modal-overlay')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('points-modal-overlay')) window.closeSetPointsModal();
+});
+
+// ═══════════════════════════════════════
+//  任務資訊列「⭐ 評價對方」按鈕 ──
 window.openChatReview = () => {
   const btn = document.getElementById('cr-task-review-btn');
   if (!btn) return;
