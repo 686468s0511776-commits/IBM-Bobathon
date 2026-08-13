@@ -2631,45 +2631,49 @@ function _startInviteListener() {
 
   _inviteListenerUnsub = onSnapshot(qInvite, snap => {
     console.log('收到即時邀請快照，數量:', snap.size);
-    const ids = snap.docs.map(d => d.id);
 
-    if (_knownInviteIds === null) {
-      // 第一次載入：記錄現有 ID，不彈通知
-      _knownInviteIds = new Set(ids);
-      return;
+    // ── 每次快照都全量同步 recvInvites（確保即時、不重複）──
+    const freshInvites = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id:        d.id,
+        fromUid:   data.fromUid,
+        fromName:  data.fromName  || '（未知）',
+        fromEmoji: data.fromEmoji || '🙂',
+        fromMeta:  data.fromMeta  || '',
+        contact:   data.contact   || '',
+        time:      data.time      || '',
+        msg:       data.msg       || '',
+        status:    data.status    || '等待回覆',
+      };
+    });
+
+    // 找出真正新增的邀請（比對舊快取 ID）
+    const newDocs = (_knownInviteIds !== null)
+      ? snap.docs.filter(d => !_knownInviteIds.has(d.id))
+      : [];
+
+    // 更新全量快取（覆寫，確保正確）
+    const existingOther = recvInvites.filter(r => !snap.docs.find(d => d.id === r.id));
+    recvInvites = [...existingOther, ...freshInvites];
+
+    // 記錄本次快照的所有 ID
+    _knownInviteIds = new Set(snap.docs.map(d => d.id));
+
+    // 更新 badge
+    const badge = document.getElementById('recv-badge');
+    if (badge) {
+      const cnt = recvInvites.filter(r =>
+        r.status === '等待回覆' || r.status === 'pending' || r.status === '進行中'
+      ).length;
+      badge.textContent = cnt ? `(${cnt})` : '';
     }
 
-    // 找出新增的邀請
-    const newDocs = snap.docs.filter(d => !_knownInviteIds.has(d.id));
+    // 只對真正新增的邀請彈通知
     newDocs.forEach(d => {
       const data = d.data();
       console.log('收到新邀請：', data);
-      _knownInviteIds.add(d.id);
-
-      // 更新本地快取
-      if (!recvInvites.find(r => r.id === d.id)) {
-        recvInvites.push({
-          id:        d.id,
-          fromUid:   data.fromUid,
-          fromName:  data.fromName,
-          fromEmoji: data.fromEmoji || '🙂',
-          fromMeta:  data.fromMeta  || '',
-          contact:   data.contact   || '',
-          time:      data.time,
-          msg:       data.msg,
-          status:    data.status || '等待回覆',
-        });
-      }
-
-      // 更新收到邀請 badge
-      const badge = document.getElementById('recv-badge');
-      if (badge) {
-        const cnt = recvInvites.filter(r => r.status === '等待回覆').length;
-        badge.textContent = cnt ? `(${cnt})` : '';
-      }
-
-      // 彈出通知提示
-      showToast(`📥 收到來自「${data.fromName}」的新邀請！請至「我的 → 收到的邀請」查看。`);
+      showToast(`📥 收到來自「${data.fromName || '（未知）'}」的新邀請！請至「我的 → 收到的邀請」查看。`);
     });
   }, err => {
     console.error('邀請監聽失敗:', err.message);
@@ -2740,10 +2744,17 @@ window.doLogout = () => {
 // ─────────────────────────────────
 //  技能標籤互動（註冊頁）
 // ─────────────────────────────────
+// 全域技能標籤點擊：只作用在「非編輯 Modal」內的 .skill-tags
+// 編輯 Modal 內部有獨立的精確事件委派（下方 ~4352），避免雙重觸發互相抵消
 document.querySelectorAll('.skill-tags').forEach(container => {
+  // 跳過編輯技能 Modal 內部的容器（由下方專屬委派處理）
+  if (container.closest('#skill-edit-modal-overlay')) return;
   container.addEventListener('click', e => {
     const tag = e.target.closest('.skill-tag');
-    if (tag) tag.classList.toggle('selected');
+    if (!tag) return;
+    // 排除「其他」—由 onclick 處理，不在此 toggle
+    if (tag.dataset.skill === '其他(一般)' || tag.dataset.skill === '其他(技能)') return;
+    tag.classList.toggle('selected');
   });
 });
 
@@ -3351,20 +3362,25 @@ window.sendInvite = async () => {
   }
   try {
     const ref = await addDoc(collection(db,'invites'), {
+      // 新格式欄位（符合需求描述的 schema）
+      senderId:     currentUser.uid,
+      senderName:   currentUserData.name,
+      receiverId:   toUid,
+      taskId:       type === 'need' ? (d.id || null) : null,
+      // 向下相容的舊欄位
       fromUid:      currentUser.uid,
       fromName:     currentUserData.name,
       fromEmoji:    currentUserData.emoji || '🙂',
       fromMeta:     `${currentUserData.age} 歲・${currentUserData.gender}`,
       contact:      currentUserData.email || '',
       toName, toUid,
-      receiverId:   toUid,    // 同時存 receiverId 供即時監聽 query 使用
       requesterUid, requesterName,
       providerUid,  providerName,
       needId:       type === 'need' ? (d.id || null) : null,
       type,
       points:       pts,
       msg, time,
-      status: '進行中',
+      status: 'pending',
       createdAt: serverTimestamp()
     });
     console.log('✅ 邀請寫入成功 id:', ref.id, '| toUid:', toUid, '| receiverId:', toUid, '| pts:', pts);
@@ -3478,7 +3494,7 @@ async function renderProfile() {
     const merged = firestoreSent.length ? firestoreSent : sentInvites;
     sl.innerHTML = merged.length
       ? merged.map(h => {
-          const canComplete = h.type === 'need' && h.status === '進行中';
+          const canComplete = h.type === 'need' && (h.status === '進行中' || h.status === 'pending');
           const completeData = JSON.stringify({ inviteId: h.id, toUid: h.toUid, toName: h.toName, points: h.points || 0 }).replace(/"/g,'&quot;');
           return `<div class="history-item">
             <div class="h-name">對象：${h.toName}</div>
@@ -3508,29 +3524,42 @@ async function renderProfile() {
   const rl = document.getElementById('recv-list');
   const badge = document.getElementById('recv-badge');
 
-  // 從 Firestore 讀取別人送給我的邀請
+  // 從 Firestore 讀取別人送給我的邀請（同時查 toUid 和 receiverId 兩個欄位以相容新舊資料）
   try {
     console.log('🔍 查詢收到的邀請，我的 uid:', currentUser.uid);
-    const qRecv = query(
+    // 查 receiverId（新格式）
+    const qByReceiverId = query(
+      collection(db, 'invites'),
+      where('receiverId', '==', currentUser.uid)
+    );
+    // 查 toUid（舊格式相容）
+    const qByToUid = query(
       collection(db, 'invites'),
       where('toUid', '==', currentUser.uid)
     );
-    const recvSnap = await getDocs(qRecv);
-    console.log('📥 Firestore 收到邀請數量:', recvSnap.size);
-    recvSnap.docs.forEach(d => console.log('  邀請:', d.id, d.data()));
-    if (!recvSnap.empty) {
-      recvInvites = recvSnap.docs.map(d => {
+    const [snapR, snapT] = await Promise.all([getDocs(qByReceiverId), getDocs(qByToUid)]);
+    console.log('📥 Firestore receiverId 邀請數:', snapR.size, '| toUid 邀請數:', snapT.size);
+
+    // 合併去重（以 doc.id 去重）
+    const allDocs = [...snapR.docs];
+    const seenIds = new Set(allDocs.map(d => d.id));
+    snapT.docs.forEach(d => { if (!seenIds.has(d.id)) { allDocs.push(d); seenIds.add(d.id); } });
+
+    allDocs.forEach(d => console.log('  邀請:', d.id, d.data()));
+
+    if (allDocs.length) {
+      recvInvites = allDocs.map(d => {
         const data = d.data();
         return {
           id:        d.id,
-          fromUid:   data.fromUid,        // ← 必要：用於產生正確 chatId
-          fromName:  data.fromName,
+          fromUid:   data.fromUid,
+          fromName:  data.fromName  || '（未知）',
           fromEmoji: data.fromEmoji || '🙂',
           fromMeta:  data.fromMeta  || '',
           contact:   data.contact   || '（對方尚未填寫聯絡方式）',
-          time:      data.time,
-          msg:       data.msg,
-          status:    data.status || '等待回覆',
+          time:      data.time      || '',
+          msg:       data.msg       || '',
+          status:    data.status    || '等待回覆',
         };
       });
     }
@@ -3538,16 +3567,16 @@ async function renderProfile() {
     console.error('❌ 讀取收到邀請失敗:', e.message);
   }
 
-  const pending = recvInvites.filter(r => r.status === '等待回覆');
+  const pending = recvInvites.filter(r => r.status === '等待回覆' || r.status === 'pending' || r.status === '進行中');
   badge.textContent = pending.length ? `(${pending.length})` : '';
   rl.innerHTML = pending.length
     ? pending.map(h => `<div class="history-item">
-        <div class="h-name">來自：${h.fromName}</div>
-        <div class="h-time">⏰ 希望時間：${h.time}</div>
-        <div class="h-msg">${h.msg}</div>
+        <div class="h-name">來自：${h.fromName} <small style="color:#9ca3af;font-weight:400">${h.fromMeta}</small></div>
+        <div class="h-time">⏰ 希望時間：${h.time || '未指定'}</div>
+        <div class="h-msg">${h.msg || '（無說明）'}</div>
         <div>
           <button class="btn-accept" onclick="window.acceptInvite('${h.id}', this)">✅ 接受</button>
-          <button class="btn-reject" onclick="window.openRejectModal('${h.id}','${h.fromName}','${h.msg.replace(/'/g,"&#39;")}')">❌ 拒絕</button>
+          <button class="btn-reject" onclick="window.openRejectModal('${h.id}','${h.fromName}','${(h.msg||'').replace(/'/g,"&#39;")}')">❌ 拒絕</button>
         </div>
       </div>`).join('')
     : '<div class="empty-state"><span class="empty-icon">📭</span><p>目前沒有待處理的邀請</p></div>';
