@@ -3336,6 +3336,7 @@
       <button class="admin-tab-btn active" id="admin-tab-treasury" onclick="window.switchAdminTab('treasury')">🏦 平台庫房</button>
       <button class="admin-tab-btn"        id="admin-tab-history"  onclick="window.switchAdminTab('history')">📋 抽成明細</button>
       <button class="admin-tab-btn"        id="admin-tab-users"    onclick="window.switchAdminTab('users')">👥 用戶管理</button>
+      <button class="admin-tab-btn"        id="admin-tab-reset"    onclick="window.switchAdminTab('reset')" style="color:#dc2626">🧹 清空測試資料</button>
     </div>
     <div class="admin-body" id="admin-body">
       <div class="admin-loading" id="admin-loading">⏳ 載入中…</div>
@@ -3354,7 +3355,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, getDocs,
          query, orderBy, serverTimestamp, where, onSnapshot, deleteDoc,
-         runTransaction, increment }
+         runTransaction, increment, writeBatch }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 // Firebase Storage 已移除 — 改用 Base64 Canvas 壓縮
 
@@ -6161,7 +6162,6 @@ async function _markChatAsRead(chatId) {
     if (snap.empty) return;
 
     // 分批 batch write（Firestore 每批最多 500 筆）
-    const { writeBatch } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
     const batch = writeBatch(db);
     snap.docs.forEach(d => batch.update(d.ref, { isRead: true }));
     await batch.commit();
@@ -7376,7 +7376,7 @@ window.closeAdminPanel = () => {
 // ── 切換分頁 ──
 window.switchAdminTab = async (tab) => {
   _adminCurrentTab = tab;
-  ['treasury','history','users'].forEach(t => {
+  ['treasury','history','users','reset'].forEach(t => {
     const btn = document.getElementById('admin-tab-' + t);
     if (btn) btn.classList.toggle('active', t === tab);
   });
@@ -7389,9 +7389,10 @@ async function _adminLoadTab(tab) {
   if (!body) return;
   body.innerHTML = '<div class="admin-loading">⏳ 載入中…</div>';
   try {
-    if (tab === 'treasury')   await _adminRenderTreasury(body);
+    if (tab === 'treasury')     await _adminRenderTreasury(body);
     else if (tab === 'history') await _adminRenderHistory(body);
     else if (tab === 'users')   await _adminRenderUsers(body);
+    else if (tab === 'reset')   await _adminRenderReset(body);
   } catch(e) {
     body.innerHTML = `<div class="admin-empty">❌ 載入失敗：${e.message}</div>`;
   }
@@ -7562,6 +7563,134 @@ window.adminAdjustPoints = async (uid, displayName, dir) => {
     await _adminLoadTab('users');
   } catch(e) {
     showToast(`❌ 操作失敗：${e.message}`);
+  }
+};
+
+// ── 分頁 4：清空測試資料 ──
+async function _adminRenderReset(body) {
+  // 統計目前各集合的文件數量，讓管理者確認資料量
+  let stats = {};
+  const countCols = ['users','needs','invites','chats','reviews','point_transactions','points_history','reports'];
+  await Promise.all(countCols.map(async col => {
+    try {
+      const s = await getDocs(collection(db, col));
+      stats[col] = s.size;
+    } catch(_) { stats[col] = '?'; }
+  }));
+
+  body.innerHTML = `
+    <p class="admin-section-title" style="color:#dc2626">⚠️ 危險區域：清空展示資料庫</p>
+    <p style="color:#6b7280;font-size:13px;line-height:1.7;margin-bottom:16px">
+      此操作將刪除所有<strong>測試用戶、需求任務、聊天記錄、評價與點數紀錄</strong>，
+      方便在 Demo 前還原乾淨狀態。<br>
+      <strong style="color:#dc2626">管理員帳號與 system/treasury 系統資料將會保留。</strong>
+    </p>
+    <table class="admin-table" style="margin-bottom:20px">
+      <thead><tr><th>集合</th><th style="text-align:center">文件數</th><th>清除</th></tr></thead>
+      <tbody>
+        <tr><td>👥 users（一般用戶）</td><td style="text-align:center">${stats.users ?? '?'}</td><td style="color:#dc2626">✗ 清除（保留管理員）</td></tr>
+        <tr><td>📋 needs（求助卡片）</td><td style="text-align:center">${stats.needs ?? '?'}</td><td style="color:#dc2626">✗ 全部清除</td></tr>
+        <tr><td>💌 invites（邀請記錄）</td><td style="text-align:center">${stats.invites ?? '?'}</td><td style="color:#dc2626">✗ 全部清除</td></tr>
+        <tr><td>💬 chats（聊天對話）</td><td style="text-align:center">${stats.chats ?? '?'}</td><td style="color:#dc2626">✗ 全部清除</td></tr>
+        <tr><td>⭐ reviews（評價記錄）</td><td style="text-align:center">${stats.reviews ?? '?'}</td><td style="color:#dc2626">✗ 全部清除</td></tr>
+        <tr><td>⭐ point_transactions</td><td style="text-align:center">${stats.point_transactions ?? '?'}</td><td style="color:#dc2626">✗ 全部清除</td></tr>
+        <tr><td>⭐ points_history</td><td style="text-align:center">${stats.points_history ?? '?'}</td><td style="color:#dc2626">✗ 全部清除</td></tr>
+        <tr><td>🚩 reports（檢舉記錄）</td><td style="text-align:center">${stats.reports ?? '?'}</td><td style="color:#dc2626">✗ 全部清除</td></tr>
+        <tr style="background:#f0fdf4"><td>🏦 system/treasury</td><td style="text-align:center">—</td><td style="color:#16a34a">✓ 保留</td></tr>
+        <tr style="background:#f0fdf4"><td>👑 管理員帳號</td><td style="text-align:center">—</td><td style="color:#16a34a">✓ 保留</td></tr>
+      </tbody>
+    </table>
+    <button id="admin-reset-btn" onclick="window.adminResetDatabase()"
+      style="background:#dc2626;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;width:100%">
+      🧹 確認清空所有測試資料（此操作不可復原）
+    </button>
+  `;
+}
+
+// ── 批次刪除整個集合的所有文件（分批 500 筆）──
+async function _batchDeleteCollection(colName) {
+  const snap = await getDocs(collection(db, colName));
+  if (snap.empty) return 0;
+  // Firestore writeBatch 最多 500 筆一批
+  const batchSize = 400;
+  let deleted = 0;
+  let batchDocs = [];
+  for (const d of snap.docs) {
+    batchDocs.push(d.ref);
+    if (batchDocs.length >= batchSize) {
+      const b = writeBatch(db);
+      batchDocs.forEach(ref => b.delete(ref));
+      await b.commit();
+      deleted += batchDocs.length;
+      batchDocs = [];
+    }
+  }
+  if (batchDocs.length) {
+    const b = writeBatch(db);
+    batchDocs.forEach(ref => b.delete(ref));
+    await b.commit();
+    deleted += batchDocs.length;
+  }
+  return deleted;
+}
+
+window.adminResetDatabase = async () => {
+  // ── 雙重確認 ──
+  const confirmed = confirm(
+    '⚠️ 確定要清空所有測試用戶、需求任務、聊天對話、評價與點數紀錄嗎？\n\n管理員帳號與 system/treasury 系統資料將會保留。\n\n此操作無法復原！'
+  );
+  if (!confirmed) return;
+  const confirmed2 = confirm('🔴 最後確認：真的要清空資料庫嗎？按下「確定」後將立即執行刪除。');
+  if (!confirmed2) return;
+
+  const btn = document.getElementById('admin-reset-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 清空中，請勿關閉頁面…'; }
+
+  try {
+    let totalDeleted = 0;
+
+    // ── 1. 刪除一般用戶（保留 role==='admin' 與 ADMIN_EMAILS）──
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const nonAdminRefs = usersSnap.docs
+      .filter(d => {
+        const u = d.data();
+        return u.role !== 'admin' && !ADMIN_EMAILS.includes(u.email || '');
+      })
+      .map(d => d.ref);
+
+    if (nonAdminRefs.length) {
+      const batchSize = 400;
+      for (let i = 0; i < nonAdminRefs.length; i += batchSize) {
+        const b = writeBatch(db);
+        nonAdminRefs.slice(i, i + batchSize).forEach(ref => b.delete(ref));
+        await b.commit();
+      }
+      totalDeleted += nonAdminRefs.length;
+    }
+
+    // ── 2. 刪除各集合所有文件 ──
+    const colsToClear = [
+      'needs', 'invites', 'chats',
+      'reviews', 'point_transactions', 'points_history', 'reports'
+    ];
+    for (const col of colsToClear) {
+      const n = await _batchDeleteCollection(col);
+      totalDeleted += n;
+    }
+
+    // ── 3. 重置 treasury 計數（清空後歸零）──
+    try {
+      await setDoc(doc(db, 'system', 'treasury'), {
+        totalFees: 0, totalDeals: 0, resetAt: serverTimestamp()
+      }, { merge: true });
+    } catch(_) {}
+
+    showToast(`✅ 已清空 ${totalDeleted} 筆測試資料，即將重新載入…`);
+    setTimeout(() => location.reload(), 1800);
+
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '🧹 確認清空所有測試資料（此操作不可復原）'; }
+    showToast(`❌ 清空失敗：${e.message}`);
   }
 };
 
