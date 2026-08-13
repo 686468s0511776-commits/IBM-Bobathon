@@ -4130,7 +4130,10 @@ window.switchProfileTab = (tab) => {
   document.getElementById('profile-tab-transactions').style.display = tab==='transactions' ? 'block' : 'none';
   document.getElementById('profile-tab-portfolio').style.display    = tab==='portfolio'    ? 'block' : 'none';
   if (tab === 'transactions') renderTransactions();
-  if (tab === 'portfolio')    renderPortfolio();
+  if (tab === 'portfolio') {
+    // 先渲染作品集照片框架，再獨立載入評價（不受 composite index 影響）
+    renderPortfolio();
+  }
 };
 
 // ═══════════════════════════════════════
@@ -4164,7 +4167,6 @@ function _compressImageBase64(file, maxPx = 600, quality = 0.75) {
 async function renderPortfolio() {
   if (!currentUser) return;
   const grid = document.getElementById('portfolio-grid');
-  const reviewEl = document.getElementById('review-list-display');
 
   // 先保留「新增」按鈕，其餘清除
   if (grid) {
@@ -4173,7 +4175,7 @@ async function renderPortfolio() {
     if (addBtn) grid.appendChild(addBtn);
   }
 
-  // 載入作品集照片
+  // 載入作品集照片（允許靜默失敗）
   try {
     const snap = await getDocs(
       query(collection(db, 'users', currentUser.uid, 'portfolio'), orderBy('createdAt', 'desc'))
@@ -4186,37 +4188,73 @@ async function renderPortfolio() {
         item.innerHTML = `
           <img src="${url}" loading="lazy" alt="作品集照片" />
           <button class="del-btn" title="刪除" onclick="window.deletePortfolioPhoto('${d.id}')">✕</button>`;
-        // 確保新增按鈕在最後
         const addBtn2 = grid.querySelector('.portfolio-add-btn');
         grid.insertBefore(item, addBtn2 || null);
       });
     }
   } catch(e) { /* 靜默失敗 */ }
 
-  // 載入評價列表
+  // 獨立呼叫評價載入（這樣錯誤可被單獨顯示）
+  await loadUserReviews();
+}
+
+// ── 獨立評價載入函式（供 tab 切換直接呼叫）──
+// ★ 不使用 orderBy + where 組合（避免需要 composite index）
+//   改為只用 where('toUserId') 查詢，前端排序
+async function loadUserReviews() {
+  if (!currentUser) return;
+  const reviewEl = document.getElementById('review-list-display');
+  if (!reviewEl) return;
+
+  // 顯示載入中
+  reviewEl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">載入評價中…</div>';
+
   try {
+    // ★ 只用 where，不加 orderBy，避免 Firestore 要求 composite index
     const rSnap = await getDocs(
-      query(collection(db, 'reviews'), where('toUserId','==',currentUser.uid), orderBy('createdAt','desc'))
+      query(collection(db, 'reviews'), where('toUserId', '==', currentUser.uid))
     );
-    if (reviewEl) {
-      if (rSnap.empty) {
-        reviewEl.innerHTML = '<div class="empty-state"><span class="empty-icon">⭐</span><p>尚無評價</p></div>';
-      } else {
-        reviewEl.innerHTML = rSnap.docs.map(d => {
-          const r = d.data();
-          const stars = '★'.repeat(Math.round(r.rating || 0)) + '☆'.repeat(5 - Math.round(r.rating || 0));
-          return `<div class="review-list-item">
-            <div class="review-avatar">${(r.fromName||'？')[0]}</div>
-            <div style="flex:1;min-width:0">
-              <div class="review-stars">${stars}</div>
-              <div class="review-comment">${r.comment || '（無留言）'}</div>
-              <div class="review-from">— ${r.fromName || '匿名'}・${r.createdAt?.toDate?.().toLocaleDateString('zh-TW') || ''}</div>
-            </div>
-          </div>`;
-        }).join('');
-      }
+
+    // 前端依 createdAt 降冪排序（timestamp 物件或 null 都能處理）
+    const docs = rSnap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const ta = a.createdAt?.seconds ?? 0;
+        const tb = b.createdAt?.seconds ?? 0;
+        return tb - ta;
+      });
+
+    if (docs.length === 0) {
+      reviewEl.innerHTML = '<div class="empty-state"><span class="empty-icon">⭐</span><p>尚無評價</p></div>';
+      return;
     }
-  } catch(e) { /* 靜默失敗 */ }
+
+    reviewEl.innerHTML = docs.map(r => {
+      const rating  = Math.round(r.rating || 0);
+      const stars   = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+      const name    = r.fromName || '匿名';
+      const initial = name[0] || '？';
+      const dateStr = r.createdAt?.toDate?.().toLocaleDateString('zh-TW') || '';
+      const safeComment = (r.comment || '（無留言）')
+        .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<div class="review-list-item">
+        <div class="review-avatar">${initial}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+            <span style="font-size:13px;font-weight:700;color:var(--text-primary)">${name}</span>
+            <span class="review-stars">${stars}</span>
+          </div>
+          <div class="review-comment">${safeComment}</div>
+          <div class="review-from">${dateStr}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    console.error('[loadUserReviews] 評價載入失敗:', e);
+    reviewEl.innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span>
+      <p style="color:#ef4444">評價載入失敗<br><small>${e.message}</small></p></div>`;
+  }
 }
 
 // ── 使用者選取照片後上傳 ──
