@@ -119,12 +119,15 @@
   .form-group input:focus,
   .form-group select:focus { border-color: #5B8DB8; }
 
-  .skill-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-tags { display: flex; flex-wrap: wrap; gap: 8px 8px; }
   .skill-tag {
     padding: 7px 14px; border-radius: 20px;
     border: 1.5px solid #e5e7eb; font-size: 13px;
     cursor: pointer; user-select: none;
     color: #6b7280; transition: all .15s;
+    /* 防止換行時標籤高度塌陷疊壓 */
+    display: inline-flex; align-items: center; white-space: nowrap;
+    margin-bottom: 4px;
   }
   .skill-tag.selected {
     background: #5B8DB8; border-color: #5B8DB8; color: #fff;
@@ -1521,32 +1524,32 @@
         <!-- 緊急度 -->
         <div class="form-group">
           <label>緊急程度</label>
-          <div style="display:flex;gap:10px">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-              <input type="radio" name="post-urgency" id="urgency-urgent" value="urgent" style="accent-color:#5B8DB8">
-              <span class="urgency-badge urgent">🚨 急件</span>
+          <div style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:12px">
+            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
+              <input type="radio" name="post-urgency" id="urgency-urgent" value="urgent" style="accent-color:#5B8DB8;flex-shrink:0">
+              <span class="urgency-badge urgent" style="white-space:nowrap">🚨 急件</span>
             </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-              <input type="radio" name="post-urgency" id="urgency-normal" value="normal" checked style="accent-color:#5B8DB8">
-              <span class="urgency-badge normal">☕ 一般</span>
+            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
+              <input type="radio" name="post-urgency" id="urgency-normal" value="normal" checked style="accent-color:#5B8DB8;flex-shrink:0">
+              <span class="urgency-badge normal" style="white-space:nowrap">☕ 一般</span>
             </label>
           </div>
         </div>
         <!-- 回饋方式 -->
         <div class="form-group">
           <label>回饋方式</label>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-              <input type="radio" name="post-reward" id="reward-volunteer" value="volunteer" checked style="accent-color:#5B8DB8">
-              🤝 免費志工
+          <div style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:16px">
+            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
+              <input type="radio" name="post-reward" id="reward-volunteer" value="volunteer" checked style="accent-color:#5B8DB8;flex-shrink:0">
+              <span style="white-space:nowrap">🤝 免費志工</span>
             </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-              <input type="radio" name="post-reward" id="reward-drink" value="drink" style="accent-color:#5B8DB8">
-              🥤 請喝飲料
+            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
+              <input type="radio" name="post-reward" id="reward-drink" value="drink" style="accent-color:#5B8DB8;flex-shrink:0">
+              <span style="white-space:nowrap">🥤 請喝飲料</span>
             </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-              <input type="radio" name="post-reward" id="reward-points" value="points" style="accent-color:#5B8DB8">
-              ⭐ 點數回饋
+            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;white-space:nowrap">
+              <input type="radio" name="post-reward" id="reward-points" value="points" style="accent-color:#5B8DB8;flex-shrink:0">
+              <span style="white-space:nowrap">⭐ 點數回饋</span>
             </label>
           </div>
         </div>
@@ -1923,14 +1926,14 @@
      編輯技能 Modal
 ════════════════════════════════ -->
 <div class="modal-overlay" id="skill-edit-modal-overlay">
-  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+  <div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto">
     <h3>💪 編輯我的技能</h3>
     <div class="modal-sub" style="margin-bottom:20px">選擇你可以提供的幫助，勾選「其他」可輸入自訂內容</div>
 
     <!-- 🟢 一般互助 — 無 inline onclick，全由 JS 管理 -->
     <div style="margin-bottom:18px">
       <div class="skill-cat-header green" style="margin-bottom:10px">🟢 一般互助</div>
-      <div id="edit-general-tags">
+      <div id="edit-general-tags" style="display:flex;flex-wrap:wrap;gap:8px 8px;">
         <span class="skill-tag" data-skill="搬運" data-cat="general">🪜 搬運</span>
         <span class="skill-tag" data-skill="代買" data-cat="general">🛒 代買</span>
         <span class="skill-tag" data-skill="代領" data-cat="general">📦 代領</span>
@@ -1949,7 +1952,7 @@
     <!-- 🔵 技能互助 — 無 inline onclick，全由 JS 管理 -->
     <div style="margin-bottom:20px">
       <div class="skill-cat-header blue" style="margin-bottom:10px">🔵 技能互助</div>
-      <div id="edit-skill-modal-tags">
+      <div id="edit-skill-modal-tags" style="display:flex;flex-wrap:wrap;gap:8px 8px;">
         <span class="skill-tag" data-skill="簡單修繕" data-cat="skill">🔧 簡單修繕</span>
         <span class="skill-tag" data-skill="基礎電器" data-cat="skill">💡 基礎電器</span>
         <span class="skill-tag" data-skill="電腦" data-cat="skill">💻 電腦</span>
@@ -2102,8 +2105,9 @@ let activeMatchInv  = null;
 let activeRejectId  = null;
 
 // 未讀訊息監聽器
-let _unreadUnsub = null;    // onSnapshot 取消器
-let _unreadMap   = {};      // { chatId: Set<senderId> } — 以人為單位計算
+let _unreadUnsub     = null;  // onSnapshot 取消器（已改為 _unreadChatUnsubs 陣列）
+let _unreadMap       = {};    // { chatId: Set<senderId> } — 以「有幾人」更新導覽列
+let _unreadCountMap  = {};    // { chatId: number } — 實際未讀訊息則數，用於左欄紅點數字
 
 // ── 點數常數：技能 → 所需點數 ──
 const SKILL_POINTS = {
@@ -2675,14 +2679,19 @@ function _startUnreadListener() {
 
       let isFirstSnapshot = true;
       const unsub = onSnapshot(msgQ, snap => {
-        const senders = new Set(snap.docs.map(d => d.data().senderId).filter(Boolean));
+        const senders   = new Set(snap.docs.map(d => d.data().senderId).filter(Boolean));
+        const msgCount  = snap.size;   // 未讀訊息數量（每則一個 doc）
 
         if (senders.size > 0) {
-          _unreadMap[chatId] = senders;
+          _unreadMap[chatId]      = senders;
+          _unreadCountMap[chatId] = msgCount;
         } else {
           delete _unreadMap[chatId];
+          delete _unreadCountMap[chatId];
         }
         _updateUnreadBadge();
+        // 同步更新聊天列表左欄紅點數字
+        renderChatList();
 
         // 新訊息通知（非首次快照，且使用者不在此對話視窗）
         if (!isFirstSnapshot) {
@@ -2691,8 +2700,6 @@ function _startUnreadListener() {
             const msg = change.doc.data();
             if (msg.senderId === currentUser.uid) return; // 自己送的不通知
             if (activeChatId === chatId) return;          // 已在此對話視窗不通知
-
-            // 發送瀏覽器桌面通知
             _sendBrowserNotification(chatId, msg);
           });
         }
@@ -2853,7 +2860,8 @@ window.doLogout = () => {
   if (window._roomUnsubscribe){ window._roomUnsubscribe(); window._roomUnsubscribe = null; }
   _unreadChatUnsubs.forEach(fn => fn());
   _unreadChatUnsubs = [];
-  _unreadMap = {};
+  _unreadMap      = {};
+  _unreadCountMap = {};
   _updateUnreadBadge();
   if (!IS_LOCAL) {
     signOut(auth);
@@ -4140,14 +4148,32 @@ async function renderChatList() {
 
   el.innerHTML = myChats.map((c, i) => {
     const info    = infos[i];
-    const name    = info.displayName;   // getUserInfo 已處理所有 fallback
+    const name    = info.displayName;
     const isMe    = c.lastSenderUid === currentUser.uid;
     const preview = c.lastMsg ? (isMe ? `你：${c.lastMsg}` : c.lastMsg) : '尚無訊息';
+
+    // 未讀訊息紅點：從 _unreadMap[chatId] 取得 Set<senderId>，計算訊息則數
+    const unreadSenders = _unreadMap[c.chatId];
+    const unreadCount   = unreadSenders instanceof Set ? unreadSenders.size : 0;
+    // 計算實際未讀訊息數（儲存在 _unreadCountMap）
+    const msgCount = _unreadCountMap?.[c.chatId] || 0;
+    const unreadBadge = (msgCount > 0 && activeChatId !== c.chatId)
+      ? `<span style="
+          display:inline-flex;align-items:center;justify-content:center;
+          min-width:20px;height:20px;padding:0 5px;
+          background:#ef4444;color:#fff;border-radius:20px;
+          font-size:11px;font-weight:700;flex-shrink:0;margin-right:8px
+        ">${msgCount > 99 ? '99+' : msgCount}</span>`
+      : '';
+
     return `<div class="chat-list-item ${activeChatId===c.chatId?'active':''}" onclick="window.openChatRoom('${c.chatId}')">
       ${listAvatarHtml({ ...info, emoji: c.peerEmoji || info.emoji })}
-      <div style="flex:1;overflow:hidden">
-        <div class="chat-list-name">${name}</div>
-        <div class="chat-list-preview">${preview}</div>
+      <div style="flex:1;overflow:hidden;display:flex;align-items:center;gap:4px">
+        ${unreadBadge}
+        <div style="min-width:0;flex:1">
+          <div class="chat-list-name" style="${msgCount > 0 && activeChatId !== c.chatId ? 'color:#1f2328;font-weight:800' : ''}">${name}</div>
+          <div class="chat-list-preview">${preview}</div>
+        </div>
       </div>
       <div class="chat-list-time">${c.lastTime||''}</div>
     </div>`;
@@ -4306,9 +4332,11 @@ async function _markChatAsRead(chatId) {
     snap.docs.forEach(d => batch.update(d.ref, { isRead: true }));
     await batch.commit();
 
-    // 清除本 chatId 的未讀計數，更新紅點
+    // 清除本 chatId 的未讀計數，更新紅點與左欄列表
     delete _unreadMap[chatId];
+    delete _unreadCountMap[chatId];
     _updateUnreadBadge();
+    renderChatList();
   } catch(e) { /* 標記已讀失敗不影響主流程 */ }
 }
 
