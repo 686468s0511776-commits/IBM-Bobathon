@@ -78,6 +78,123 @@
     z-index: 50;
     box-shadow: 0 2px 12px rgba(91,141,184,.3);
   }
+
+  /* ══════════════════════════════
+     手機版響應式覆蓋
+  ══════════════════════════════ */
+  @media (max-width: 768px) {
+    .navbar {
+      padding: 0 12px;
+      height: 56px;
+    }
+    .navbar-nav { display: none !important; }  /* 手機隱藏頂部 nav，改用底部導覽列 */
+    .navbar-user { gap: 4px; }
+    .home-layout {
+      grid-template-columns: 1fr !important;
+    }
+    .sidebar {
+      display: none !important;
+    }
+    .main-content { padding: 16px 14px 96px; }
+    .profile-layout {
+      grid-template-columns: 1fr !important;
+      max-width: 100%;
+    }
+    .chat-room-layout {
+      grid-template-columns: 1fr !important;
+      height: calc(100vh - 56px);
+    }
+    .chat-list-panel {
+      display: none !important;
+    }
+    #chat-room-active {
+      height: 100% !important;
+    }
+    /* 搜尋列 & 快捷標籤 */
+    .quick-tags-bar {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 4px;
+    }
+    .quick-tags-bar::-webkit-scrollbar { display: none; }
+    /* 卡片格線：手機一欄 */
+    .card-grid {
+      grid-template-columns: 1fr !important;
+    }
+    /* 兌換中心：手機雙欄 */
+    .shop-grid {
+      grid-template-columns: 1fr 1fr !important;
+    }
+    /* 聊天室報價列 flex-wrap */
+    .chat-quote-bar {
+      flex-wrap: wrap;
+      padding: 8px 12px;
+    }
+    .chat-quote-bar .quote-input-wrap { flex: 1 1 100%; order: 2; margin-top: 6px; }
+    .chat-quote-bar .btn-send-quote   { order: 3; width: 100%; margin-top: 4px; }
+    .chat-quote-bar .chat-quote-label { order: 1; }
+    /* Modal 手機適配 */
+    .modal { border-radius: 20px 20px 0 0; margin-top: auto; max-height: 90vh; overflow-y: auto; }
+    .user-profile-box { width: 95% !important; max-height: 90vh; overflow-y: auto; }
+    .edit-profile-box { width: 95% !important; max-height: 90vh; overflow-y: auto; }
+    /* 底部導覽列 */
+    .mobile-bottom-nav {
+      display: flex !important;
+    }
+    /* 手機版訊息列表 padding 讓底部 nav 不遮住 */
+    .cr-messages { padding-bottom: 0; }
+    /* 管理者後台 Modal 手機適配 */
+    .admin-panel {
+      width: 100% !important;
+      max-height: 96vh;
+      border-radius: 16px 16px 0 0;
+      align-self: flex-end;
+    }
+    .admin-overlay {
+      align-items: flex-end !important;
+    }
+    /* 聊天室 pipeline 手機橫向捲動 */
+    .chat-status-bar {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .chat-status-bar::-webkit-scrollbar { display: none; }
+    /* 互助紀錄列：方便手指點擊 */
+    .btn-accept, .btn-reject { padding: 8px 14px; font-size: 13px; }
+    /* 發布頁 */
+    .post-layout { max-width: 100%; }
+  }
+
+  /* 手機底部導覽列 */
+  .mobile-bottom-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    height: 64px;
+    background: #fff;
+    border-top: 1.5px solid #d0e4f5;
+    align-items: stretch;
+    box-shadow: 0 -2px 12px rgba(91,141,184,.1);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  body.dark .mobile-bottom-nav {
+    background: #1f2937;
+    border-top-color: #374151;
+  }
+  .mbn-btn {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+    border: none; background: none; cursor: pointer;
+    color: #9ca3af; font-size: 10px; font-weight: 700;
+    padding: 8px 2px;
+    -webkit-tap-highlight-color: transparent;
+    transition: color .15s;
+  }
+  .mbn-btn .mbn-icon { font-size: 20px; line-height: 1; }
+  .mbn-btn.active { color: #5B8DB8; }
+  body.dark .mbn-btn { color: #6b7280; }
+  body.dark .mbn-btn.active { color: #93c5fd; }
   .navbar-brand {
     font-size: 20px;
     font-weight: 800;
@@ -3325,6 +3442,31 @@
 <div class="toast" id="toast"></div>
 
 <!-- ════════════════════════════════
+     手機版底部導覽列（Mobile Bottom Nav）
+════════════════════════════════ -->
+<div class="mobile-bottom-nav" id="mobile-bottom-nav" style="display:none">
+  <button class="mbn-btn active" id="mbn-home"    onclick="window.switchMainPage('home')">
+    <span class="mbn-icon">🏠</span>首頁
+  </button>
+  <button class="mbn-btn"        id="mbn-post"    onclick="window.switchMainPage('post')">
+    <span class="mbn-icon">➕</span>發布
+  </button>
+  <button class="mbn-btn"        id="mbn-shop"    onclick="window.switchMainPage('shop')">
+    <span class="mbn-icon">⭐</span>點數
+  </button>
+  <button class="mbn-btn"        id="mbn-chatroom" onclick="window.switchMainPage('chatroom')">
+    <span class="mbn-icon">💬</span>聊天
+    <span id="mbn-chat-badge" style="display:none;background:#ef4444;color:#fff;border-radius:20px;padding:0 5px;font-size:10px;position:absolute;top:6px;right:calc(50% - 22px)"></span>
+  </button>
+  <button class="mbn-btn"        id="mbn-profile"  onclick="window.switchMainPage('profile')">
+    <span class="mbn-icon">👤</span>我的
+  </button>
+  <button class="mbn-btn"        id="mbn-admin"    onclick="window.openAdminPanel()" style="display:none">
+    <span class="mbn-icon">👑</span>管理
+  </button>
+</div>
+
+<!-- ════════════════════════════════
      評價 Modal
 ════════════════════════════════ -->
 <div class="review-overlay" id="review-overlay">
@@ -3919,11 +4061,31 @@ function _showManualAreaSelector() {
   if (el) el.style.display = 'block';
 }
 
+// ── 底部導覽列顯示 / 隱藏輔助函式 ──
+function _showMobileNav() {
+  const nav = document.getElementById('mobile-bottom-nav');
+  if (nav) nav.style.removeProperty('display');
+}
+function _hideMobileNav() {
+  const nav = document.getElementById('mobile-bottom-nav');
+  if (nav) nav.style.display = 'none';
+}
+// ── 底部導覽列 active 狀態同步 ──
+function _updateMobileNavActive(name) {
+  const map = { home:'mbn-home', post:'mbn-post', shop:'mbn-shop', chatroom:'mbn-chatroom', profile:'mbn-profile' };
+  Object.keys(map).forEach(k => {
+    const el = document.getElementById(map[k]);
+    if (el) el.classList.toggle('active', k === name);
+  });
+}
+
 function enterApp() {
   _isGuest = false;
   document.getElementById('main-nav').style.display = 'flex';
   const hamburger = document.getElementById('hamburger-btn');
   if (hamburger) hamburger.style.display = 'inline-flex';
+  // ── 顯示手機底部導覽列 ──
+  _showMobileNav();
   const _isDark = document.body.classList.contains('dark');
   document.getElementById('navbar-user').innerHTML =
     `<button id="theme-toggle-btn" onclick="window.toggleTheme()" title="切換深色/淺色模式">
@@ -3948,17 +4110,31 @@ function enterApp() {
   _startInviteListener();
   // ── 即時監聽未讀訊息（以人為單位更新紅點）──
   _startUnreadListener();
+  // ── 即時監聽 Profile（currentUserData）跨裝置同步 ──
+  if (window._profileUnsub) { window._profileUnsub(); window._profileUnsub = null; }
+  window._profileUnsub = onSnapshot(doc(db, 'users', currentUser.uid), docSnap => {
+    if (docSnap.exists()) {
+      currentUserData = docSnap.data();
+      if (!currentUserData.name) currentUserData.name = currentUserData.displayName || '';
+      updateSidebarUser();
+      // 若目前停留在 profile 頁，則自動重新渲染
+      const profilePage = document.getElementById('page-profile');
+      if (profilePage && profilePage.classList.contains('active')) {
+        renderProfile();
+      }
+    }
+  }, err => console.warn('profile onSnapshot error:', err.message));
   // ── 請求瀏覽器通知權限（非阻塞）──
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
   // ── 管理者按鈕顯示（雙重判斷：Firestore role 或 Email 白名單）──
-  const adminBtn = document.getElementById('admin-nav-btn');
+  const adminBtn    = document.getElementById('admin-nav-btn');
+  const mbnAdminBtn = document.getElementById('mbn-admin');
   const _isAdmin = (currentUserData && currentUserData.role === 'admin')
                 || (currentUser && ADMIN_EMAILS.includes(currentUser.email));
-  if (adminBtn && _isAdmin) {
-    adminBtn.style.display = 'inline-flex';
-  }
+  if (adminBtn && _isAdmin)    adminBtn.style.display    = 'inline-flex';
+  if (mbnAdminBtn && _isAdmin) mbnAdminBtn.style.display = 'flex';
 }
 
 // ─────────────────────────────────
@@ -3975,6 +4151,17 @@ function _updateUnreadBadge() {
   } else {
     badge.style.display = 'none';
     badge.textContent = '';
+  }
+  // ── 同步更新手機底部導覽列的聊天室紅點 ──
+  const mbnBadge = document.getElementById('mbn-chat-badge');
+  if (mbnBadge) {
+    if (count > 0) {
+      mbnBadge.textContent = count > 99 ? '99+' : count;
+      mbnBadge.style.display = 'inline';
+    } else {
+      mbnBadge.style.display = 'none';
+      mbnBadge.textContent = '';
+    }
   }
 }
 
@@ -4166,10 +4353,13 @@ function enterGuestMode() {
   document.getElementById('main-nav').style.display = 'flex';
   const hamburger = document.getElementById('hamburger-btn');
   if (hamburger) hamburger.style.display = 'inline-flex';
+  // 訪客也顯示底部導覽列（可瀏覽首頁），但 post/chatroom 點擊時會跳出登入引導
+  _showMobileNav();
   document.getElementById('navbar-user').innerHTML =
     `<button onclick="window.showLoginPrompt('general')" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:7px 16px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer">🔐 登入 / 註冊</button>`;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-home').classList.add('active');
+  _updateMobileNavActive('home');
   loadCards();
 }
 
@@ -4197,6 +4387,7 @@ window.closeLoginPrompt = (goLogin) => {
 
 function showAuthPage() {
   document.getElementById('main-nav').style.display = 'none';
+  _hideMobileNav();
   document.getElementById('navbar-user').innerHTML = `<span style="font-size:13px;opacity:.85">請先登入</span>`;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-register').classList.add('active');
@@ -4212,6 +4403,16 @@ window.doLogout = () => {
   if (_inviteListenerUnsub)  { _inviteListenerUnsub();  _inviteListenerUnsub  = null; }
   if (window._chatListUnsub) { window._chatListUnsub(); window._chatListUnsub = null; }
   if (window._roomUnsubscribe){ window._roomUnsubscribe(); window._roomUnsubscribe = null; }
+  // 清除 offer 卡片監聽器
+  if (window._offerCardsUnsub) { window._offerCardsUnsub(); window._offerCardsUnsub = null; }
+  // 清除送出邀請監聽器
+  if (window._sentInvitesUnsub) { window._sentInvitesUnsub(); window._sentInvitesUnsub = null; }
+  // 清除收到邀請監聽器（profile 頁用）
+  if (window._recvInvitesProfileUnsub) { window._recvInvitesProfileUnsub(); window._recvInvitesProfileUnsub = null; }
+  // 清除點數記錄監聽器
+  if (window._txUnsub) { window._txUnsub(); window._txUnsub = null; }
+  // 清除 Profile 監聽器
+  if (window._profileUnsub) { window._profileUnsub(); window._profileUnsub = null; }
   _unreadChatUnsubs.forEach(fn => fn());
   _unreadChatUnsubs = [];
   _unreadMap      = {};
@@ -4265,6 +4466,8 @@ window.switchMainPage = (name) => {
   document.getElementById(map[name]).classList.add('active');
   document.querySelectorAll('#main-nav .nav-btn').forEach((b,i) =>
     b.classList.toggle('active', ['home','post','shop','chatroom','profile'][i] === name));
+  // ── 同步更新手機底部導覽列 active ──
+  _updateMobileNavActive(name);
   if (name === 'profile')  renderProfile();
   if (name === 'chatroom') window.loadChatList && window.loadChatList();
   if (name === 'shop')     renderShop();
@@ -4806,16 +5009,22 @@ async function loadCards() {
     renderNeedCards(demoNeeds);
   });
 
-  // 其他用戶（提供幫助）
-  try {
-    const snap = await getDocs(collection(db,'users'));
-    const users = snap.docs.filter(d => d.id !== currentUser?.uid).map(d => ({ id: d.id, ...d.data() }));
-    _allOfferCards = users.length ? users : demoOffers;
-    renderOfferCards(_filterCardsByDist(_allOfferCards, _offerFilterDist));
-  } catch(e) {
-    _allOfferCards = demoOffers;
-    renderOfferCards(demoOffers);
-  }
+  // ── 提供幫助（users 集合）：改為 onSnapshot 即時監聽 ──
+  if (window._offerCardsUnsub) { window._offerCardsUnsub(); window._offerCardsUnsub = null; }
+  window._offerCardsUnsub = onSnapshot(
+    collection(db, 'users'),
+    snap => {
+      const users = snap.docs
+        .filter(d => d.id !== currentUser?.uid)
+        .map(d => ({ id: d.id, ...d.data() }));
+      _allOfferCards = users.length ? users : demoOffers;
+      renderOfferCards(_filterCardsByDist(_allOfferCards, _offerFilterDist));
+    },
+    () => {
+      _allOfferCards = demoOffers;
+      renderOfferCards(demoOffers);
+    }
+  );
 }
 
 // 距離過濾輔助函式
@@ -5380,108 +5589,67 @@ async function renderProfile() {
     ? sklLabels.map(s=>`<span class="tag">${s}</span>`).join('')
     : '<span class="my-skills-empty">尚未設定</span>';
 
-  // ── 送出的邀請（本地 + Firestore 合併）
+  // ── 送出的邀請（onSnapshot 即時監聽）
   const sl = document.getElementById('sent-list');
-  try {
-    const q = query(collection(db,'invites'), where('fromUid','==',currentUser.uid), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    const firestoreSent = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const merged = firestoreSent.length ? firestoreSent : sentInvites;
-    sl.innerHTML = merged.length
-      ? merged.map(h => {
-          const canComplete = h.type === 'need' && (h.status === '進行中' || h.status === 'pending');
-          const completeData = JSON.stringify({ inviteId: h.id, toUid: h.toUid, toName: h.toName, points: h.points || 0 }).replace(/"/g,'&quot;');
-          const titleStr = h.taskTitle || h.msg || '';
-          const titleHtml = titleStr
-            ? `<div style="font-size:12px;color:#6b52c8;font-weight:700;margin-bottom:4px">📌 任務：${titleStr.length > 40 ? titleStr.slice(0,40) + '…' : titleStr}</div>`
-            : '';
-          return `<div class="history-item">
-            ${titleHtml}
+  if (sl) {
+    // 取消舊的監聽器（避免重複）
+    if (window._sentInvitesUnsub) { window._sentInvitesUnsub(); window._sentInvitesUnsub = null; }
+    const qSent = query(collection(db,'invites'), where('fromUid','==',currentUser.uid), orderBy('createdAt','desc'));
+    window._sentInvitesUnsub = onSnapshot(qSent, snap => {
+      const firestoreSent = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const merged = firestoreSent.length ? firestoreSent : sentInvites;
+      sl.innerHTML = merged.length
+        ? merged.map(h => {
+            const canComplete = h.type === 'need' && (h.status === '進行中' || h.status === 'pending');
+            const completeData = JSON.stringify({ inviteId: h.id, toUid: h.toUid, toName: h.toName, points: h.points || 0 }).replace(/"/g,'&quot;');
+            const titleStr = h.taskTitle || h.msg || '';
+            const titleHtml = titleStr
+              ? `<div style="font-size:12px;color:#6b52c8;font-weight:700;margin-bottom:4px">📌 任務：${titleStr.length > 40 ? titleStr.slice(0,40) + '…' : titleStr}</div>`
+              : '';
+            return `<div class="history-item">
+              ${titleHtml}
+              <div class="h-name">對象：${h.toName}</div>
+              <div class="h-time">⏰ ${h.time}</div>
+              <div class="h-msg">${h.msg}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+                ${statusBadge(h.status)}
+                ${h.points ? `<span class="points-badge">⭐ ${h.points} 點</span>` : ''}
+                ${canComplete ? `<button onclick="window.openCompleteModal('${completeData}')" style="padding:4px 12px;background:#5B8DB8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">確認完成</button>` : ''}
+              </div>
+              ${h.rejectReason ? `<div style="margin-top:6px;font-size:12px;color:#9ca3af">拒絕原因：${h.rejectReason}</div>` : ''}
+            </div>`;
+          }).join('')
+        : '<div class="empty-state"><span class="empty-icon">📭</span><p>尚無送出紀錄</p></div>';
+    }, err => {
+      console.warn('sentInvites onSnapshot error:', err.message);
+      sl.innerHTML = sentInvites.length
+        ? sentInvites.map(h => `<div class="history-item">
             <div class="h-name">對象：${h.toName}</div>
             <div class="h-time">⏰ ${h.time}</div>
             <div class="h-msg">${h.msg}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-              ${statusBadge(h.status)}
-              ${h.points ? `<span class="points-badge">⭐ ${h.points} 點</span>` : ''}
-              ${canComplete ? `<button onclick="window.openCompleteModal('${completeData}')" style="padding:4px 12px;background:#5B8DB8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">確認完成</button>` : ''}
-            </div>
-            ${h.rejectReason ? `<div style="margin-top:6px;font-size:12px;color:#9ca3af">拒絕原因：${h.rejectReason}</div>` : ''}
-          </div>`;
-        }).join('')
-      : '<div class="empty-state"><span class="empty-icon">📭</span><p>尚無送出紀錄</p></div>';
-  } catch(e) {
-    sl.innerHTML = sentInvites.length
-      ? sentInvites.map(h => `<div class="history-item">
-          <div class="h-name">對象：${h.toName}</div>
-          <div class="h-time">⏰ ${h.time}</div>
-          <div class="h-msg">${h.msg}</div>
-          ${statusBadge(h.status)}
-        </div>`).join('')
-      : '<div class="empty-state"><span class="empty-icon">📭</span><p>尚無送出紀錄</p></div>';
+            ${statusBadge(h.status)}
+          </div>`).join('')
+        : '<div class="empty-state"><span class="empty-icon">📭</span><p>尚無送出紀錄</p></div>';
+    });
   }
 
-  // ── 收到的邀請（Firestore 真實資料 + 本地示範合併）
+  // ── 收到的邀請（onSnapshot 即時監聽，利用已有 _startInviteListener 快取的 recvInvites）
   const rl = document.getElementById('recv-list');
-  const badge = document.getElementById('recv-badge');
 
-  // 從 Firestore 讀取別人送給我的邀請（同時查 toUid 和 receiverId 兩個欄位以相容新舊資料）
-  try {
-    console.log('🔍 查詢收到的邀請，我的 uid:', currentUser.uid);
-    // 查 receiverId（新格式）
-    const qByReceiverId = query(
-      collection(db, 'invites'),
-      where('receiverId', '==', currentUser.uid)
-    );
-    // 查 toUid（舊格式相容）
-    const qByToUid = query(
-      collection(db, 'invites'),
-      where('toUid', '==', currentUser.uid)
-    );
-    const [snapR, snapT] = await Promise.all([getDocs(qByReceiverId), getDocs(qByToUid)]);
-    console.log('📥 Firestore receiverId 邀請數:', snapR.size, '| toUid 邀請數:', snapT.size);
-
-    // 合併去重（以 doc.id 去重）
-    const allDocs = [...snapR.docs];
-    const seenIds = new Set(allDocs.map(d => d.id));
-    snapT.docs.forEach(d => { if (!seenIds.has(d.id)) { allDocs.push(d); seenIds.add(d.id); } });
-
-    allDocs.forEach(d => console.log('  邀請:', d.id, d.data()));
-
-    if (allDocs.length) {
-      recvInvites = allDocs.map(d => {
-        const data = d.data();
-        return {
-          id:        d.id,
-          fromUid:   data.fromUid,
-          fromName:  data.fromName  || '（未知）',
-          fromEmoji: data.fromEmoji || '🙂',
-          fromMeta:  data.fromMeta  || '',
-          contact:   data.contact   || '（對方尚未填寫聯絡方式）',
-          time:      data.time      || '',
-          msg:       data.msg       || '',
-          taskTitle: data.taskTitle || data.msg || '',
-          status:    data.status    || '等待回覆',
-        };
-      });
+  // 用輔助函式渲染 recvInvites（供 onSnapshot 回調重複使用）
+  async function _renderRecvInvites() {
+    const pending = recvInvites.filter(r => r.status === '等待回覆' || r.status === 'pending' || r.status === '進行中');
+    _updateInviteBadges();
+    if (!rl) return;
+    if (!pending.length) {
+      rl.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span><p>目前沒有待處理的邀請</p></div>';
+      return;
     }
-  } catch(e) {
-    console.error('❌ 讀取收到邀請失敗:', e.message);
-  }
-
-  const pending = recvInvites.filter(r => r.status === '等待回覆' || r.status === 'pending' || r.status === '進行中');
-  _updateInviteBadges();   // 同步更新 sidebar 紅點
-
-  if (!pending.length) {
-    rl.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span><p>目前沒有待處理的邀請</p></div>';
-  } else {
     // 批次抓取所有邀請者的最新 user info（含 photoURL/displayName/averageRating）
     const userInfoMap = {};
     await Promise.all(pending.map(async h => {
-      if (h.fromUid) {
-        userInfoMap[h.fromUid] = await getUserInfo(h.fromUid);
-      }
+      if (h.fromUid) userInfoMap[h.fromUid] = await getUserInfo(h.fromUid);
     }));
-
     rl.innerHTML = pending.map(h => {
       const info     = (h.fromUid && userInfoMap[h.fromUid]) || {};
       const name     = info.displayName || h.fromName;
@@ -5490,16 +5658,9 @@ async function renderProfile() {
       const avatarHTML = hasPhoto
         ? `<img src="${info.avatar}" alt="${name}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #e5e7eb">`
         : `<span style="width:42px;height:42px;border-radius:50%;background:#f3f4f6;display:inline-flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:2px solid #e5e7eb">${info.emoji || h.fromEmoji || '🙂'}</span>`;
-      const clickable = h.fromUid
-        ? `onclick="window.openUserProfile('${h.fromUid}')" style="cursor:pointer"`
-        : '';
-      const nameStyle = h.fromUid
-        ? 'cursor:pointer;text-decoration:underline dotted;color:inherit'
-        : '';
-      const ratingStr = (info.averageRating != null)
-        ? ` ⭐${Number(info.averageRating).toFixed(1)}`
-        : '';
-
+      const clickable = h.fromUid ? `onclick="window.openUserProfile('${h.fromUid}')" style="cursor:pointer"` : '';
+      const nameStyle = h.fromUid ? 'cursor:pointer;text-decoration:underline dotted;color:inherit' : '';
+      const ratingStr = (info.averageRating != null) ? ` ⭐${Number(info.averageRating).toFixed(1)}` : '';
       const recvTitleStr = h.taskTitle || '';
       const recvTitleHtml = recvTitleStr
         ? `<div style="font-size:12px;color:#6b52c8;font-weight:700;margin-bottom:4px">📌 任務：${recvTitleStr.length > 40 ? recvTitleStr.slice(0,40) + '…' : recvTitleStr}</div>`
@@ -5522,8 +5683,57 @@ async function renderProfile() {
       </div>`;
     }).join('');
   }
+
+  // 取消舊的收到邀請 onSnapshot 監聽器（避免重複）
+  if (window._recvInvitesProfileUnsub) { window._recvInvitesProfileUnsub(); window._recvInvitesProfileUnsub = null; }
+
+  // 同時監聽 receiverId 和 toUid 兩種欄位（相容新舊格式）
+  const _qRecvByReceiverId = query(collection(db,'invites'), where('receiverId','==',currentUser.uid));
+  const _qRecvByToUid      = query(collection(db,'invites'), where('toUid','==',currentUser.uid));
+
+  // 共用回調：更新 recvInvites 快取並重新渲染
+  function _mergeAndRenderRecv(snapR_docs, snapT_docs) {
+    const allDocs = [...snapR_docs];
+    const seenIds = new Set(allDocs.map(d => d.id));
+    snapT_docs.forEach(d => { if (!seenIds.has(d.id)) { allDocs.push(d); seenIds.add(d.id); } });
+    if (allDocs.length) {
+      recvInvites = allDocs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id, fromUid: data.fromUid,
+          fromName:  data.fromName  || '（未知）',
+          fromEmoji: data.fromEmoji || '🙂',
+          fromMeta:  data.fromMeta  || '',
+          contact:   data.contact   || '（對方尚未填寫聯絡方式）',
+          time:      data.time      || '',
+          msg:       data.msg       || '',
+          taskTitle: data.taskTitle || data.msg || '',
+          status:    data.status    || '等待回覆',
+        };
+      });
+    }
+    _renderRecvInvites();
+  }
+
+  // 用來暫存兩個查詢最新快照
+  let _snapReceiverDocs = [];
+  let _snapToUidDocs    = [];
+
+  const _unsubR = onSnapshot(_qRecvByReceiverId, snap => {
+    _snapReceiverDocs = snap.docs;
+    _mergeAndRenderRecv(_snapReceiverDocs, _snapToUidDocs);
+  }, err => console.warn('recvInvites(receiverId) onSnapshot error:', err.message));
+
+  const _unsubT = onSnapshot(_qRecvByToUid, snap => {
+    _snapToUidDocs = snap.docs;
+    _mergeAndRenderRecv(_snapReceiverDocs, _snapToUidDocs);
+  }, err => console.warn('recvInvites(toUid) onSnapshot error:', err.message));
+
+  // 合併兩個取消函式為一個
+  window._recvInvitesProfileUnsub = () => { _unsubR(); _unsubT(); };
+
   // 點數交易記錄
-  await renderTransactions();
+  renderTransactions();
 }
 
 window.renderProfile = renderProfile;
@@ -5636,15 +5846,16 @@ window.saveSkillEdit = async () => {
   }
 };
 
-async function renderTransactions() {
+function renderTransactions() {
   const tl = document.getElementById('tx-list');
   if (!tl || !currentUser) return;
   tl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af">載入中...</div>';
-  try {
-    // 只用 where，不加 orderBy，避免 Firestore 複合索引錯誤；排序在前端做
-    const snap = await getDocs(
-      query(collection(db, 'point_transactions'), where('uid', '==', currentUser.uid))
-    );
+
+  // 取消舊的監聽器（避免重複）
+  if (window._txUnsub) { window._txUnsub(); window._txUnsub = null; }
+
+  const txQ = query(collection(db, 'point_transactions'), where('uid', '==', currentUser.uid));
+  window._txUnsub = onSnapshot(txQ, snap => {
     if (snap.empty) {
       tl.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div style="font-size:36px;margin-bottom:8px">⭐</div><p>目前尚無點數變動紀錄</p></div>';
       return;
@@ -5657,7 +5868,6 @@ async function renderTransactions() {
         const tb = (b.createdAt ?? b.timestamp)?.seconds ?? 0;
         return tb - ta;
       });
-
     tl.innerHTML = docs.map(tx => {
       // 相容新舊欄位：delta（舊）/ amount（新）；reason（舊）/ description（新）
       const delta   = tx.delta   ?? (tx.type === 'deduct' ? -(tx.amount ?? 0) : (tx.amount ?? 0));
@@ -5675,10 +5885,10 @@ async function renderTransactions() {
         <div class="tx-amount ${isPlus ? 'plus' : 'minus'}">${isPlus ? '🟢 +' : '🔴 '}${Math.abs(delta)} 點</div>
       </div>`;
     }).join('');
-  } catch(e) {
-    console.error('renderTransactions error:', e);
+  }, err => {
+    console.error('renderTransactions onSnapshot error:', err);
     tl.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div style="font-size:36px;margin-bottom:8px">⭐</div><p>目前尚無點數變動紀錄</p></div>';
-  }
+  });
 }
 
 // ─────────────────────────────────
