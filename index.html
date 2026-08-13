@@ -130,6 +130,49 @@
     background: #5B8DB8; border-color: #5B8DB8; color: #fff;
   }
 
+  /* ── 技能分類 Header ── */
+  .skill-cat-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 800; color: #fff;
+    padding: 5px 12px; border-radius: 20px;
+    margin-bottom: 10px; width: fit-content;
+  }
+  .skill-cat-header.green { background: #22c55e; }
+  .skill-cat-header.blue  { background: #5B8DB8; }
+
+  /* ── 「其他」自訂輸入展開 ── */
+  .skill-other-input-wrap {
+    display: none; margin-top: 8px; width: 100%;
+  }
+  .skill-other-input-wrap.open { display: block; }
+  .skill-other-input {
+    width: 100%; padding: 9px 12px;
+    border: 1.5px solid #d0e4f5; border-radius: 10px;
+    font-size: 13px; outline: none; transition: border-color .2s;
+  }
+  .skill-other-input:focus { border-color: #5B8DB8; }
+
+  /* ── 我的技能管理區 ── */
+  .my-skills-section {
+    background: #EDF4FB; border-radius: 14px;
+    padding: 16px 18px; margin-bottom: 16px;
+  }
+  .my-skills-section h4 {
+    font-size: 13px; font-weight: 800; color: #5B8DB8;
+    margin-bottom: 10px; display: flex; align-items: center;
+    justify-content: space-between;
+  }
+  .my-skills-empty {
+    font-size: 13px; color: #9ca3af; font-style: italic;
+  }
+  .btn-edit-skills {
+    padding: 6px 14px; background: #5B8DB8; color: #fff;
+    border: none; border-radius: 8px; font-size: 12px;
+    font-weight: 700; cursor: pointer; transition: background .2s;
+    white-space: nowrap;
+  }
+  .btn-edit-skills:hover { background: #4a7aa3; }
+
   .btn-primary {
     width: 100%; padding: 14px;
     background: #5B8DB8; color: #fff;
@@ -1265,43 +1308,47 @@
           <input type="password" id="reg-password" placeholder="請輸入密碼" />
         </div>
         <div class="form-group">
-          <label>我具備的技能（可多選）</label>
+          <label>我可以幫什麼（可多選）</label>
           <div id="skill-tags">
-            <div class="skill-category">
-              <span class="skill-category-title">🏠 家事清潔</span>
-              <div class="skill-tags">
-                <span class="skill-tag" data-skill="居家清潔">🧹 居家清潔</span>
-                <span class="skill-tag" data-skill="傳統烹飪">🍳 傳統烹飪</span>
-                <span class="skill-tag" data-skill="代購代辦">🛒 代購代辦</span>
+            <!-- 🟢 一般互助 -->
+            <div class="skill-category" style="margin-bottom:14px">
+              <div class="skill-cat-header green">🟢 一般互助</div>
+              <div class="skill-tags" id="reg-general-tags">
+                <span class="skill-tag" data-skill="搬運" data-cat="general">🪜 搬運</span>
+                <span class="skill-tag" data-skill="代買" data-cat="general">🛒 代買</span>
+                <span class="skill-tag" data-skill="代領" data-cat="general">📦 代領</span>
+                <span class="skill-tag" data-skill="陪伴" data-cat="general">💚 陪伴</span>
+                <span class="skill-tag" data-skill="外出協助" data-cat="general">🚶 外出協助</span>
+                <span class="skill-tag" data-skill="居家整理" data-cat="general">🧹 居家整理</span>
+                <span class="skill-tag" data-skill="寵物照顧" data-cat="general">🐾 寵物照顧</span>
+                <span class="skill-tag" data-skill="其他(一般)" data-cat="general" data-other="generalTasks"
+                  onclick="window.toggleOtherInput('reg-general-other', this)">➕ 其他</span>
+              </div>
+              <div class="skill-other-input-wrap" id="reg-general-other">
+                <input class="skill-other-input" id="reg-general-other-input"
+                  placeholder="請輸入你可以提供的其他一般幫助…" />
               </div>
             </div>
-            <div class="skill-category">
-              <span class="skill-category-title">📱 數位教學</span>
-              <div class="skill-tags">
-                <span class="skill-tag" data-skill="智慧手機教學">📱 智慧手機教學</span>
-                <span class="skill-tag" data-skill="電腦維修">💻 電腦維修</span>
-              </div>
-            </div>
-            <div class="skill-category">
-              <span class="skill-category-title">🔧 修繕維護</span>
-              <div class="skill-tags">
-                <span class="skill-tag" data-skill="水電修繕">🔧 水電修繕</span>
-                <span class="skill-tag" data-skill="家具組裝">🪑 家具組裝</span>
-                <span class="skill-tag" data-skill="接送服務">🚗 接送服務</span>
-              </div>
-            </div>
-            <div class="skill-category">
-              <span class="skill-category-title">❤️ 長照陪伴</span>
-              <div class="skill-tags">
-                <span class="skill-tag" data-skill="陪伴聊天">💬 陪伴聊天</span>
-                <span class="skill-tag" data-skill="就醫陪伴">🏥 就醫陪伴</span>
-              </div>
-            </div>
+            <!-- 🔵 技能互助 -->
             <div class="skill-category" style="margin-bottom:0">
-              <span class="skill-category-title">✏️ 自訂技能</span>
-              <input type="text" id="custom-skill-input" placeholder="輸入技能名稱後按 Enter"
-                style="width:100%;padding:8px 12px;border:1.5px solid #d0e4f5;border-radius:10px;font-size:13px;outline:none"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();window.addCustomSkill('reg')}" />
+              <div class="skill-cat-header blue">🔵 技能互助</div>
+              <div class="skill-tags" id="reg-skill-tags">
+                <span class="skill-tag" data-skill="簡單修繕" data-cat="skill">🔧 簡單修繕</span>
+                <span class="skill-tag" data-skill="基礎電器" data-cat="skill">💡 基礎電器</span>
+                <span class="skill-tag" data-skill="電腦" data-cat="skill">💻 電腦</span>
+                <span class="skill-tag" data-skill="手機/3C" data-cat="skill">📱 手機/3C</span>
+                <span class="skill-tag" data-skill="腳踏車維修" data-cat="skill">🚲 腳踏車維修</span>
+                <span class="skill-tag" data-skill="課業" data-cat="skill">📚 課業</span>
+                <span class="skill-tag" data-skill="設計" data-cat="skill">🎨 設計</span>
+                <span class="skill-tag" data-skill="攝影" data-cat="skill">📷 攝影</span>
+                <span class="skill-tag" data-skill="程式設計" data-cat="skill">👨‍💻 程式設計</span>
+                <span class="skill-tag" data-skill="其他(技能)" data-cat="skill" data-other="skills"
+                  onclick="window.toggleOtherInput('reg-skill-other', this)">➕ 其他</span>
+              </div>
+              <div class="skill-other-input-wrap" id="reg-skill-other">
+                <input class="skill-other-input" id="reg-skill-other-input"
+                  placeholder="請輸入你可以提供的其他技能幫助…" />
+              </div>
             </div>
           </div>
         </div>
@@ -1578,7 +1625,21 @@
             <div style="margin-top:10px">
               <span class="points-badge large" id="profile-points">⭐ — 點</span>
             </div>
-            <div class="tags profile-tags" id="profile-tags" style="margin-top:10px"></div>
+            <!-- 我的技能管理區 -->
+            <div class="my-skills-section" style="margin-top:14px">
+              <h4>
+                💪 我的技能
+                <button class="btn-edit-skills" onclick="window.openSkillEditModal()">✏️ 編輯技能</button>
+              </h4>
+              <div id="profile-skill-general" style="margin-bottom:8px">
+                <div style="font-size:11px;font-weight:700;color:#22c55e;margin-bottom:5px">🟢 一般互助</div>
+                <div id="profile-skill-general-tags" class="tags" style="margin:0"><span class="my-skills-empty">尚未設定</span></div>
+              </div>
+              <div id="profile-skill-tech">
+                <div style="font-size:11px;font-weight:700;color:#5B8DB8;margin-bottom:5px">🔵 技能互助</div>
+                <div id="profile-skill-tech-tags" class="tags" style="margin:0"><span class="my-skills-empty">尚未設定</span></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="history-card">
@@ -1851,6 +1912,64 @@
   </div>
 </div>
 
+<!-- ════════════════════════════════
+     編輯技能 Modal
+════════════════════════════════ -->
+<div class="modal-overlay" id="skill-edit-modal-overlay">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+    <h3>💪 編輯我的技能</h3>
+    <div class="modal-sub" style="margin-bottom:20px">選擇你可以提供的幫助，勾選「其他」可輸入自訂內容</div>
+
+    <!-- 🟢 一般互助 -->
+    <div style="margin-bottom:18px">
+      <div class="skill-cat-header green" style="margin-bottom:10px">🟢 一般互助</div>
+      <div class="skill-tags" id="edit-general-tags">
+        <span class="skill-tag" data-skill="搬運" data-cat="general">🪜 搬運</span>
+        <span class="skill-tag" data-skill="代買" data-cat="general">🛒 代買</span>
+        <span class="skill-tag" data-skill="代領" data-cat="general">📦 代領</span>
+        <span class="skill-tag" data-skill="陪伴" data-cat="general">💚 陪伴</span>
+        <span class="skill-tag" data-skill="外出協助" data-cat="general">🚶 外出協助</span>
+        <span class="skill-tag" data-skill="居家整理" data-cat="general">🧹 居家整理</span>
+        <span class="skill-tag" data-skill="寵物照顧" data-cat="general">🐾 寵物照顧</span>
+        <span class="skill-tag" data-skill="其他(一般)" data-cat="general"
+          onclick="window.toggleOtherInput('edit-general-other', this)">➕ 其他</span>
+      </div>
+      <div class="skill-other-input-wrap" id="edit-general-other">
+        <input class="skill-other-input" id="edit-general-other-input"
+          placeholder="請輸入你可以提供的其他一般幫助…" />
+      </div>
+    </div>
+
+    <!-- 🔵 技能互助 -->
+    <div style="margin-bottom:20px">
+      <div class="skill-cat-header blue" style="margin-bottom:10px">🔵 技能互助</div>
+      <div class="skill-tags" id="edit-skill-modal-tags">
+        <span class="skill-tag" data-skill="簡單修繕" data-cat="skill">🔧 簡單修繕</span>
+        <span class="skill-tag" data-skill="基礎電器" data-cat="skill">💡 基礎電器</span>
+        <span class="skill-tag" data-skill="電腦" data-cat="skill">💻 電腦</span>
+        <span class="skill-tag" data-skill="手機/3C" data-cat="skill">📱 手機/3C</span>
+        <span class="skill-tag" data-skill="腳踏車維修" data-cat="skill">🚲 腳踏車維修</span>
+        <span class="skill-tag" data-skill="課業" data-cat="skill">📚 課業</span>
+        <span class="skill-tag" data-skill="設計" data-cat="skill">🎨 設計</span>
+        <span class="skill-tag" data-skill="攝影" data-cat="skill">📷 攝影</span>
+        <span class="skill-tag" data-skill="程式設計" data-cat="skill">👨‍💻 程式設計</span>
+        <span class="skill-tag" data-skill="其他(技能)" data-cat="skill"
+          onclick="window.toggleOtherInput('edit-skill-other', this)">➕ 其他</span>
+      </div>
+      <div class="skill-other-input-wrap" id="edit-skill-other">
+        <input class="skill-other-input" id="edit-skill-other-input"
+          placeholder="請輸入你可以提供的其他技能幫助…" />
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="window.closeSkillEditModal()">取消</button>
+      <button class="btn-send" onclick="window.saveSkillEdit()">💾 儲存技能</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- 刪除確認 Modal -->
 <div class="modal-overlay" id="delete-confirm-overlay">
   <div class="modal" style="max-width:400px;text-align:center">
@@ -2075,9 +2194,13 @@ onAuthStateChanged(auth, async user => {
       const snap = await getDoc(doc(db, 'users', user.uid));
       if (snap.exists()) {
         currentUserData = snap.data();
-        // 確保本地 currentUserData 有 name 欄位（舊資料可能只有 displayName 或只有 name）
         if (!currentUserData.name) currentUserData.name = currentUserData.displayName || derivedName;
-        enterApp();
+        // ── 首次登入判斷：若已設定過技能（skillsConfigured=true 或 age 有值）→ 直接進入 App
+        if (currentUserData.skillsConfigured || currentUserData.age) {
+          enterApp();
+        } else {
+          showSkillSetup();
+        }
       } else {
         // 理論上 setDoc 後一定存在，保險起見
         currentUserData = {
@@ -2142,13 +2265,88 @@ window.signInWithGoogle = async () => {
 // ─────────────────────────────────
 //  Google 首次登入 → 補填技能頁
 // ─────────────────────────────────
+// ── 技能資料結構輔助函式 ──
+// 從 currentUserData 取出完整技能列表（含自訂），用於 sidebar/cards 顯示
+function getAllSkillLabels(userData) {
+  const d = userData || {};
+  return [
+    ...(d.generalTasks || []),
+    ...(d.skills       || []),
+    ...(d.customGeneralTasks || []).map(s => `✏️ ${s}`),
+    ...(d.customSkills       || []).map(s => `✏️ ${s}`),
+  ];
+}
+
+// 套用已存的技能到指定容器的 skill-tag（勾選 + 其他輸入框）
+function applySkillsToContainer(containerGenId, containerSklId, otherGenId, otherGenInputId, otherSklId, otherSklInputId, userData) {
+  const d = userData || {};
+  const generalTasks       = d.generalTasks       || [];
+  const skills             = d.skills             || [];
+  const customGeneralTasks = d.customGeneralTasks || [];
+  const customSkills       = d.customSkills       || [];
+
+  // 一般互助
+  document.querySelectorAll(`#${containerGenId} .skill-tag`).forEach(tag => {
+    const isOther = tag.dataset.skill === '其他(一般)';
+    tag.classList.toggle('selected', !isOther && generalTasks.includes(tag.dataset.skill));
+  });
+  if (customGeneralTasks.length) {
+    const otherTag = document.querySelector(`#${containerGenId} [data-skill="其他(一般)"]`);
+    if (otherTag) { otherTag.classList.add('selected'); window.toggleOtherInput(otherGenId, otherTag, true); }
+    const inp = document.getElementById(otherGenInputId);
+    if (inp) inp.value = customGeneralTasks.join('、');
+  }
+
+  // 技能互助
+  document.querySelectorAll(`#${containerSklId} .skill-tag`).forEach(tag => {
+    const isOther = tag.dataset.skill === '其他(技能)';
+    tag.classList.toggle('selected', !isOther && skills.includes(tag.dataset.skill));
+  });
+  if (customSkills.length) {
+    const otherTag = document.querySelector(`#${containerSklId} [data-skill="其他(技能)"]`);
+    if (otherTag) { otherTag.classList.add('selected'); window.toggleOtherInput(otherSklId, otherTag, true); }
+    const inp = document.getElementById(otherSklInputId);
+    if (inp) inp.value = customSkills.join('、');
+  }
+}
+
+// 從容器讀出技能（分 generalTasks / skills / customGeneralTasks / customSkills）
+function readSkillsFromContainer(containerGenId, containerSklId, otherGenInputId, otherSklInputId) {
+  const generalTasks = [...document.querySelectorAll(`#${containerGenId} .skill-tag.selected`)]
+    .map(t => t.dataset.skill).filter(s => s !== '其他(一般)');
+  const skills = [...document.querySelectorAll(`#${containerSklId} .skill-tag.selected`)]
+    .map(t => t.dataset.skill).filter(s => s !== '其他(技能)');
+
+  const rawGenOther = (document.getElementById(otherGenInputId)?.value || '').trim();
+  const rawSklOther = (document.getElementById(otherSklInputId)?.value || '').trim();
+
+  const customGeneralTasks = rawGenOther ? rawGenOther.split(/[、,，]+/).map(s=>s.trim()).filter(Boolean) : [];
+  const customSkills       = rawSklOther ? rawSklOther.split(/[、,，]+/).map(s=>s.trim()).filter(Boolean) : [];
+
+  return { generalTasks, skills, customGeneralTasks, customSkills };
+}
+
+// ── 其他勾選展開 / 收合 ──
+window.toggleOtherInput = (wrapId, tagEl, forceOpen = false) => {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const willOpen = forceOpen || !wrap.classList.contains('open');
+  wrap.classList.toggle('open', willOpen);
+  if (tagEl) tagEl.classList.toggle('selected', willOpen);
+  if (!willOpen) {
+    // 取消勾選 → 清空輸入內容
+    const inp = wrap.querySelector('.skill-other-input');
+    if (inp) inp.value = '';
+  }
+};
+
 function showSkillSetup() {
-  // 顯示技能補填 Modal
+  // 首次登入 Google → 補填年齡/性別/技能
   const overlay = document.createElement('div');
   overlay.id = 'skill-setup-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:300;padding:24px';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:300;padding:24px;overflow-y:auto';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:20px;padding:36px;max-width:480px;width:100%">
+    <div style="background:#fff;border-radius:20px;padding:36px;max-width:520px;width:100%">
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:40px;margin-bottom:8px">👋</div>
         <h2 style="font-size:20px;font-weight:800;color:#3D3D3D">歡迎，${currentUserData.name}！</h2>
@@ -2165,33 +2363,47 @@ function showSkillSetup() {
           <select id="setup-gender"
             style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none">
             <option value="">請選擇</option>
-            <option value="男">男</option>
-            <option value="女">女</option>
-            <option value="其他">其他</option>
+            <option value="男">男</option><option value="女">女</option><option value="其他">其他</option>
           </select>
         </div>
       </div>
-      <label style="display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px">我具備的技能（可多選）</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px" id="setup-skills">
-        ${['🔧 水電修繕','📱 智慧手機教學','🍳 傳統烹飪','🛒 代購代辦','🪑 家具組裝','💬 陪伴聊天','🚗 接送服務','💻 電腦維修']
-          .map(s => `<span onclick="this.classList.toggle('sel')"
-            style="padding:7px 13px;border-radius:20px;border:1.5px solid #e5e7eb;font-size:12px;cursor:pointer;transition:all .15s"
-            data-skill="${s.replace(/^.+ /,'')}"
-            class="setup-skill-tag">${s}</span>`).join('')}
+      <label style="display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">我可以幫什麼（可多選）</label>
+      <!-- 🟢 一般互助 -->
+      <div style="margin-bottom:14px">
+        <div class="skill-cat-header green" style="margin-bottom:8px">🟢 一般互助</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="setup-general-tags">
+          ${['搬運','代買','代領','陪伴','外出協助','居家整理','寵物照顧'].map(s=>`
+            <span class="skill-tag setup-skill-tag" data-skill="${s}" data-cat="general">${s}</span>`).join('')}
+          <span class="skill-tag setup-skill-tag" data-skill="其他(一般)" data-cat="general"
+            onclick="window.toggleOtherInput('setup-general-other',this)">➕ 其他</span>
+        </div>
+        <div class="skill-other-input-wrap" id="setup-general-other">
+          <input class="skill-other-input" id="setup-general-other-input" placeholder="請輸入其他一般幫助…"/>
+        </div>
+      </div>
+      <!-- 🔵 技能互助 -->
+      <div style="margin-bottom:24px">
+        <div class="skill-cat-header blue" style="margin-bottom:8px">🔵 技能互助</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="setup-skill-tags">
+          ${['簡單修繕','基礎電器','電腦','手機/3C','腳踏車維修','課業','設計','攝影','程式設計'].map(s=>`
+            <span class="skill-tag setup-skill-tag" data-skill="${s}" data-cat="skill">${s}</span>`).join('')}
+          <span class="skill-tag setup-skill-tag" data-skill="其他(技能)" data-cat="skill"
+            onclick="window.toggleOtherInput('setup-skill-other',this)">➕ 其他</span>
+        </div>
+        <div class="skill-other-input-wrap" id="setup-skill-other">
+          <input class="skill-other-input" id="setup-skill-other-input" placeholder="請輸入其他技能幫助…"/>
+        </div>
       </div>
       <button onclick="window.completeSetup()"
         style="width:100%;padding:13px;background:#5B8DB8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
         完成設定，進入平台 →
       </button>
     </div>`;
-  // 技能標籤切換樣式
+  // 技能標籤點擊切換
   overlay.querySelectorAll('.setup-skill-tag').forEach(t => {
-    t.addEventListener('click', () => {
-      const sel = t.classList.contains('sel');
-      t.style.background    = sel ? '' : '#5B8DB8';
-      t.style.borderColor   = sel ? '#d0e4f5' : '#5B8DB8';
-      t.style.color         = sel ? '' : '#fff';
-    });
+    if (!t.dataset.other && t.dataset.skill !== '其他(一般)' && t.dataset.skill !== '其他(技能)') {
+      t.addEventListener('click', () => t.classList.toggle('selected'));
+    }
   });
   document.body.appendChild(overlay);
 }
@@ -2199,23 +2411,26 @@ function showSkillSetup() {
 window.completeSetup = async () => {
   const age    = document.getElementById('setup-age').value.trim();
   const gender = document.getElementById('setup-gender').value;
-  const skills = [...document.querySelectorAll('#setup-skills .setup-skill-tag.sel')]
-                   .map(t => t.dataset.skill);
   if (!age)    return alert('請填寫年齡');
   if (!gender) return alert('請選擇性別');
+
+  const { generalTasks, skills, customGeneralTasks, customSkills } =
+    readSkillsFromContainer('setup-general-tags','setup-skill-tags','setup-general-other-input','setup-skill-other-input');
 
   const emojis = ['👨','👩','🧑','👷','👩‍💻','👩‍🍳','🚗'];
   const derivedName = currentUserData.name || currentUserData.displayName
                    || currentUser.displayName || currentUser.email.split('@')[0] || '社區鄰居';
   await setDoc(doc(db, 'users', currentUser.uid), {
-    uid:         currentUser.uid,
-    name:        derivedName,
-    displayName: derivedName,        // 確保 getUserInfo 能查到
-    email:       currentUserData.email || currentUser.email,
-    photoURL:    currentUser.photoURL || '',
-    age:    parseInt(age),
-    gender, skills,
-    emoji:  emojis[Math.floor(Math.random()*emojis.length)],
+    uid: currentUser.uid, name: derivedName, displayName: derivedName,
+    email: currentUserData.email || currentUser.email,
+    photoURL: currentUser.photoURL || '',
+    age: parseInt(age), gender,
+    // 新資料結構
+    generalTasks, skills, customGeneralTasks, customSkills,
+    // 向下相容：合併所有技能到 skills 欄位供舊邏輯使用
+    skillsCompat: [...generalTasks, ...skills, ...customGeneralTasks, ...customSkills],
+    emoji: emojis[Math.floor(Math.random()*emojis.length)],
+    skillsConfigured: true,   // 標記「已設定過技能」
     createdAt: serverTimestamp()
   }, { merge: true });
   document.getElementById('skill-setup-overlay')?.remove();
@@ -2252,7 +2467,6 @@ window.doEmailRegister = async () => {
   const gender = document.getElementById('reg-gender').value;
   const email  = document.getElementById('reg-email').value.trim();
   const pass   = document.getElementById('reg-password').value;
-  const skills = [...document.querySelectorAll('#skill-tags .skill-tag.selected')].map(t=>t.dataset.skill);
   document.getElementById('register-error').style.display = 'none';
 
   if (!name)          return showErr('register-error', '請填寫姓名');
@@ -2261,19 +2475,24 @@ window.doEmailRegister = async () => {
   if (!email)         return showErr('register-error', '請填寫電子郵件');
   if (pass.length<6)  return showErr('register-error', '密碼至少 6 位');
 
+  // 讀取新結構技能
+  const { generalTasks, skills, customGeneralTasks, customSkills } =
+    readSkillsFromContainer('reg-general-tags','reg-skill-tags','reg-general-other-input','reg-skill-other-input');
+
   const btn = document.getElementById('btn-register');
   btn.disabled = true; btn.textContent = '註冊中...';
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const emojis = ['👨','👩','🧑','👷','👩‍💻','👩‍🍳'];
     await setDoc(doc(db,'users', cred.user.uid), {
-      uid:         cred.user.uid,
-      name,
-      displayName: name,             // 確保 getUserInfo 能查到
-      age: parseInt(age), gender, email, skills,
-      email,
-      photoURL:    '',
+      uid: cred.user.uid, name, displayName: name,
+      age: parseInt(age), gender, email,
+      photoURL: '',
+      // 新資料結構
+      generalTasks, skills, customGeneralTasks, customSkills,
+      skillsCompat: [...generalTasks, ...skills, ...customGeneralTasks, ...customSkills],
       emoji: emojis[Math.floor(Math.random()*emojis.length)],
+      skillsConfigured: true,
       createdAt: serverTimestamp()
     });
     // 成功後由 onAuthStateChanged 接手，自動進入 App
@@ -2519,7 +2738,6 @@ function updateSidebarUser() {
     if (n) n.textContent = currentUserData.name;
     if (m) m.textContent = `${currentUserData.age} 歲・${currentUserData.gender}`;
   });
-  // 更新所有點數顯示
   ['', '4'].forEach(s => {
     const pts = document.getElementById('sb-user-points' + s);
     if (pts) pts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
@@ -2528,9 +2746,11 @@ function updateSidebarUser() {
   if (shopPts) shopPts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
   const profilePts = document.getElementById('profile-points');
   if (profilePts) profilePts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
+  // Sidebar 技能標籤：顯示所有類別（新結構 + 舊結構向下相容）
+  const allLabels = getAllSkillLabels(currentUserData);
   const tagsEl = document.getElementById('sb-user-tags');
-  if (tagsEl) tagsEl.innerHTML = (currentUserData.skills||[]).length
-    ? currentUserData.skills.map(s=>`<span class="tag" style="font-size:10px">${s}</span>`).join('')
+  if (tagsEl) tagsEl.innerHTML = allLabels.length
+    ? allLabels.map(s=>`<span class="tag" style="font-size:10px">${s}</span>`).join('')
     : '<span style="font-size:11px;color:#9ca3af">尚未設定技能</span>';
 }
 
@@ -3129,9 +3349,25 @@ async function renderProfile() {
   document.getElementById('profile-meta').textContent = `${currentUserData.age} 歲・${currentUserData.gender}`;
   const profilePtsEl = document.getElementById('profile-points');
   if (profilePtsEl) profilePtsEl.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
-  document.getElementById('profile-tags').innerHTML = (currentUserData.skills||[]).length
-    ? currentUserData.skills.map(s=>`<span class="tag">${s}</span>`).join('')
-    : '<span style="font-size:13px;color:#9ca3af">尚未設定技能</span>';
+
+  // ── 我的技能管理區：分類顯示 ──
+  const d = currentUserData;
+  const genLabels = [
+    ...(d.generalTasks||[]),
+    ...(d.customGeneralTasks||[]).map(s=>`✏️ ${s}`)
+  ];
+  const sklLabels = [
+    ...(d.skills||[]),
+    ...(d.customSkills||[]).map(s=>`✏️ ${s}`)
+  ];
+  const genEl = document.getElementById('profile-skill-general-tags');
+  const sklEl = document.getElementById('profile-skill-tech-tags');
+  if (genEl) genEl.innerHTML = genLabels.length
+    ? genLabels.map(s=>`<span class="tag">${s}</span>`).join('')
+    : '<span class="my-skills-empty">尚未設定</span>';
+  if (sklEl) sklEl.innerHTML = sklLabels.length
+    ? sklLabels.map(s=>`<span class="tag">${s}</span>`).join('')
+    : '<span class="my-skills-empty">尚未設定</span>';
 
   // ── 送出的邀請（本地 + Firestore 合併）
   const sl = document.getElementById('sent-list');
@@ -3220,6 +3456,68 @@ async function renderProfile() {
 }
 
 window.renderProfile = renderProfile;
+
+// ─────────────────────────────────
+//  編輯技能 Modal（profile 頁「我的技能」）
+// ─────────────────────────────────
+window.openSkillEditModal = () => {
+  if (!currentUserData) return;
+  // 重置所有勾選與輸入框
+  document.querySelectorAll('#edit-general-tags .skill-tag, #edit-skill-modal-tags .skill-tag')
+    .forEach(t => t.classList.remove('selected'));
+  ['edit-general-other','edit-skill-other'].forEach(id => {
+    const wrap = document.getElementById(id);
+    if (wrap) wrap.classList.remove('open');
+  });
+  ['edit-general-other-input','edit-skill-other-input'].forEach(id => {
+    const inp = document.getElementById(id);
+    if (inp) inp.value = '';
+  });
+  // 預載使用者現有技能（含其他自訂）
+  applySkillsToContainer(
+    'edit-general-tags','edit-skill-modal-tags',
+    'edit-general-other','edit-general-other-input',
+    'edit-skill-other', 'edit-skill-other-input',
+    currentUserData
+  );
+  document.getElementById('skill-edit-modal-overlay').classList.add('open');
+};
+
+window.closeSkillEditModal = () => {
+  document.getElementById('skill-edit-modal-overlay').classList.remove('open');
+};
+
+window.saveSkillEdit = async () => {
+  if (!currentUser) return;
+  const { generalTasks, skills, customGeneralTasks, customSkills } =
+    readSkillsFromContainer(
+      'edit-general-tags','edit-skill-modal-tags',
+      'edit-general-other-input','edit-skill-other-input'
+    );
+
+  // ── 歷史紀錄保護：只更新 users 文件，invites/history 完全不動 ──
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), {
+      generalTasks, skills, customGeneralTasks, customSkills,
+      skillsCompat: [...generalTasks, ...skills, ...customGeneralTasks, ...customSkills],
+      skillsConfigured: true,
+    }, { merge: true });
+
+    // 同步更新本地快取
+    currentUserData.generalTasks       = generalTasks;
+    currentUserData.skills             = skills;
+    currentUserData.customGeneralTasks = customGeneralTasks;
+    currentUserData.customSkills       = customSkills;
+    currentUserData.skillsCompat       = [...generalTasks, ...skills, ...customGeneralTasks, ...customSkills];
+
+    window.closeSkillEditModal();
+    updateSidebarUser();
+    renderProfile();
+    showToast('✅ 技能已更新！');
+  } catch(e) {
+    showToast('儲存失敗：' + e.message);
+  }
+};
 
 async function renderTransactions() {
   const tl = document.getElementById('tx-list');
@@ -3926,6 +4224,32 @@ document.getElementById('complete-modal').addEventListener('click', e => {
 document.getElementById('edit-skill-tags').addEventListener('click', e => {
   const tag = e.target.closest('.skill-tag');
   if (tag) tag.classList.toggle('selected');
+});
+// 編輯技能 Modal 標籤點擊（排除「其他」—已由 onclick 處理）
+['edit-general-tags','edit-skill-modal-tags'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('click', e => {
+    const tag = e.target.closest('.skill-tag');
+    if (!tag) return;
+    if (tag.dataset.skill === '其他(一般)' || tag.dataset.skill === '其他(技能)') return;
+    tag.classList.toggle('selected');
+  });
+});
+// 編輯技能 Modal 背景點擊關閉
+document.getElementById('skill-edit-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('skill-edit-modal-overlay')) window.closeSkillEditModal();
+});
+// 註冊頁技能標籤（排除「其他」）
+['reg-general-tags','reg-skill-tags'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('click', e => {
+    const tag = e.target.closest('.skill-tag');
+    if (!tag) return;
+    if (tag.dataset.skill === '其他(一般)' || tag.dataset.skill === '其他(技能)') return;
+    tag.classList.toggle('selected');
+  });
 });
 // 訪客登入引導彈窗：點擊背景關閉
 document.getElementById('login-prompt-overlay').addEventListener('click', e => {
