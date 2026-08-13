@@ -6252,25 +6252,24 @@ function renderBubbleContent(m) {
   if (m.recalled) {
     return `<div class="bubble"><span class="bubble-recalled">此訊息已收回</span></div>`;
   }
-  // 報價卡片（點數協商）
-  if (m.type === 'quote') {
-    const pts      = m.quotedPoints || 0;
+  // 報價卡片（type:'quote' 或 type:'offer' 皆走同一渲染邏輯）
+  if (m.type === 'quote' || m.type === 'offer') {
+    // 相容兩種欄位命名：quotedPoints（舊）/ points（offer 格式）
+    const pts      = m.quotedPoints || m.points || 0;
     const fee      = m.fee  || Math.floor(pts * 0.1);
     const gain     = m.gain || (pts - fee);
-    const isPending = m.quoteStatus === 'pending';
-    // 只有「對方送來的」且「仍在 pending」才顯示互動按鈕
-    // isMe 在 renderBubbleContent 外部，透過 data attribute 傳入
-    const fromMe   = (m._isMe === true);   // 由呼叫端注入
+    const isPending = (m.quoteStatus === 'pending') || (m.type === 'offer' && !m.agreed);
+    const fromMe   = (m._isMe === true);
     const msgId    = m._docId || '';
-    // 如果 chat 層級已同意（quoteStatus=agreed 或 points>0），不論訊息狀態為何都顯示「已確認」
+    // 若 chat 層級已鎖定，一律顯示「已確認」
     const activeChatData = myChats.find(c => c.chatId === activeChatId);
     const chatAlreadyAgreed = activeChatData &&
       (activeChatData.quoteStatus === 'agreed' || (activeChatData.points || 0) > 0);
-    const actionsHtml = (chatAlreadyAgreed)
+    const actionsHtml = chatAlreadyAgreed
       ? `<div style="font-size:11px;color:#16a34a;margin-top:8px">✅ 已確認</div>`
       : (!fromMe && isPending)
         ? `<div class="quote-card-actions">
-             <button class="btn-qc-agree" onclick="window.agreeQuotedPoints()">✅ 同意 ${pts} 點</button>
+             <button class="btn-qc-agree" onclick="window.acceptNegotiationOffer(${pts})">✅ 同意此報價（${pts} 點）</button>
              <button class="btn-qc-counter" onclick="window._toggleCounterRow('qcc-${msgId}')">💬 重新出價</button>
            </div>
            <div class="quote-card-counter-row" id="qcc-${msgId}">
@@ -6278,10 +6277,10 @@ function renderBubbleContent(m) {
              <button class="btn-qc-send-counter" onclick="window.submitCounterQuote('qci-${msgId}', this)">送出</button>
            </div>`
         : (fromMe && isPending
-            ? `<div style="font-size:11px;color:#6d28d9;margin-top:8px">⏳ 等待對方確認中…</div>`
+            ? `<div style="font-size:11px;color:#6d28d9;margin-top:8px">⏳ 等待對方確認報價中…</div>`
             : `<div style="font-size:11px;color:#16a34a;margin-top:8px">✅ 已確認</div>`);
     return `<div class="bubble-quote-card">
-      <div style="font-size:12px;font-weight:700;margin-bottom:4px">💰 服務報價</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px">💰 提議金額</div>
       <div class="quote-amount">${pts} 點</div>
       <div class="quote-note">手續費：${fee} 點 ／ 提供者實得：${gain} 點</div>
       ${actionsHtml}
@@ -6925,7 +6924,7 @@ function _updateQuoteBar(chat) {
       inner.innerHTML = `
         <span class="chat-quote-label">💰 對方出價</span>
         <span class="quote-requester-msg">對方提議 <strong>${quotedPoints} 點</strong>（對方實得 ${gain} 點，手續費 ${fee} 點）</span>
-        <button class="btn-agree-quote" onclick="window.agreeQuotedPoints()">✅ 同意</button>
+        <button class="btn-agree-quote" onclick="window.acceptNegotiationOffer(${quotedPoints})">✅ 同意此報價（${quotedPoints} 點）</button>
         <button class="btn-renegotiate-quote" onclick="window.renegotiatePoints()">💬 還價</button>`;
     }
     return;
@@ -6937,12 +6936,12 @@ function _updateQuoteBar(chat) {
   inner.innerHTML = `
     <span class="chat-quote-label">💰 點數議價</span>
     <div class="quote-input-wrap">
-      <input class="quote-pts-input" id="inline-quote-input" type="number" min="1" max="9999"
-        placeholder="輸入提議點數（如 100）"
+      <input class="quote-pts-input" id="offerPointsInput" type="number" min="1" max="9999"
+        placeholder="輸入提議點數（如 50）"
         oninput="window._onQuoteInputChange(this)" />
       <span class="quote-fee-hint" id="inline-quote-hint">輸入後可預覽手續費</span>
     </div>
-    <button class="btn-send-quote" id="inline-quote-btn" onclick="window.submitInlineQuote()">💰 發送出價</button>`;
+    <button class="btn-send-quote" id="inline-quote-btn" onclick="window.sendNegotiationOffer()">💰 發送報價</button>`;
 }
 
 // ── 報價輸入框即時預覽 ──
@@ -6961,7 +6960,8 @@ window._onQuoteInputChange = (input) => {
 
 // ── 內聯送出報價（取代 openSetPointsModal + submitSetPoints）──
 window.submitInlineQuote = async () => {
-  const input = document.getElementById('inline-quote-input');
+  // 同時相容 offerPointsInput（新命名）與 inline-quote-input（舊命名）
+  const input = document.getElementById('offerPointsInput') || document.getElementById('inline-quote-input');
   const btn   = document.getElementById('inline-quote-btn');
   const pts   = parseInt(input?.value || '0');
   if (!pts || pts <= 0) return showToast('請輸入有效點數（大於 0）');
@@ -7003,6 +7003,75 @@ window.submitInlineQuote = async () => {
     showToast('出價送出失敗：' + e.message);
     if (btn) { btn.disabled = false; btn.textContent = '💰 發送出價'; }
   }
+};
+
+// ── sendNegotiationOffer：發送報價（公開 API，包裝 submitInlineQuote）──
+// 讀取 offerPointsInput → 寫入 type:'offer' 訊息（相容現有 quote 流程）
+window.sendNegotiationOffer = async () => {
+  const input = document.getElementById('offerPointsInput') || document.getElementById('inline-quote-input');
+  const pts   = parseInt(input?.value || '0');
+  if (!pts || pts <= 0) return showToast('請輸入有效點數（大於 0）');
+  if (!activeChatId || !currentUser) return;
+
+  const btn  = document.getElementById('inline-quote-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 送出中…'; }
+
+  const fee  = Math.floor(pts * 0.1);
+  const gain = pts - fee;
+  const chat = myChats.find(c => c.chatId === activeChatId);
+  const peerId = chat ? otherUid(chat) : '';
+
+  try {
+    // 更新 chat 文件（沿用 pending_quote 狀態機）
+    await setDoc(doc(db, 'chats', activeChatId), {
+      quotedPoints: pts,
+      quoteStatus:  'pending_quote',
+      quotedBy:     currentUser.uid,
+      quotedAt:     serverTimestamp()
+    }, { merge: true });
+
+    // 寫入 type:'offer' 訊息卡片
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderId:     currentUser.uid,
+      receiverId:   peerId,
+      type:         'offer',
+      points:       pts,
+      quotedPoints: pts,
+      fee, gain,
+      text:         `💰 提議金額：${pts} 點`,
+      quoteStatus:  'pending',
+      time:         nowTime(),
+      timestamp:    serverTimestamp(),
+      isRead:       false
+    });
+
+    if (chat) { chat.quotedPoints = pts; chat.quotedBy = currentUser.uid; chat.quoteStatus = 'pending_quote'; }
+    _updateChatActionBar(chat || {});
+    if (input) input.value = '';
+    showToast(`💰 報價 ${pts} 點已送出，等待對方確認`);
+  } catch(e) {
+    showToast('報價送出失敗：' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '💰 發送報價'; }
+  }
+};
+
+// ── acceptNegotiationOffer(pts)：同意指定金額報價（公開 API，包裝 agreeQuotedPoints）──
+// 支援從訊息卡片傳入 pts 直接鎖定，不依賴 chat.quotedPoints
+window.acceptNegotiationOffer = async (pts) => {
+  if (!activeChatId || !currentUser) return;
+  const chat = myChats.find(c => c.chatId === activeChatId);
+  // 若呼叫端傳入 pts（來自卡片按鈕），直接覆蓋 chat.quotedPoints 再走同意流程
+  if (pts && pts > 0 && chat) {
+    chat.quotedPoints = pts;
+    // 確保 Firestore 也更新（以防 chat 快取與訊息卡片不同步）
+    await setDoc(doc(db, 'chats', activeChatId), {
+      quotedPoints: pts,
+      quoteStatus:  'pending_quote',
+      quotedBy:     chat.quotedBy || otherUid(chat)
+    }, { merge: true }).catch(() => {});
+  }
+  // 走現有完整的同意流程（更新狀態、發系統訊息、鎖定點數、更新 needs/services）
+  await window.agreeQuotedPoints();
 };
 
 // ── 展開/收起卡片內還價輸入框 ──
