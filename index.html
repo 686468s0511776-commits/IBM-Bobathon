@@ -4767,22 +4767,21 @@ async function loadCards() {
   document.getElementById('need-cards').innerHTML  = '<div style="text-align:center;padding:40px;color:#9ca3af">載入中...</div>';
   document.getElementById('offer-cards').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">載入中...</div>';
 
-  // 求助需求（過濾掉已完成/已下架的卡片）
-  try {
-    const q = query(collection(db,'needs'), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
+  // ── 求助需求：onSnapshot 即時監聽（status 變更時自動重繪卡片）──
+  if (window._needCardsUnsub) { window._needCardsUnsub(); window._needCardsUnsub = null; }
+  const _needQ = query(collection(db, 'needs'), orderBy('createdAt', 'desc'));
+  window._needCardsUnsub = onSnapshot(_needQ, snap => {
     const allCards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // 前端過濾：排除已完成/已取消/已下架（相容中英文狀態值）
     const _inactiveStatuses = new Set(['completed', '已完成', 'canceled', '已取消', 'closed']);
     const activeCards = allCards.filter(c =>
       !c.isArchived && !_inactiveStatuses.has(c.status)
     );
     _allNeedCards = activeCards.length ? activeCards : (allCards.length ? [] : demoNeeds);
     renderNeedCards(_filterCardsByDist(_allNeedCards, _needFilterDist));
-  } catch(e) {
+  }, () => {
     _allNeedCards = demoNeeds;
     renderNeedCards(demoNeeds);
-  }
+  });
 
   // 其他用戶（提供幫助）
   try {
@@ -4942,17 +4941,20 @@ function renderNeedCards(cards) {
       ? `<span class="reward-badge">${rewardMap[d.reward] || d.reward}</span>`
       : '';
 
-    // 底部按鈕（嚴格 isMe，訪客守衛）
+    // 底部按鈕（嚴格 isMe，訪客守衛，含 in_progress 狀態）
     const actionClick = _isGuest
       ? `window.showLoginPrompt('help')`
       : `window.openModal('need','${data}')`;
+    const isInProgress = d.status === 'in_progress';
     const bottomBtn = isMe
       ? `<div class="card-btn-row">
            <div class="btn-card-mine">📌 我的需求</div>
            <button class="btn-card-edit" onclick="window.openEditNeedModal('${d.id}','${data}')">✏️ 編輯</button>
            <button class="btn-card-delete" onclick="window.openDeleteConfirm('needs','${d.id}','${d.desc.slice(0,18).replace(/'/g,'')}')">🗑️</button>
          </div>`
-      : `<button class="btn-card" onclick="${actionClick}">我來幫忙 🙋</button>`;
+      : isInProgress
+        ? `<button class="btn-card" disabled style="background:#f3f4f6;color:#9ca3af;border:1px solid #e5e7eb;cursor:not-allowed">⏳ 已被接單</button>`
+        : `<button class="btn-card" onclick="${actionClick}">我來幫忙 🙋</button>`;
 
     return `<div class="card" id="need-card-${d.id}">
       <div class="card-header">
@@ -5672,6 +5674,19 @@ window.acceptInvite = async (id, btn) => {
     try {
       await ensureChatDoc(chatId, inv, peerId);
       await setDoc(doc(db, 'invites', id), { status: '已接受', chatId }, { merge: true });
+      // ── 將 needs 文件標記為 in_progress（接單後停止其他人接單）──
+      const needId = inv.needId || inv.taskId || null;
+      if (needId) {
+        await setDoc(doc(db, 'needs', needId), {
+          status:     'in_progress',
+          acceptedBy: currentUser.uid,
+          acceptedAt: serverTimestamp()
+        }, { merge: true }).catch(() => {});
+        // 即時更新本地快取（讓按鈕立即變灰）
+        const cached = (_allNeedCards || []).find(c => c.id === needId);
+        if (cached) { cached.status = 'in_progress'; cached.acceptedBy = currentUser.uid; }
+        renderNeedCards(_filterCardsByDist(_allNeedCards || [], _needFilterDist));
+      }
     } catch(e) {
       console.error('acceptInvite Firestore 寫入失敗:', e.message);
     }
@@ -7262,19 +7277,41 @@ window.requestCancel = async () => {
     if (chat?.inviteId) {
       await setDoc(doc(db, 'invites', chat.inviteId), { status: '已取消' }, { merge: true });
     }
-    // 系統訊息
+
+    // ── 恢復 needs 文件為 open，讓其他人可以再接單 ──
+    const cancelNeedId = chat?.needId || chat?.taskId || null;
+    if (cancelNeedId) {
+      try {
+        await setDoc(doc(db, 'needs', cancelNeedId), {
+          status:     'open',
+          acceptedBy: null,
+          acceptedAt: null,
+          reopenedAt: serverTimestamp()
+        }, { merge: true });
+        // 即時更新本地快取
+        const cached = (_allNeedCards || []).find(c => c.id === cancelNeedId);
+        if (cached) { cached.status = 'open'; cached.acceptedBy = null; }
+        renderNeedCards(_filterCardsByDist(_allNeedCards || [], _needFilterDist));
+      } catch(_e) {
+        console.warn('[restore needs] 恢復開放失敗：', _e.message);
+      }
+    }
+
+    // 系統訊息（更新文字：任務已取消，重新開放）
     if (peerId) {
       await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
         senderId: currentUser.uid, receiverId: peerId,
-        text: '⚠️ 任務已取消，媒合解除。',
+        text: '⚠️ 任務已取消，已重新開放給其他鄰居幫助。',
         type: 'system', time: nowTime(),
         timestamp: serverTimestamp(), isRead: false
       });
     }
     if (chat) chat.taskStatus = 'canceled';
     _updateChatActionBar(chat || { taskStatus: 'canceled' });
-    showToast('任務已取消');
+    showToast('任務已取消，已重新開放');
     renderProfile();
+    // Fallback：重新從 Firestore 載入首頁
+    setTimeout(() => loadCards(), 1000);
   } catch(e) {
     showToast('操作失敗，請稍後再試');
   }
