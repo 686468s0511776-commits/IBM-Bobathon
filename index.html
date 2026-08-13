@@ -3255,12 +3255,16 @@ window.redeemItem = async (itemId) => {
       t.update(userRef, { points: increment(-item.price) });
     });
     await addDoc(collection(db, 'point_transactions'), {
-      uid:    currentUser.uid,
-      name:   currentUserData.name,
-      type:   'redeem',
-      delta:  -item.price,
-      reason: `兌換 ${item.name}`,
-      createdAt: serverTimestamp()
+      uid:         currentUser.uid,
+      userId:      currentUser.uid,
+      name:        currentUserData.name,
+      type:        'deduct',
+      delta:       -item.price,
+      amount:      item.price,
+      reason:      `兌換 ${item.name}`,
+      description: `兌換 ${item.name}`,
+      createdAt:   serverTimestamp(),
+      timestamp:   serverTimestamp()
     });
     currentUserData.points = userPts - item.price;
     updateSidebarUser();
@@ -3300,12 +3304,16 @@ window.confirmBuy = async () => {
       t.update(userRef, { points: increment(pts) });
     });
     await addDoc(collection(db,'point_transactions'), {
-      uid:    currentUser.uid,
-      name:   currentUserData.name,
-      type:   'purchase',
-      delta:  pts,
-      reason: `購買 ${pts} 點（NT$${pts}）`,
-      createdAt: serverTimestamp()
+      uid:         currentUser.uid,
+      userId:      currentUser.uid,
+      name:        currentUserData.name,
+      type:        'gain',
+      delta:       pts,
+      amount:      pts,
+      reason:      `購買 ${pts} 點（NT$${pts}）`,
+      description: `購買 ${pts} 點（NT$${pts}）`,
+      createdAt:   serverTimestamp(),
+      timestamp:   serverTimestamp()
     });
     currentUserData.points = (currentUserData.points ?? 0) + pts;
     updateSidebarUser();
@@ -3360,18 +3368,30 @@ window.confirmComplete = async () => {
     });
     // 寫入點數交易日誌
     await addDoc(collection(db,'point_transactions'), {
-      uid: requesterUid, name: toName,
-      type: 'spend', delta: -points,
-      reason: `任務完成 — 支付給 ${currentUserData.name}（含 ${fee} 點平台費）`,
+      uid:         requesterUid,
+      userId:      requesterUid,
+      name:        toName,
+      type:        'deduct',
+      delta:       -points,
+      amount:      points,
+      reason:      `任務完成 — 支付給 ${currentUserData.name}（含 ${fee} 點平台費）`,
+      description: `任務完成 — 支付給 ${currentUserData.name}（含 ${fee} 點平台費）`,
       counterpart: currentUserData.name,
-      createdAt: serverTimestamp()
+      createdAt:   serverTimestamp(),
+      timestamp:   serverTimestamp()
     });
     await addDoc(collection(db,'point_transactions'), {
-      uid: providerUid, name: currentUserData.name,
-      type: 'earn', delta: providerGain,
-      reason: `任務完成 — 收到來自 ${toName}（扣除 ${fee} 點手續費）`,
+      uid:         providerUid,
+      userId:      providerUid,
+      name:        currentUserData.name,
+      type:        'gain',
+      delta:       providerGain,
+      amount:      providerGain,
+      reason:      `任務完成 — 收到來自 ${toName}（扣除 ${fee} 點手續費）`,
+      description: `任務完成 — 收到來自 ${toName}（扣除 ${fee} 點手續費）`,
       counterpart: toName,
-      createdAt: serverTimestamp()
+      createdAt:   serverTimestamp(),
+      timestamp:   serverTimestamp()
     });
     await addDoc(collection(db,'points_history'), {
       inviteId, requesterUid, providerUid: providerUid,
@@ -3397,6 +3417,7 @@ window.switchProfileTab = (tab) => {
     t.classList.toggle('active', (i===0&&tab==='invites')||(i===1&&tab==='transactions')));
   document.getElementById('profile-tab-invites').style.display      = tab==='invites'      ? 'block' : 'none';
   document.getElementById('profile-tab-transactions').style.display = tab==='transactions' ? 'block' : 'none';
+  if (tab === 'transactions') renderTransactions();
 };
 
 // ─────────────────────────────────
@@ -4104,29 +4125,46 @@ window.saveSkillEdit = async () => {
 
 async function renderTransactions() {
   const tl = document.getElementById('tx-list');
-  if (!tl) return;
+  if (!tl || !currentUser) return;
   tl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af">載入中...</div>';
   try {
-    const q = query(collection(db,'point_transactions'), where('uid','==',currentUser.uid), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
+    // 只用 where，不加 orderBy，避免 Firestore 複合索引錯誤；排序在前端做
+    const snap = await getDocs(
+      query(collection(db, 'point_transactions'), where('uid', '==', currentUser.uid))
+    );
     if (snap.empty) {
-      tl.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div style="font-size:36px;margin-bottom:8px">⭐</div><p>尚無點數記錄</p></div>';
-    } else {
-      tl.innerHTML = snap.docs.map(d => {
-        const tx = d.data();
-        const isPlus = tx.delta > 0;
-        const dt = tx.createdAt?.toDate?.()?.toLocaleDateString('zh-TW') ?? '';
-        return `<div class="tx-item">
-          <div>
-            <div class="tx-desc">${tx.reason}</div>
-            <div class="tx-meta">${dt}${tx.counterpart ? ' · 對象：' + tx.counterpart : ''}</div>
-          </div>
-          <div class="tx-amount ${isPlus?'plus':'minus'}">${isPlus?'+':''}${tx.delta}</div>
-        </div>`;
-      }).join('');
+      tl.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div style="font-size:36px;margin-bottom:8px">⭐</div><p>目前尚無點數變動紀錄</p></div>';
+      return;
     }
+    // 前端排序：新的在上（相容 createdAt / timestamp 兩種欄位名）
+    const docs = snap.docs
+      .map(d => d.data())
+      .sort((a, b) => {
+        const ta = (a.createdAt ?? a.timestamp)?.seconds ?? 0;
+        const tb = (b.createdAt ?? b.timestamp)?.seconds ?? 0;
+        return tb - ta;
+      });
+
+    tl.innerHTML = docs.map(tx => {
+      // 相容新舊欄位：delta（舊）/ amount（新）；reason（舊）/ description（新）
+      const delta   = tx.delta   ?? (tx.type === 'deduct' ? -(tx.amount ?? 0) : (tx.amount ?? 0));
+      const isPlus  = delta >= 0;
+      const desc    = tx.description ?? tx.reason ?? '點數變動';
+      const tsField = tx.createdAt ?? tx.timestamp;
+      const dt      = tsField?.toDate?.()?.toLocaleString('zh-TW', {
+        month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'
+      }) ?? '';
+      return `<div class="tx-item">
+        <div style="flex:1;min-width:0">
+          <div class="tx-desc">${desc}</div>
+          <div class="tx-meta">${dt}${tx.counterpart ? ' · 對象：' + tx.counterpart : ''}</div>
+        </div>
+        <div class="tx-amount ${isPlus ? 'plus' : 'minus'}">${isPlus ? '🟢 +' : '🔴 '}${Math.abs(delta)} 點</div>
+      </div>`;
+    }).join('');
   } catch(e) {
-    tl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af">載入失敗</div>';
+    console.error('renderTransactions error:', e);
+    tl.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div style="font-size:36px;margin-bottom:8px">⭐</div><p>目前尚無點數變動紀錄</p></div>';
   }
 }
 
@@ -5173,12 +5211,16 @@ window.adminAdjustPoints = async (uid, displayName, dir) => {
     // 寫入管理者操作日誌
     await addDoc(collection(db, 'point_transactions'), {
       uid,
-      name:       displayName,
-      type:       dir > 0 ? 'admin_add' : 'admin_sub',
+      userId:      uid,
+      name:        displayName,
+      type:        dir > 0 ? 'gain' : 'deduct',
       delta,
-      reason:     `管理者手動${action} ${amount} 點`,
+      amount,
+      reason:      `管理者手動${action} ${amount} 點`,
+      description: `管理者手動${action} ${amount} 點`,
       counterpart: currentUserData.displayName || '管理者',
-      createdAt:  serverTimestamp()
+      createdAt:   serverTimestamp(),
+      timestamp:   serverTimestamp()
     });
     showToast(`✅ 已為「${displayName}」${action} ${amount} 點`);
     // 重新載入用戶列表
