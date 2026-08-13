@@ -6,13 +6,60 @@
 <title>社區微互助平台</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
+  /* ══════════════════════════════
+     CSS 變數（Light / Dark Mode）
+  ══════════════════════════════ */
+  :root {
+    --bg-page:      #F8FAFB;
+    --bg-surface:   #ffffff;
+    --bg-surface2:  #f3f4f6;
+    --bg-sidebar:   #ffffff;
+    --bg-card:      #ffffff;
+    --bg-input:     #ffffff;
+    --border:       #e5e7eb;
+    --text-primary: #3D3D3D;
+    --text-muted:   #6b7280;
+    --text-light:   #9ca3af;
+    --shadow:       rgba(0,0,0,.08);
+    --navbar-bg:    #5B8DB8;
+    --bubble-me:    #5B8DB8;
+    --bubble-peer:  #EDF4FB;
+    --bubble-peer-text: #3D3D3D;
+    --chat-status-bg: #f0f9ff;
+    --chat-status-border: #bae6fd;
+    --action-bar-bg: #fffbeb;
+    --action-bar-border: #fde68a;
+  }
+  body.dark {
+    --bg-page:      #111827;
+    --bg-surface:   #1f2937;
+    --bg-surface2:  #374151;
+    --bg-sidebar:   #1f2937;
+    --bg-card:      #1f2937;
+    --bg-input:     #374151;
+    --border:       #374151;
+    --text-primary: #f9fafb;
+    --text-muted:   #9ca3af;
+    --text-light:   #6b7280;
+    --shadow:       rgba(0,0,0,.35);
+    --navbar-bg:    #1a3a5c;
+    --bubble-me:    #2563eb;
+    --bubble-peer:  #374151;
+    --bubble-peer-text: #f9fafb;
+    --chat-status-bg: #1f2937;
+    --chat-status-border: #374151;
+    --action-bar-bg: #292517;
+    --action-bar-border: #78600a;
+  }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: #F8FAFB;
+    background: var(--bg-page);
     font-family: -apple-system, "Segoe UI", system-ui, "Helvetica Neue", sans-serif;
     min-height: 100vh;
-    color: #3D3D3D;
+    color: var(--text-primary);
+    transition: background .25s, color .25s;
   }
 
   /* ══════════════════════════════
@@ -1371,6 +1418,151 @@
     font-size: 13px; font-weight: 700; color: #92400e; margin-top: 6px;
   }
 
+  /* ══════════════════════════════
+     Dark / Light Mode 全站覆蓋
+  ══════════════════════════════ */
+  /* Navbar */
+  .navbar { background: var(--navbar-bg) !important; transition: background .25s; }
+  /* 卡片 / 表面 */
+  .card, .profile-card, .history-card, .register-card, .match-box,
+  .modal, .admin-panel, .review-box,
+  .chat-list-panel, .chat-main-panel, .chat-room-header,
+  .sidebar, .shop-card, .shop-card-inner,
+  .tab-panel, .home-layout, .sidebar-user,
+  .skill-edit-overlay .modal, .buy-points-modal, .redeem-success-box {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+  .cr-messages, .chat-main-panel { background: var(--bg-surface); }
+  .chat-status-bar {
+    background: var(--chat-status-bg) !important;
+    border-color: var(--chat-status-border) !important;
+  }
+  .chat-action-bar {
+    background: var(--action-bar-bg) !important;
+    border-color: var(--action-bar-border) !important;
+  }
+  /* 輸入框 */
+  .chat-room-input, .form-group input, .form-group select,
+  .form-group textarea, .post-layout .form-group input,
+  .post-layout .form-group textarea, .review-textarea,
+  .admin-pts-input, .reject-reason {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border) !important;
+  }
+  /* 文字顏色 */
+  .h-name, .h-msg, .h-time, .cr-name, .cr-meta,
+  .card-name, .card-meta, .card-desc, .card-need-title,
+  .profile-name, .profile-meta, .sidebar-btn,
+  .chat-list-name, .admin-table td { color: var(--text-primary); }
+  .tx-meta, .card-skills, .empty-state p,
+  .admin-table th { color: var(--text-muted); }
+  /* 氣泡 */
+  .bubble-wrap.me .bubble { background: var(--bubble-me); color: #fff; }
+  .bubble-wrap:not(.me) .bubble {
+    background: var(--bubble-peer);
+    color: var(--bubble-peer-text);
+  }
+  /* 表格、border */
+  .admin-table th { background: var(--bg-surface2); border-color: var(--border); }
+  .admin-table td { border-color: var(--border); }
+  .admin-tabs { background: var(--bg-surface2); border-color: var(--border); }
+  .admin-tab-btn { color: var(--text-muted); }
+  .admin-tab-btn.active { background: var(--bg-surface); }
+  body.dark .admin-kpi { background: #1a2a3a; }
+  body.dark .profile-rating { background: #292517; color: #fbbf24; }
+  body.dark .skill-tag { background: var(--bg-surface2); border-color: var(--border); color: var(--text-primary); }
+  body.dark .skill-tag.selected { background: #1a3a5c; border-color: #3b82f6; color: #93c5fd; }
+  body.dark .history-item { border-color: var(--border); }
+  body.dark .points-badge { background: #1a3a1a; color: #4ade80; }
+  body.dark .sidebar-btn { color: var(--text-primary); }
+  body.dark .sidebar-btn:hover, body.dark .sidebar-btn.active { background: rgba(255,255,255,.1); }
+  body.dark .tx-item { border-color: var(--border); }
+  body.dark .chat-list-item:hover,
+  body.dark .chat-list-item.active { background: rgba(255,255,255,.07); }
+  body.dark .bubble-more-menu { background: #1f2937; border-color: var(--border); }
+  body.dark .bubble-menu-item { color: var(--text-primary); }
+  body.dark .bubble-menu-item:hover { background: var(--bg-surface2); }
+  body.dark .btn-task-cancel { background: transparent; border-color: #ef4444; color: #f87171; }
+  body.dark .chat-status-label { color: var(--text-muted); }
+
+  /* ══════════════════════════════
+     懸浮深色/淺色模式切換按鈕
+  ══════════════════════════════ */
+  #theme-toggle-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-surface);
+    box-shadow: 0 4px 20px var(--shadow), 0 0 0 1.5px var(--border);
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .2s, box-shadow .2s, background .25s;
+  }
+  #theme-toggle-btn:hover {
+    transform: scale(1.12);
+    box-shadow: 0 8px 28px rgba(0,0,0,.2), 0 0 0 2px var(--border);
+  }
+
+  /* ══════════════════════════════
+     聊天室任務資訊列（任務標題 + 點數）
+  ══════════════════════════════ */
+  .chat-task-info-bar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--bg-surface2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .chat-task-info-bar.show { display: flex; }
+  .chat-task-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chat-task-pts {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-weight: 700;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  body.dark .chat-task-pts { background: #1e3a5f; color: #93c5fd; }
+  .chat-task-done-badge {
+    background: #dcfce7;
+    color: #15803d;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  body.dark .chat-task-done-badge { background: #14532d; color: #4ade80; }
+  .btn-task-review {
+    padding: 4px 12px; border-radius: 20px; border: none;
+    background: #fbbf24; color: #78350f; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: opacity .15s;
+  }
+  .btn-task-review:hover { opacity: .85; }
+
 </style>
 
 <!-- Mock 登入/註冊：獨立 script，不依賴 Firebase module -->
@@ -1514,6 +1706,21 @@
 </script>
 </head>
 <body>
+
+<!-- 深色/淺色模式切換按鈕（右下角懸浮） -->
+<button id="theme-toggle-btn" title="切換深色/淺色模式" onclick="window.toggleTheme()">☀️</button>
+
+<!-- 主題初始化（立即執行，防閃爍） -->
+<script>
+(function(){
+  var t = localStorage.getItem('theme');
+  if (t === 'dark') document.body.classList.add('dark');
+  document.addEventListener('DOMContentLoaded', function(){
+    var btn = document.getElementById('theme-toggle-btn');
+    if (btn) btn.textContent = (t === 'dark') ? '🌙' : '☀️';
+  });
+})();
+</script>
 
 <!-- ════════════════════════════════
      Navbar
@@ -2077,6 +2284,14 @@
           <span class="chat-status-label">對話狀態：</span>
           <button class="chat-status-btn active" data-status="discussing" onclick="window.setChatStatus('discussing')">💬 討論中</button>
           <button class="chat-status-btn" data-status="scheduled" onclick="window.setChatStatus('scheduled')">📅 已約定</button>
+        </div>
+        <!-- 任務資訊列（任務標題 + 點數，常駐顯示） -->
+        <div class="chat-task-info-bar" id="cr-task-info-bar">
+          <span>📋</span>
+          <span class="chat-task-title" id="cr-task-title">任務</span>
+          <span class="chat-task-pts" id="cr-task-pts" style="display:none"></span>
+          <span class="chat-task-done-badge" id="cr-task-done-badge" style="display:none">🎉 任務已完成</span>
+          <button class="btn-task-review" id="cr-task-review-btn" style="display:none" onclick="window.openChatReview()">⭐ 評價對方</button>
         </div>
         <!-- 任務行動列（確認完成 / 取消任務） -->
         <div class="chat-action-bar" id="cr-action-bar" style="display:none">
@@ -5087,6 +5302,10 @@ function ensureChatDoc(chatId, inv, peerId) {
     peerEmoji:    inv.fromEmoji || null,
     peerMeta:     inv.fromMeta  || '',
     peerId,
+    inviteId:     inv.id     || null,
+    taskTitle:    inv.msg    || '',
+    points:       inv.points || 0,
+    taskStatus:   'active',
     createdAt:    serverTimestamp()
   }, { merge: true });
 }
@@ -5254,16 +5473,54 @@ window.setChatStatus = async (status) => {
 //  雙方確認完成 / 取消任務
 // ═══════════════════════════════════════
 
-// ── 根據 chat 文件的 taskStatus 更新行動列 ──
+// ── 根據 chat 文件的 taskStatus 更新行動列 + 任務資訊列 ──
 function _updateChatActionBar(chat) {
   const actionBar  = document.getElementById('cr-action-bar');
   const label      = document.getElementById('cr-action-label');
   const completeBtn= document.getElementById('btn-task-complete');
   if (!actionBar || !label || !completeBtn || !currentUser) return;
 
-  const ts = chat.taskStatus || 'active';          // active | pending_completion | completed | canceled
-  const confirmedBy = chat.completionConfirmedBy || null; // uid of first confirmer
+  const ts          = chat.taskStatus || 'active';
+  const confirmedBy = chat.completionConfirmedBy || null;
 
+  // ── 更新任務資訊列 ──
+  const infoBar    = document.getElementById('cr-task-info-bar');
+  const titleEl    = document.getElementById('cr-task-title');
+  const ptsEl      = document.getElementById('cr-task-pts');
+  const doneBadge  = document.getElementById('cr-task-done-badge');
+  const reviewBtn  = document.getElementById('cr-task-review-btn');
+
+  if (infoBar && titleEl) {
+    const title  = chat.taskTitle || chat.peerName || '任務';
+    const points = chat.points    || 0;
+    titleEl.textContent = title;
+    infoBar.classList.add('show');
+
+    if (ptsEl) {
+      if (points > 0) {
+        ptsEl.textContent = `⭐ ${points} 點`;
+        ptsEl.style.display = 'inline';
+      } else {
+        ptsEl.style.display = 'none';
+      }
+    }
+
+    if (ts === 'completed') {
+      if (doneBadge) doneBadge.style.display = 'inline';
+      // 若對方尚未評價我（reviewBtn 是否顯示由 pendingReviewFor 邏輯決定，這裡只做常駐顯示）
+      if (reviewBtn) {
+        reviewBtn.style.display = 'inline';
+        reviewBtn.dataset.peerId   = chat.participants?.find(u => u !== currentUser.uid) || '';
+        reviewBtn.dataset.peerName = chat.peerName || '對方';
+        reviewBtn.dataset.taskId   = chat.inviteId || chat.chatId || '';
+      }
+    } else {
+      if (doneBadge) doneBadge.style.display = 'none';
+      if (reviewBtn) reviewBtn.style.display = 'none';
+    }
+  }
+
+  // ── 更新行動列 ──
   if (ts === 'completed' || ts === 'canceled') {
     actionBar.style.display = 'none';
     return;
@@ -5273,18 +5530,15 @@ function _updateChatActionBar(chat) {
 
   if (ts === 'pending_completion') {
     if (confirmedBy === currentUser.uid) {
-      // 我已確認，等對方
       label.innerHTML = '⏳ 已送出完成確認，等待對方確認中…';
       completeBtn.disabled = true;
       completeBtn.textContent = '✅ 已送出';
     } else {
-      // 對方已確認，等我
-      label.innerHTML = '🔔 對方已標示任務完成，請確認是否完成？';
+      label.innerHTML = '🔔 對方已標示任務完成，請點擊 [確認結算完成]';
       completeBtn.disabled = false;
-      completeBtn.textContent = '✅ 確認完成';
+      completeBtn.textContent = '✅ 確認結算完成';
     }
   } else {
-    // active 狀態
     label.innerHTML = '任務進行中';
     completeBtn.disabled = false;
     completeBtn.textContent = '✅ 已完成';
@@ -5809,6 +6063,28 @@ window.adminAdjustPoints = async (uid, displayName, dir) => {
 document.getElementById('admin-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('admin-overlay')) window.closeAdminPanel();
 });
+
+// ═══════════════════════════════════════
+//  Dark / Light Mode 切換
+// ═══════════════════════════════════════
+window.toggleTheme = () => {
+  const isDark = document.body.classList.toggle('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+};
+
+// ── 任務資訊列「⭐ 評價對方」按鈕 ──
+window.openChatReview = () => {
+  const btn = document.getElementById('cr-task-review-btn');
+  if (!btn) return;
+  const peerId   = btn.dataset.peerId   || '';
+  const peerName = btn.dataset.peerName || '對方';
+  const taskId   = btn.dataset.taskId   || activeChatId || '';
+  if (!peerId) { showToast('找不到對方資訊'); return; }
+  _openReviewModal(peerId, peerName, taskId);
+  btn.style.display = 'none';   // 送出後隱藏，避免重複評價
+};
 </script>
 </body>
 </html>
