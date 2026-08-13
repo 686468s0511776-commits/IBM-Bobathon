@@ -1075,7 +1075,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithRedirect, getRedirectResult }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, getDocs,
-         query, orderBy, serverTimestamp, where }
+         query, orderBy, serverTimestamp, where, onSnapshot }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1747,30 +1747,67 @@ window.closeMatchModal = () => {
 };
 
 // ─────────────────────────────────
-//  聊天 Modal
+//  聊天 Modal（Firestore 即時同步）
 // ─────────────────────────────────
+let chatUnsubscribe = null; // 用來取消 Firestore 即時監聽
+
 window.openChatModal = () => {
   if (!activeMatchInv) return;
   window.closeMatchModal();
   const inv = activeMatchInv;
   activeChatInviteId = inv.id;
-  document.getElementById('chat-avatar').textContent   = inv.fromEmoji || '🙂';
+
+  // 判斷是否為示範資料
+  const isDemo = inv.id.startsWith('r');
+
+  document.getElementById('chat-avatar').textContent    = inv.fromEmoji || '🙂';
   document.getElementById('chat-peer-name').textContent = inv.fromName;
   document.getElementById('chat-peer-meta').textContent = inv.fromMeta || '';
-  renderChatMessages();
+  document.getElementById('chat-messages').innerHTML    = '';
   document.getElementById('chat-modal-overlay').classList.add('open');
   document.getElementById('chat-input').focus();
+
+  if (isDemo) {
+    // 示範資料：用本地 chatLogs
+    renderChatMessages();
+  } else {
+    // 真實邀請：Firestore 即時監聽
+    const msgCol = collection(db, 'invites', inv.id, 'messages');
+    const msgQ   = query(msgCol, orderBy('createdAt', 'asc'));
+    if (chatUnsubscribe) chatUnsubscribe();
+    chatUnsubscribe = onSnapshot(msgQ, snap => {
+      const el = document.getElementById('chat-messages');
+      if (!el) return;
+      el.innerHTML = snap.docs.map(d => {
+        const m    = d.data();
+        const isMe = m.senderUid === currentUser.uid;
+        const emoji = isMe ? (currentUserData.emoji || '🙂') : (inv.fromEmoji || '🙂');
+        return `<div class="bubble-wrap ${isMe ? 'me' : ''}">
+          ${!isMe ? `<div class="bubble-avatar">${emoji}</div>` : ''}
+          <div>
+            <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time || ''}</div>
+            <div class="bubble">${m.text}</div>
+          </div>
+          ${isMe ? `<div class="bubble-avatar" style="background:#fff7ed">${emoji}</div>` : ''}
+        </div>`;
+      }).join('');
+      el.scrollTop = el.scrollHeight;
+    });
+  }
 };
 
 window.closeChatModal = () => {
   document.getElementById('chat-modal-overlay').classList.remove('open');
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
   activeChatInviteId = null;
 };
 
 function renderChatMessages() {
+  // 僅用於示範資料
   const logs = chatLogs[activeChatInviteId] || [];
   const inv  = recvInvites.find(r => r.id === activeChatInviteId);
   const el   = document.getElementById('chat-messages');
+  if (!el) return;
   el.innerHTML = logs.map(m => {
     const isMe = m.from === 'me';
     return `<div class="bubble-wrap ${isMe ? 'me' : ''}">
@@ -1785,32 +1822,48 @@ function renderChatMessages() {
   el.scrollTop = el.scrollHeight;
 }
 
-window.sendChatMsg = () => {
+window.sendChatMsg = async () => {
   const input = document.getElementById('chat-input');
   const text  = input.value.trim();
   if (!text) return;
   input.value = '';
-  if (!chatLogs[activeChatInviteId]) chatLogs[activeChatInviteId] = [];
-  chatLogs[activeChatInviteId].push({ from: 'me', text, time: nowTime() });
-  renderChatMessages();
-  // 打字動畫
-  const el = document.getElementById('chat-messages');
-  const inv = recvInvites.find(r => r.id === activeChatInviteId);
-  const typingEl = document.createElement('div');
-  typingEl.className = 'bubble-wrap';
-  typingEl.id = 'typing-bubble';
-  typingEl.innerHTML = `<div class="bubble-avatar">${inv?.fromEmoji || '🙂'}</div>
-    <div class="typing-indicator">
-      <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
-    </div>`;
-  el.appendChild(typingEl);
-  el.scrollTop = el.scrollHeight;
-  setTimeout(() => {
-    document.getElementById('typing-bubble')?.remove();
-    const reply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
-    chatLogs[activeChatInviteId].push({ from: 'peer', text: reply, time: nowTime() });
+
+  const isDemo = activeChatInviteId && activeChatInviteId.startsWith('r');
+
+  if (isDemo) {
+    // 示範資料：本地模擬自動回覆
+    if (!chatLogs[activeChatInviteId]) chatLogs[activeChatInviteId] = [];
+    chatLogs[activeChatInviteId].push({ from: 'me', text, time: nowTime() });
     renderChatMessages();
-  }, 1200);
+    const el = document.getElementById('chat-messages');
+    const inv = recvInvites.find(r => r.id === activeChatInviteId);
+    const typingEl = document.createElement('div');
+    typingEl.className = 'bubble-wrap'; typingEl.id = 'typing-bubble';
+    typingEl.innerHTML = `<div class="bubble-avatar">${inv?.fromEmoji || '🙂'}</div>
+      <div class="typing-indicator">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>`;
+    el.appendChild(typingEl); el.scrollTop = el.scrollHeight;
+    setTimeout(() => {
+      document.getElementById('typing-bubble')?.remove();
+      const reply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
+      chatLogs[activeChatInviteId].push({ from: 'peer', text: reply, time: nowTime() });
+      renderChatMessages();
+    }, 1200);
+  } else {
+    // 真實邀請：寫入 Firestore subcollection
+    try {
+      await addDoc(collection(db, 'invites', activeChatInviteId, 'messages'), {
+        senderUid:  currentUser.uid,
+        senderName: currentUserData.name,
+        text,
+        time: nowTime(),
+        createdAt: serverTimestamp()
+      });
+    } catch(e) {
+      showToast('訊息送出失敗');
+    }
+  }
 };
 
 // ─────────────────────────────────
