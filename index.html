@@ -9,17 +9,17 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: #f3f4f6;
+    background: #F8FAFB;
     font-family: -apple-system, "Segoe UI", system-ui, "Helvetica Neue", sans-serif;
     min-height: 100vh;
-    color: #1f2328;
+    color: #3D3D3D;
   }
 
   /* ══════════════════════════════
      頂部 Navbar
   ══════════════════════════════ */
   .navbar {
-    background: #F97316;
+    background: #5B8DB8;
     color: #fff;
     padding: 0 40px;
     height: 60px;
@@ -29,7 +29,7 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    box-shadow: 0 2px 12px rgba(249,115,22,.3);
+    box-shadow: 0 2px 12px rgba(91,141,184,.3);
   }
   .navbar-brand {
     font-size: 20px;
@@ -89,18 +89,18 @@
   .register-card {
     background: #fff;
     border-radius: 20px;
-    border: 1.5px solid #e5e7eb;
+    border: 1.5px solid #d0e4f5;
     padding: 48px;
     width: 100%;
     max-width: 540px;
-    box-shadow: 0 4px 24px rgba(0,0,0,.07);
+    box-shadow: 0 4px 24px rgba(91,141,184,.1);
   }
   .register-logo {
     text-align: center;
     margin-bottom: 36px;
   }
   .register-logo .icon { font-size: 56px; display: block; margin-bottom: 12px; }
-  .register-logo h1 { font-size: 26px; font-weight: 800; color: #F97316; }
+  .register-logo h1 { font-size: 26px; font-weight: 800; color: #5B8DB8; }
   .register-logo p { font-size: 14px; color: #6b7280; margin-top: 6px; }
 
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -112,12 +112,12 @@
   .form-group input,
   .form-group select {
     width: 100%; padding: 11px 14px;
-    border: 1.5px solid #e5e7eb; border-radius: 10px;
-    font-size: 14px; color: #1f2328; outline: none;
+    border: 1.5px solid #d0e4f5; border-radius: 10px;
+    font-size: 14px; color: #3D3D3D; outline: none;
     transition: border-color .2s;
   }
   .form-group input:focus,
-  .form-group select:focus { border-color: #F97316; }
+  .form-group select:focus { border-color: #5B8DB8; }
 
   .skill-tags { display: flex; flex-wrap: wrap; gap: 8px; }
   .skill-tag {
@@ -127,19 +127,19 @@
     color: #6b7280; transition: all .15s;
   }
   .skill-tag.selected {
-    background: #F97316; border-color: #F97316; color: #fff;
+    background: #5B8DB8; border-color: #5B8DB8; color: #fff;
   }
 
   .btn-primary {
     width: 100%; padding: 14px;
-    background: #F97316; color: #fff;
+    background: #5B8DB8; color: #fff;
     border: none; border-radius: 12px;
     font-size: 16px; font-weight: 700;
     cursor: pointer; margin-top: 10px;
     transition: background .2s;
   }
-  .btn-primary:hover { background: #ea6c0a; }
-  .btn-primary:disabled { background: #fed7aa; cursor: not-allowed; }
+  .btn-primary:hover { background: #4a7aa3; }
+  .btn-primary:disabled { background: #b8d4ea; cursor: not-allowed; }
 
   /* Google 登入按鈕 */
   .btn-google {
@@ -151,7 +151,7 @@
     justify-content: center; gap: 10px; transition: all .2s;
     margin-bottom: 16px;
   }
-  .btn-google:hover { background: #f9fafb; border-color: #d1d5db; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .btn-google:hover { background: #EDF4FB; border-color: #5B8DB8; box-shadow: 0 2px 8px rgba(91,141,184,.12); }
   .btn-google img { width: 20px; height: 20px; }
 
   .divider {
@@ -162,13 +162,13 @@
     content: ''; flex: 1; height: 1px; background: #e5e7eb;
   }
 
-  .auth-tabs { display: flex; margin-bottom: 24px; border-bottom: 2px solid #f3f4f6; }
+  .auth-tabs { display: flex; margin-bottom: 24px; border-bottom: 2px solid #EDF4FB; }
   .auth-tab {
     flex: 1; padding: 10px; background: none; border: none;
     font-size: 14px; font-weight: 700; color: #9ca3af;
     cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
   }
-  .auth-tab.active { color: #F97316; border-bottom-color: #F97316; }
+  .auth-tab.active { color: #5B8DB8; border-bottom-color: #5B8DB8; }
   .auth-panel { display: none; }
   .auth-panel.active { display: block; }
 
@@ -191,11 +191,21 @@
   /* 左側邊欄 */
   .sidebar {
     background: #fff;
-    border-right: 1.5px solid #e5e7eb;
+    border-right: 1.5px solid #d0e4f5;
     padding: 28px 20px;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    transition: width .25s ease, min-width .25s ease, padding .25s ease, opacity .25s ease;
+    overflow: hidden;
+    min-width: 260px;
+  }
+  .sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+    padding: 28px 0;
+    opacity: 0;
+    pointer-events: none;
   }
   .sidebar-title {
     font-size: 11px; font-weight: 700; color: #9ca3af;
@@ -208,25 +218,28 @@
     border: none; background: none;
     font-size: 14px; font-weight: 600; color: #4b5563;
     cursor: pointer; transition: all .15s; text-align: left;
+    white-space: nowrap; width: 100%;
   }
-  .sidebar-btn:hover { background: #fff7ed; color: #F97316; }
-  .sidebar-btn.active { background: #fff7ed; color: #F97316; }
+  .sidebar-btn:hover { background: #EDF4FB; color: #5B8DB8; }
+  .sidebar-btn.active { background: #EDF4FB; color: #5B8DB8; }
   .sidebar-icon { font-size: 18px; width: 24px; text-align: center; }
 
   .sidebar-divider {
-    height: 1px; background: #e5e7eb; margin: 10px 0;
+    height: 1px; background: #d0e4f5; margin: 10px 0;
   }
 
   /* 使用者資訊區（sidebar 底部） */
   .sidebar-user {
     margin-top: auto;
-    background: #fff7ed;
+    background: #EDF4FB;
     border-radius: 12px;
     padding: 14px;
+    white-space: nowrap;
   }
-  .sidebar-user .name { font-size: 15px; font-weight: 800; color: #1f2328; }
+  .sidebar-user .name { font-size: 15px; font-weight: 800; color: #3D3D3D; overflow: hidden; text-overflow: ellipsis; }
   .sidebar-user .meta { font-size: 12px; color: #9ca3af; margin-top: 2px; }
   .sidebar-user .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .sb-points { font-size: 12px; color: #5B8DB8; font-weight: 700; margin-top: 4px; }
 
   /* 主內容區 */
   .main-content { padding: 32px 36px; overflow-y: auto; }
@@ -236,7 +249,7 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 24px;
   }
-  .content-header h2 { font-size: 22px; font-weight: 800; color: #1f2328; }
+  .content-header h2 { font-size: 22px; font-weight: 800; color: #3D3D3D; }
   .content-header p  { font-size: 14px; color: #6b7280; margin-top: 3px; }
 
   /* 分頁 Tabs（主內容區上方） */
@@ -250,7 +263,7 @@
     color: #6b7280; cursor: pointer; transition: all .2s;
   }
   .tab-btn.active {
-    background: #F97316; border-color: #F97316; color: #fff;
+    background: #5B8DB8; border-color: #5B8DB8; color: #fff;
   }
 
   /* 卡片格線 */
@@ -262,38 +275,49 @@
 
   .card {
     background: #fff; border-radius: 16px;
-    border: 1.5px solid #e5e7eb; padding: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    border: 1.5px solid #d0e4f5; padding: 20px;
+    box-shadow: 0 2px 8px rgba(91,141,184,.06);
     transition: box-shadow .2s, transform .2s;
     display: flex; flex-direction: column;
-    min-height: 300px;            /* 統一最小高度 */
+    min-height: 300px;
     position: relative;
   }
   .card:hover {
-    box-shadow: 0 6px 24px rgba(249,115,22,.12);
+    box-shadow: 0 6px 24px rgba(91,141,184,.14);
     transform: translateY(-2px);
   }
 
   .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .avatar {
     width: 44px; height: 44px; border-radius: 50%;
-    background: #fff7ed; display: flex; align-items: center;
+    background: #EDF4FB; display: flex; align-items: center;
     justify-content: center; font-size: 22px; flex-shrink: 0;
   }
-  .card-name { font-size: 14px; font-weight: 700; color: #1f2328; }
+  .card-name { font-size: 14px; font-weight: 700; color: #3D3D3D; }
   .card-meta { font-size: 11px; color: #b0b7c3; margin-top: 2px; }
 
   .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; min-height: 28px; }
   .tag {
     padding: 3px 10px; border-radius: 20px;
     font-size: 11px; font-weight: 600;
-    background: #fff7ed; color: #F97316;
-    border: 1px solid #fed7aa;
+    background: #EDF4FB; color: #5B8DB8;
+    border: 1px solid #d0e4f5;
+  }
+
+  /* 點數徽章 */
+  .points-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #f5f4dc; color: #7a7930;
+    border: 1px solid #cccb85; border-radius: 20px;
+    padding: 3px 10px; font-size: 11px; font-weight: 700;
+  }
+  .points-badge.large {
+    font-size: 15px; padding: 6px 16px; border-radius: 24px;
   }
 
   /* 需求標題 */
   .card-need-title {
-    font-size: 16px; font-weight: 800; color: #1f2328;
+    font-size: 16px; font-weight: 800; color: #3D3D3D;
     margin-bottom: 6px; line-height: 1.4;
     display: -webkit-box; -webkit-line-clamp: 1;
     -webkit-box-orient: vertical; overflow: hidden;
@@ -308,13 +332,13 @@
 
   .btn-card {
     width: 100%; padding: 10px;
-    background: #F97316; color: #fff;
+    background: #5B8DB8; color: #fff;
     border: none; border-radius: 10px;
     font-size: 13px; font-weight: 700;
     cursor: pointer; transition: background .2s;
     margin-top: auto;
   }
-  .btn-card:hover { background: #ea6c0a; }
+  .btn-card:hover { background: #4a7aa3; }
   .btn-card.pending {
     background: #e5e7eb; color: #9ca3af; cursor: default;
   }
@@ -325,19 +349,19 @@
   }
   .btn-card-mine {
     flex: 1; padding: 9px 10px;
-    background: #fff7ed; color: #F97316;
-    border: 1.5px solid #fed7aa; border-radius: 10px;
+    background: #EDF4FB; color: #5B8DB8;
+    border: 1.5px solid #d0e4f5; border-radius: 10px;
     font-size: 11px; font-weight: 700;
     cursor: default; text-align: center; white-space: nowrap;
   }
   .btn-card-edit {
     padding: 9px 13px;
-    background: #F97316; color: #fff;
+    background: #5B8DB8; color: #fff;
     border: none; border-radius: 10px;
     font-size: 12px; font-weight: 700;
     cursor: pointer; transition: background .2s; white-space: nowrap;
   }
-  .btn-card-edit:hover { background: #ea6c0a; }
+  .btn-card-edit:hover { background: #4a7aa3; }
   .btn-card-delete {
     padding: 9px 11px;
     background: #fff; color: #dc2626;
@@ -363,13 +387,13 @@
     font-size: 14px; color: #1f2328;
     outline: none; resize: vertical; min-height: 100px;
   }
-  .post-layout .form-group textarea:focus { border-color: #F97316; }
+  .post-layout .form-group textarea:focus { border-color: #5B8DB8; }
   .post-layout .form-group input {
     width: 100%; padding: 11px 14px;
-    border: 1.5px solid #e5e7eb; border-radius: 10px;
-    font-size: 14px; color: #1f2328; outline: none;
+    border: 1.5px solid #d0e4f5; border-radius: 10px;
+    font-size: 14px; color: #3D3D3D; outline: none;
   }
-  .post-layout .form-group input:focus { border-color: #F97316; }
+  .post-layout .form-group input:focus { border-color: #5B8DB8; }
 
   /* ══════════════════════════════
      我的頁
@@ -382,23 +406,23 @@
   }
   .profile-card {
     background: #fff; border-radius: 16px;
-    border: 1.5px solid #e5e7eb; padding: 28px;
+    border: 1.5px solid #d0e4f5; padding: 28px;
     text-align: center;
   }
   .profile-avatar {
     font-size: 64px; margin-bottom: 14px; display: block;
   }
-  .profile-name { font-size: 22px; font-weight: 800; color: #1f2328; }
+  .profile-name { font-size: 22px; font-weight: 800; color: #3D3D3D; }
   .profile-meta { font-size: 14px; color: #9ca3af; margin-top: 4px; }
   .profile-tags { justify-content: center; margin-top: 16px; }
 
   .history-card {
     background: #fff; border-radius: 16px;
-    border: 1.5px solid #e5e7eb; padding: 24px;
+    border: 1.5px solid #d0e4f5; padding: 24px;
   }
   .history-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 16px; }
   .history-item {
-    padding: 14px 0; border-bottom: 1px solid #f3f4f6;
+    padding: 14px 0; border-bottom: 1px solid #EDF4FB;
   }
   .history-item:last-child { border-bottom: none; }
   .history-item .h-name { font-weight: 700; font-size: 15px; }
@@ -406,20 +430,32 @@
   .history-item .h-msg  { font-size: 13px; color: #4b5563; margin-top: 6px; }
   .status-badge {
     display: inline-block;
-    background: #fff7ed; color: #F97316;
+    background: #EDF4FB; color: #5B8DB8;
     padding: 3px 12px; border-radius: 20px;
     font-size: 11px; font-weight: 700; margin-top: 8px;
   }
   .status-badge.accepted { background: #dcfce7; color: #16a34a; }
   .status-badge.rejected { background: #fee2e2; color: #dc2626; }
 
+  /* Profile tabs */
+  .profile-tabs {
+    display: flex; gap: 0; margin-bottom: 16px;
+    border-bottom: 2px solid #EDF4FB;
+  }
+  .profile-tab {
+    padding: 9px 20px; background: none; border: none;
+    font-size: 13px; font-weight: 700; color: #9ca3af;
+    cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  .profile-tab.active { color: #5B8DB8; border-bottom-color: #5B8DB8; }
+
   /* 邀請 Tab */
-  .invite-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; }
+  .invite-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #EDF4FB; }
   .invite-tab {
     padding: 10px 18px; background: none; border: none; border-bottom: 2px solid transparent;
     font-size: 14px; font-weight: 700; color: #6b7280; cursor: pointer; margin-bottom: -2px;
   }
-  .invite-tab.active { color: #F97316; border-bottom-color: #F97316; }
+  .invite-tab.active { color: #5B8DB8; border-bottom-color: #5B8DB8; }
   .invite-panel { display: none; }
   .invite-panel.active { display: block; }
 
@@ -437,6 +473,98 @@
   }
   .btn-reject:hover { background: #fee2e2; }
 
+  /* 點數交易紀錄 */
+  .tx-item {
+    padding: 12px 0; border-bottom: 1px solid #EDF4FB;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .tx-item:last-child { border-bottom: none; }
+  .tx-desc { font-size: 13px; color: #3D3D3D; }
+  .tx-meta { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+  .tx-amount { font-size: 15px; font-weight: 800; flex-shrink: 0; }
+  .tx-amount.plus  { color: #2e7d32; }
+  .tx-amount.minus { color: #c62828; }
+
+  /* 購買點數按鈕 */
+  .buy-pts-btn {
+    padding: 12px 10px;
+    background: #fff; border: 1.5px solid #d0e4f5;
+    border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 700; color: #3D3D3D;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    transition: all .15s;
+  }
+  .buy-pts-btn span { font-size: 12px; color: #9ca3af; font-weight: 400; }
+  .buy-pts-btn:hover  { border-color: #5B8DB8; color: #5B8DB8; }
+  .buy-pts-btn.sel    { background: #5B8DB8; border-color: #5B8DB8; color: #fff; }
+  .buy-pts-btn.sel span { color: rgba(255,255,255,.8); }
+
+  /* 完成任務 Modal */
+  .complete-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    display: none; align-items: center; justify-content: center;
+    z-index: 210; padding: 24px;
+  }
+  .complete-modal-overlay.open { display: flex; }
+
+  /* 兌換中心 */
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .shop-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1.5px solid #d0e4f5;
+    padding: 22px 18px 18px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(91,141,184,.06);
+    transition: box-shadow .2s, transform .2s;
+  }
+  .shop-card:hover {
+    box-shadow: 0 6px 20px rgba(91,141,184,.14);
+    transform: translateY(-2px);
+  }
+  .shop-card-icon  { font-size: 48px; margin-bottom: 12px; }
+  .shop-card-name  { font-size: 15px; font-weight: 800; color: #3D3D3D; margin-bottom: 4px; }
+  .shop-card-desc  { font-size: 12px; color: #9ca3af; margin-bottom: 14px; line-height: 1.5; }
+  .shop-card-price {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #f5f4dc; color: #7a7930;
+    border: 1.5px solid #cccb85; border-radius: 20px;
+    padding: 5px 14px; font-size: 13px; font-weight: 800;
+    margin-bottom: 14px;
+  }
+  .btn-redeem {
+    width: 100%; padding: 10px;
+    background: #5B8DB8; color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-redeem:hover    { background: #4a7aa3; }
+  .btn-redeem:disabled { background: #b8d4ea; cursor: not-allowed; }
+  /* 兌換成功彈窗 */
+  .redeem-success-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    display: none; align-items: center; justify-content: center;
+    z-index: 220; padding: 24px;
+  }
+  .redeem-success-overlay.open { display: flex; }
+  .redeem-success-box {
+    background: #fff; border-radius: 20px; padding: 40px 36px;
+    max-width: 400px; width: 100%; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    animation: fadeIn .2s ease;
+  }
+  .redeem-success-icon { font-size: 56px; margin-bottom: 12px; display: block; }
+  .redeem-success-box h3 { font-size: 20px; font-weight: 800; color: #3D3D3D; margin-bottom: 8px; }
+  .redeem-success-box p  { font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+
   /* 配對成功 Modal */
   .match-header { text-align: center; margin-bottom: 24px; }
   .match-icon { font-size: 52px; display: block; margin-bottom: 10px; }
@@ -450,26 +578,26 @@
   .match-info-row .label { color: #6b7280; font-weight: 600; min-width: 60px; }
   .match-info-row .value { color: #1f2328; font-weight: 700; }
   .contact-box {
-    background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 12px;
+    background: #EDF4FB; border: 1.5px solid #d0e4f5; border-radius: 12px;
     padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;
   }
   .contact-box .contact-icon { font-size: 28px; }
   .contact-box .contact-label { font-size: 12px; color: #9ca3af; }
-  .contact-box .contact-value { font-size: 16px; font-weight: 800; color: #F97316; letter-spacing: .04em; }
+  .contact-box .contact-value { font-size: 16px; font-weight: 800; color: #5B8DB8; letter-spacing: .04em; }
   .btn-chat {
-    width: 100%; padding: 13px; background: #F97316; color: #fff;
+    width: 100%; padding: 13px; background: #5B8DB8; color: #fff;
     border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
     cursor: pointer; transition: background .2s;
   }
-  .btn-chat:hover { background: #ea6c0a; }
+  .btn-chat:hover { background: #4a7aa3; }
 
   /* 聊天 Modal */
   .chat-header {
     display: flex; align-items: center; gap: 12px;
-    padding-bottom: 16px; margin-bottom: 0; border-bottom: 1.5px solid #f3f4f6;
+    padding-bottom: 16px; margin-bottom: 0; border-bottom: 1.5px solid #EDF4FB;
   }
   .chat-avatar {
-    width: 40px; height: 40px; border-radius: 50%; background: #fff7ed;
+    width: 40px; height: 40px; border-radius: 50%; background: #EDF4FB;
     display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
   }
   .chat-peer-name { font-size: 16px; font-weight: 800; }
@@ -484,10 +612,10 @@
     max-width: 72%; padding: 10px 14px; border-radius: 18px;
     font-size: 14px; line-height: 1.5;
   }
-  .bubble-wrap.me .bubble { background: #F97316; color: #fff; border-bottom-right-radius: 4px; }
-  .bubble-wrap:not(.me) .bubble { background: #f3f4f6; color: #1f2328; border-bottom-left-radius: 4px; }
+  .bubble-wrap.me .bubble { background: #5B8DB8; color: #fff; border-bottom-right-radius: 4px; }
+  .bubble-wrap:not(.me) .bubble { background: #EDF4FB; color: #3D3D3D; border-bottom-left-radius: 4px; }
   .bubble-avatar {
-    width: 30px; height: 30px; border-radius: 50%; background: #fff7ed;
+    width: 30px; height: 30px; border-radius: 50%; background: #EDF4FB;
     display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
   }
   .bubble-time { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
@@ -501,12 +629,12 @@
     flex: 1; padding: 11px 14px; border: 1.5px solid #e5e7eb; border-radius: 24px;
     font-size: 14px; outline: none; transition: border-color .2s;
   }
-  .chat-input:focus { border-color: #F97316; }
+  .chat-input:focus { border-color: #5B8DB8; }
   .btn-chat-send {
-    padding: 11px 18px; background: #F97316; color: #fff;
+    padding: 11px 18px; background: #5B8DB8; color: #fff;
     border: none; border-radius: 24px; font-size: 14px; font-weight: 700; cursor: pointer;
   }
-  .btn-chat-send:hover { background: #ea6c0a; }
+  .btn-chat-send:hover { background: #4a7aa3; }
 
   /* ══════════════════════════════
      Modal
@@ -531,48 +659,48 @@
     to   { transform: scale(1);   opacity: 1; }
   }
 
-  .modal h3 { font-size: 20px; font-weight: 800; color: #1f2328; margin-bottom: 4px; }
+  .modal h3 { font-size: 20px; font-weight: 800; color: #3D3D3D; margin-bottom: 4px; }
   .modal .modal-sub { font-size: 13px; color: #9ca3af; margin-bottom: 20px; }
 
   .modal-detail {
-    background: #f9fafb; border-radius: 12px;
+    background: #EDF4FB; border-radius: 12px;
     padding: 14px 16px; margin-bottom: 20px;
     font-size: 14px; color: #4b5563; line-height: 1.6;
   }
 
   .modal label {
     display: block; font-size: 13px; font-weight: 700;
-    color: #374151; margin-bottom: 7px;
+    color: #3D3D3D; margin-bottom: 7px;
   }
   .modal textarea {
     width: 100%; padding: 11px 14px;
-    border: 1.5px solid #e5e7eb; border-radius: 10px;
-    font-size: 14px; color: #1f2328; resize: none;
+    border: 1.5px solid #d0e4f5; border-radius: 10px;
+    font-size: 14px; color: #3D3D3D; resize: none;
     outline: none; height: 90px; margin-bottom: 16px;
   }
-  .modal textarea:focus { border-color: #F97316; }
+  .modal textarea:focus { border-color: #5B8DB8; }
   .modal input[type="text"] {
     width: 100%; padding: 11px 14px;
-    border: 1.5px solid #e5e7eb; border-radius: 10px;
-    font-size: 14px; color: #1f2328;
+    border: 1.5px solid #d0e4f5; border-radius: 10px;
+    font-size: 14px; color: #3D3D3D;
     outline: none; margin-bottom: 24px;
   }
-  .modal input[type="text"]:focus { border-color: #F97316; }
+  .modal input[type="text"]:focus { border-color: #5B8DB8; }
 
   .btn-row { display: flex; gap: 12px; }
   .btn-cancel {
     flex: 1; padding: 12px;
-    background: #f3f4f6; color: #6b7280;
+    background: #EDF4FB; color: #6b7280;
     border: none; border-radius: 10px;
     font-size: 14px; font-weight: 700; cursor: pointer;
   }
   .btn-send {
     flex: 2; padding: 12px;
-    background: #F97316; color: #fff;
+    background: #5B8DB8; color: #fff;
     border: none; border-radius: 10px;
     font-size: 14px; font-weight: 700; cursor: pointer;
   }
-  .btn-send:hover { background: #ea6c0a; }
+  .btn-send:hover { background: #4a7aa3; }
 
   /* ══════════════════════════════
      Toast
@@ -580,7 +708,7 @@
   .toast {
     position: fixed; bottom: 32px; left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: #1f2328; color: #fff;
+    background: #3D3D3D; color: #fff;
     padding: 12px 24px; border-radius: 24px;
     font-size: 14px; white-space: nowrap;
     opacity: 0; transition: all .3s; z-index: 300;
@@ -634,12 +762,12 @@
     border-bottom: 1px solid #f3f4f6;
     transition: background .15s;
   }
-  .chat-list-item:hover  { background: #fff7ed; }
-  .chat-list-item.active { background: #fff7ed; border-left: 3px solid #F97316; }
+  .chat-list-item:hover  { background: #EDF4FB; }
+  .chat-list-item.active { background: #EDF4FB; border-left: 3px solid #5B8DB8; }
   .chat-list-avatar {
     width: 44px; height: 44px;
     border-radius: 50%;
-    background: #fff7ed;
+    background: #EDF4FB;
     display: flex; align-items: center; justify-content: center;
     font-size: 22px; flex-shrink: 0;
   }
@@ -672,11 +800,11 @@
   .cr-avatar {
     width: 44px; height: 44px;
     border-radius: 50%;
-    background: #fff7ed;
+    background: #EDF4FB;
     display: flex; align-items: center; justify-content: center;
     font-size: 22px;
   }
-  .cr-name { font-size: 16px; font-weight: 800; color: #1f2328; }
+  .cr-name { font-size: 16px; font-weight: 800; color: #3D3D3D; }
   .cr-meta { font-size: 12px; color: #9ca3af; margin-top: 2px; }
 
   .cr-messages {
@@ -705,7 +833,7 @@
     outline: none;
     transition: border-color .2s;
   }
-  .chat-room-input:focus { border-color: #F97316; }
+  .chat-room-input:focus { border-color: #5B8DB8; }
   .chat-room-input:disabled { background: #f3f4f6; color: #9ca3af; }
 
   /* 附件按鈕 */
@@ -719,11 +847,11 @@
     display: flex; align-items: center; justify-content: center;
     transition: background .2s; flex-shrink: 0;
   }
-  .btn-attach:hover { background: #fff7ed; }
+  .btn-attach:hover { background: #EDF4FB; }
 
   .chat-room-send {
     padding: 11px 20px;
-    background: #F97316;
+    background: #5B8DB8;
     color: #fff;
     border: none;
     border-radius: 24px;
@@ -733,19 +861,19 @@
     transition: background .2s;
     flex-shrink: 0;
   }
-  .chat-room-send:hover    { background: #ea6c0a; }
+  .chat-room-send:hover    { background: #4a7aa3; }
   .chat-room-send:disabled { background: #e5e7eb; color: #9ca3af; cursor: default; }
 
   /* 上傳進度條 */
   .upload-bar {
-    height: 3px; background: #fff7ed;
+    height: 3px; background: #EDF4FB;
     border-radius: 0; overflow: hidden;
     display: none; flex-shrink: 0;
   }
   .upload-bar.active { display: block; }
   .upload-bar-fill {
     height: 100%; width: 0%;
-    background: #F97316;
+    background: #5B8DB8;
     transition: width .3s ease;
   }
 
@@ -938,12 +1066,16 @@
      Navbar
 ════════════════════════════════ -->
 <nav class="navbar">
+  <button class="nav-btn" id="hamburger-btn" onclick="toggleSidebarGlobal()" title="側邊欄" style="display:none;margin-right:8px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <div class="navbar-brand">🤝 社區微互助平台</div>
   <div class="navbar-nav" id="main-nav" style="display:none">
-    <button class="nav-btn active" onclick="switchMainPage('home')">🏠 首頁</button>
-    <button class="nav-btn"       onclick="switchMainPage('post')">➕ 發布需求</button>
-    <button class="nav-btn"       onclick="switchMainPage('chatroom')">💬 聊天室 <span id="chat-unread-badge" style="background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:3px;display:none"></span></button>
-    <button class="nav-btn"       onclick="switchMainPage('profile')">👤 我的</button>
+    <button class="nav-btn active" onclick="switchMainPage('home')" title="首頁">🏠 首頁</button>
+    <button class="nav-btn"       onclick="switchMainPage('post')" title="發布需求">➕ 發布</button>
+    <button class="nav-btn"       onclick="switchMainPage('shop')" title="點數兌換">⭐ 點數</button>
+    <button class="nav-btn"       onclick="switchMainPage('chatroom')" title="聊天室">💬 聊天室 <span id="chat-unread-badge" style="background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:3px;display:none"></span></button>
+    <button class="nav-btn"       onclick="switchMainPage('profile')" title="我的">👤 我的</button>
   </div>
   <div class="navbar-user" id="navbar-user">
     <span style="font-size:13px;opacity:.85">請先登入</span>
@@ -1047,7 +1179,7 @@
   <div class="home-layout">
 
     <!-- 左側邊欄 -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar-home">
       <div class="sidebar-title">探索</div>
       <button class="sidebar-btn active" id="sb-need" onclick="switchTab('need')">
         <span class="sidebar-icon">🙋</span> 需要幫助
@@ -1064,11 +1196,15 @@
       <button class="sidebar-btn" onclick="window.switchMainPage('profile')">
         <span class="sidebar-icon">📋</span> 查看互助紀錄
       </button>
+      <button class="sidebar-btn" onclick="window.switchMainPage('shop')">
+        <span class="sidebar-icon">⭐</span> 點數兌換中心
+      </button>
 
       <!-- 使用者資訊 -->
       <div class="sidebar-user">
         <div class="name" id="sb-user-name">—</div>
         <div class="meta" id="sb-user-meta">—</div>
+        <div class="sb-points" id="sb-user-points">⭐ — 點</div>
         <div class="tags" id="sb-user-tags"></div>
       </div>
     </aside>
@@ -1107,7 +1243,7 @@
 ════════════════════════════════ -->
 <div class="page" id="page-post">
   <div class="home-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar-post">
       <div class="sidebar-title">探索</div>
       <button class="sidebar-btn" onclick="switchMainPage('home'); switchTab('need')">
         <span class="sidebar-icon">🙋</span> 需要幫助
@@ -1121,6 +1257,9 @@
       </button>
       <button class="sidebar-btn" onclick="switchMainPage('profile')">
         <span class="sidebar-icon">📋</span> 查看互助紀錄
+      </button>
+      <button class="sidebar-btn" onclick="switchMainPage('shop')">
+        <span class="sidebar-icon">⭐</span> 點數兌換中心
       </button>
       <div class="sidebar-user">
         <div class="name" id="sb-user-name2">—</div>
@@ -1157,10 +1296,10 @@
           <input type="text" id="post-time" placeholder="例如：本週六下午 2–4 點" />
         </div>
         <!-- 定位狀態提示 -->
-        <div id="location-status" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:#f3f4f6;font-size:13px;color:#6b7280;margin-bottom:12px">
+        <div id="location-status" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:#EDF4FB;font-size:13px;color:#6b7280;margin-bottom:12px">
           <span id="location-icon">📍</span>
           <span id="location-text">取得定位中…</span>
-          <button id="location-retry-btn" onclick="window.requestLocation(true)" style="display:none;margin-left:auto;background:#F97316;color:#fff;border:none;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">重新定位</button>
+          <button id="location-retry-btn" onclick="window.requestLocation(true)" style="display:none;margin-left:auto;background:#5B8DB8;color:#fff;border:none;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">重新定位</button>
         </div>
         <button class="btn-primary" onclick="postNeed()">發布求助需求 🚀</button>
       </div>
@@ -1173,7 +1312,7 @@
 ════════════════════════════════ -->
 <div class="page" id="page-profile">
   <div class="home-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar-profile">
       <div class="sidebar-title">探索</div>
       <button class="sidebar-btn" onclick="switchMainPage('home'); switchTab('need')">
         <span class="sidebar-icon">🙋</span> 需要幫助
@@ -1187,6 +1326,9 @@
       </button>
       <button class="sidebar-btn active">
         <span class="sidebar-icon">📋</span> 查看互助紀錄
+      </button>
+      <button class="sidebar-btn" onclick="switchMainPage('shop')">
+        <span class="sidebar-icon">⭐</span> 點數兌換中心
       </button>
       <div class="sidebar-user">
         <div class="name" id="sb-user-name3">—</div>
@@ -1202,28 +1344,93 @@
       </div>
       <div class="profile-layout">
         <div class="profile-card">
-          <span class="profile-avatar">🙂</span>
-          <div class="profile-name" id="profile-name">—</div>
-          <div class="profile-meta" id="profile-meta">—</div>
-          <div class="tags profile-tags" id="profile-tags"></div>
+          <span class="profile-avatar" id="profile-avatar">🙂</span>
+          <div>
+            <div class="profile-name" id="profile-name">—</div>
+            <div class="profile-meta" id="profile-meta">—</div>
+            <div style="margin-top:10px">
+              <span class="points-badge large" id="profile-points">⭐ — 點</span>
+            </div>
+            <div class="tags profile-tags" id="profile-tags" style="margin-top:10px"></div>
+          </div>
         </div>
         <div class="history-card">
-          <!-- 邀請 Tab -->
-          <div class="invite-tabs">
-            <button class="invite-tab active" id="itab-sent" onclick="window.switchInviteTab('sent')">📤 送出的邀請</button>
-            <button class="invite-tab" id="itab-recv" onclick="window.switchInviteTab('recv')">📥 收到的邀請 <span id="recv-badge"></span></button>
+          <!-- Profile Tabs -->
+          <div class="profile-tabs">
+            <button class="profile-tab active" onclick="window.switchProfileTab('invites')">📋 互助紀錄</button>
+            <button class="profile-tab" onclick="window.switchProfileTab('transactions')">⭐ 點數記錄</button>
           </div>
-          <div class="invite-panel active" id="ipanel-sent">
-            <div id="sent-list">
-              <div class="empty-state"><span class="empty-icon">📭</span><p>尚無送出紀錄</p></div>
+          <!-- 互助紀錄 Panel -->
+          <div id="profile-tab-invites">
+            <div class="invite-tabs">
+              <button class="invite-tab active" id="itab-sent" onclick="window.switchInviteTab('sent')">📤 送出的邀請</button>
+              <button class="invite-tab" id="itab-recv" onclick="window.switchInviteTab('recv')">📥 收到的邀請 <span id="recv-badge"></span></button>
+            </div>
+            <div class="invite-panel active" id="ipanel-sent">
+              <div id="sent-list">
+                <div class="empty-state"><span class="empty-icon">📭</span><p>尚無送出紀錄</p></div>
+              </div>
+            </div>
+            <div class="invite-panel" id="ipanel-recv">
+              <div id="recv-list">
+                <div class="empty-state"><span class="empty-icon">📭</span><p>尚無收到的邀請</p></div>
+              </div>
             </div>
           </div>
-          <div class="invite-panel" id="ipanel-recv">
-            <div id="recv-list">
-              <div class="empty-state"><span class="empty-icon">📭</span><p>尚無收到的邀請</p></div>
+          <!-- 點數記錄 Panel -->
+          <div id="profile-tab-transactions" style="display:none">
+            <div id="tx-list">
+              <div class="empty-state"><span class="empty-icon">⭐</span><p>尚無點數記錄</p></div>
             </div>
           </div>
         </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     頁面 5：點數兌換中心
+════════════════════════════════ -->
+<div class="page" id="page-shop">
+  <div class="home-layout">
+    <aside class="sidebar" id="sidebar-shop">
+      <div class="sidebar-title">探索</div>
+      <button class="sidebar-btn" onclick="switchMainPage('home'); switchTab('need')">
+        <span class="sidebar-icon">🙋</span> 需要幫助
+      </button>
+      <button class="sidebar-btn" onclick="switchMainPage('home'); switchTab('offer')">
+        <span class="sidebar-icon">💪</span> 提供幫助
+      </button>
+      <div class="sidebar-divider"></div>
+      <button class="sidebar-btn" onclick="switchMainPage('post')">
+        <span class="sidebar-icon">➕</span> 發布我的需求
+      </button>
+      <button class="sidebar-btn" onclick="switchMainPage('profile')">
+        <span class="sidebar-icon">📋</span> 查看互助紀錄
+      </button>
+      <button class="sidebar-btn active">
+        <span class="sidebar-icon">⭐</span> 點數兌換中心
+      </button>
+      <div class="sidebar-user">
+        <div class="name" id="sb-user-name4">—</div>
+        <div class="meta" id="sb-user-meta4">—</div>
+        <div class="sb-points" id="sb-user-points4">⭐ — 點</div>
+      </div>
+    </aside>
+    <main class="main-content">
+      <div style="width:100%;max-width:700px;margin:0 auto">
+        <div class="content-header">
+          <div>
+            <h2>⭐ 點數兌換中心</h2>
+            <p>用累積的點數兌換生活好禮，完成越多互助任務，獲得越多獎勵！</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <span class="points-badge large" id="shop-points-display">⭐ — 點</span>
+            <button onclick="window.openBuyModal()" style="padding:8px 16px;background:#5B8DB8;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">購買點數 💳</button>
+          </div>
+        </div>
+        <div class="shop-grid" id="shop-grid"></div>
       </div>
     </main>
   </div>
@@ -1346,6 +1553,7 @@
     <h3 id="modal-title">聯絡對方</h3>
     <div class="modal-sub" id="modal-sub"></div>
     <div class="modal-detail" id="modal-detail-text"></div>
+    <div id="modal-points-info" style="display:none;background:#f5f4dc;border:1px solid #cccb85;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#7a7930"></div>
     <label>具體說明你的需求或能提供的協助</label>
     <textarea id="modal-msg" placeholder="例如：我的燈泡在三樓客廳，週六下午方便嗎？"></textarea>
     <label>希望時間</label>
@@ -1397,6 +1605,49 @@
   </div>
 </div>
 
+<!-- 兌換成功彈窗 -->
+<div class="redeem-success-overlay" id="redeem-success-overlay">
+  <div class="redeem-success-box">
+    <span class="redeem-success-icon">🎉</span>
+    <h3>兌換成功！</h3>
+    <p id="redeem-success-msg">兌換成功，請至信箱收取憑證。<br>憑證將在 24 小時內寄出。</p>
+    <button class="btn-primary" style="margin-top:0" onclick="document.getElementById('redeem-success-overlay').classList.remove('open')">確認</button>
+  </div>
+</div>
+
+<!-- Modal：購買點數 -->
+<div class="modal-overlay" id="buy-points-modal">
+  <div class="modal">
+    <h3>購買點數</h3>
+    <div class="modal-sub">1 點 = NT$1，點數存入後即可使用</div>
+    <div class="modal-detail" style="margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="buy-options">
+        <button class="buy-pts-btn" data-pts="10"  onclick="window.selectBuyPts(this)">10 點 <span>NT$10</span></button>
+        <button class="buy-pts-btn" data-pts="30"  onclick="window.selectBuyPts(this)">30 點 <span>NT$30</span></button>
+        <button class="buy-pts-btn" data-pts="50"  onclick="window.selectBuyPts(this)">50 點 <span>NT$50</span></button>
+        <button class="buy-pts-btn" data-pts="100" onclick="window.selectBuyPts(this)">100 點 <span>NT$100</span></button>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="window.closeBuyModal()">取消</button>
+      <button class="btn-send" id="btn-confirm-buy" onclick="window.confirmBuy()">確認購買</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal：完成任務（提供者確認） -->
+<div class="complete-modal-overlay" id="complete-modal">
+  <div class="modal">
+    <h3>確認任務完成</h3>
+    <div class="modal-sub" id="complete-modal-sub"></div>
+    <div class="modal-detail" id="complete-modal-detail"></div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="window.closeCompleteModal()">取消</button>
+      <button class="btn-send" onclick="window.confirmComplete()">確認完成，轉移點數 ⭐</button>
+    </div>
+  </div>
+</div>
+
 <!-- 圖片全螢幕預覽 Overlay -->
 <div id="img-preview-overlay" onclick="window.closeImgPreview()">
   <img src="" alt="預覽圖片" />
@@ -1415,7 +1666,8 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithRedirect, getRedirectResult }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, getDocs,
-         query, orderBy, serverTimestamp, where, onSnapshot, deleteDoc }
+         query, orderBy, serverTimestamp, where, onSnapshot, deleteDoc,
+         runTransaction, increment }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
@@ -1440,6 +1692,7 @@ const googleProvider = new GoogleAuthProvider();
 let currentUser     = null;
 let currentUserData = null;
 let activeModalData = null;
+let activeCompleteData = null;  // 完成任務 modal
 
 // 邀請相關狀態
 let sentInvites     = [];   // 我送出的邀請（本地快取）
@@ -1448,6 +1701,35 @@ let chatLogs        = {};   // { inviteId: [{from, text, time}] }
 let activeChatInviteId = null;
 let activeMatchInv  = null;
 let activeRejectId  = null;
+
+// ── 點數常數：技能 → 所需點數 ──
+const SKILL_POINTS = {
+  '水電修繕':    10,
+  '電腦維修':    10,
+  '智慧手機教學': 5,
+  '傳統烹飪':    5,
+  '家具組裝':    8,
+  '代購代辦':    3,
+  '接送服務':    6,
+  '陪伴聊天':    2,
+};
+const DEFAULT_POINTS = 3;
+const REGISTER_BONUS = 50;
+
+function calcPoints(skills) {
+  if (!skills || !skills.length) return DEFAULT_POINTS;
+  return Math.max(...skills.map(s => SKILL_POINTS[s] || DEFAULT_POINTS));
+}
+
+// ── 兌換中心商品資料 ──
+const SHOP_ITEMS = [
+  { id:'s1', icon:'🏪', name:'7-ELEVEN 50元商品卡',   desc:'可於全台7-ELEVEN門市兌換，有效期限3個月。',       price:30 },
+  { id:'s2', icon:'☕', name:'大杯拿鐵兌換券',          desc:'適用星巴克門市大杯熱/冷拿鐵，限門市使用。',         price:20 },
+  { id:'s3', icon:'🍔', name:'麥當勞大麥克套餐券',       desc:'可兌換大麥克超值套餐一份，效期兩個月。',           price:25 },
+  { id:'s4', icon:'🎬', name:'威秀電影票（單張）',        desc:'適用全台威秀影城，假日加映不限定，有效期限1個月。', price:40 },
+  { id:'s5', icon:'🛒', name:'全聯福利中心100元折價券',  desc:'全聯單筆消費滿150元折100元，限用一次。',           price:50 },
+  { id:'s6', icon:'🧋', name:'珍珠奶茶兌換券',           desc:'適用50嵐、CoCo等連鎖手搖店，大杯任選一杯。',      price:12 },
+];
 
 const autoReplies = [
   '好的，我知道了！',
@@ -1592,7 +1874,7 @@ function showSkillSetup() {
     <div style="background:#fff;border-radius:20px;padding:36px;max-width:480px;width:100%">
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:40px;margin-bottom:8px">👋</div>
-        <h2 style="font-size:20px;font-weight:800;color:#1f2328">歡迎，${currentUserData.name}！</h2>
+        <h2 style="font-size:20px;font-weight:800;color:#3D3D3D">歡迎，${currentUserData.name}！</h2>
         <p style="font-size:13px;color:#6b7280;margin-top:4px">請補充一些資料讓大家認識你</p>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
@@ -1621,7 +1903,7 @@ function showSkillSetup() {
             class="setup-skill-tag">${s}</span>`).join('')}
       </div>
       <button onclick="window.completeSetup()"
-        style="width:100%;padding:13px;background:#F97316;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
+        style="width:100%;padding:13px;background:#5B8DB8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
         完成設定，進入平台 →
       </button>
     </div>`;
@@ -1629,8 +1911,8 @@ function showSkillSetup() {
   overlay.querySelectorAll('.setup-skill-tag').forEach(t => {
     t.addEventListener('click', () => {
       const sel = t.classList.contains('sel');
-      t.style.background    = sel ? '' : '#F97316';
-      t.style.borderColor   = sel ? '#e5e7eb' : '#F97316';
+      t.style.background    = sel ? '' : '#5B8DB8';
+      t.style.borderColor   = sel ? '#d0e4f5' : '#5B8DB8';
       t.style.color         = sel ? '' : '#fff';
     });
   });
@@ -1801,9 +2083,16 @@ window.requestLocation = (showToastOnDeny) => {
 
 function enterApp() {
   document.getElementById('main-nav').style.display = 'flex';
+  const hamburger = document.getElementById('hamburger-btn');
+  if (hamburger) hamburger.style.display = 'inline-flex';
   document.getElementById('navbar-user').innerHTML =
-    `<span class="user-chip">👤 ${currentUserData.name}</span>
-     <button class="btn-logout" onclick="window.doLogout()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;margin-left:4px">登出</button>`;
+    `<button onclick="window.doLogout()" title="登出" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer"><svg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/><polyline points='16 17 21 12 16 7'/><line x1='21' y1='12' x2='9' y2='12'/></svg></button>`;
+  // 確保 users/{uid} 有 points 欄位（舊帳號補初始點數）
+  if (currentUser && currentUserData && currentUserData.points === undefined) {
+    setDoc(doc(db, 'users', currentUser.uid), { points: REGISTER_BONUS }, { merge: true })
+      .then(() => { currentUserData.points = REGISTER_BONUS; updateSidebarUser(); })
+      .catch(() => {});
+  }
   // 初始化示範收到的邀請（讓「收到的邀請」Tab 有內容可展示）
   if (recvInvites.length === 0) {
     recvInvites = [
@@ -1853,7 +2142,7 @@ document.querySelectorAll('.skill-tags').forEach(container => {
 //  頁面 / Tab 切換
 // ─────────────────────────────────
 window.switchMainPage = (name) => {
-  const map = { home:'page-home', post:'page-post', profile:'page-profile', chatroom:'page-chatroom' };
+  const map = { home:'page-home', post:'page-post', profile:'page-profile', chatroom:'page-chatroom', shop:'page-shop' };
   // 離開聊天室時清除所有聊天室監聽器
   const currentActive = document.querySelector('.page.active')?.id;
   if (currentActive === 'page-chatroom' && name !== 'chatroom') {
@@ -1863,10 +2152,21 @@ window.switchMainPage = (name) => {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(map[name]).classList.add('active');
   document.querySelectorAll('#main-nav .nav-btn').forEach((b,i) =>
-    b.classList.toggle('active', ['home','post','chatroom','profile'][i] === name));
-  if (name === 'profile')  window.renderProfile && window.renderProfile();
+    b.classList.toggle('active', ['home','post','shop','chatroom','profile'][i] === name));
+  if (name === 'profile')  renderProfile();
   if (name === 'chatroom') window.loadChatList && window.loadChatList();
+  if (name === 'shop')     renderShop();
   updateSidebarUser();
+};
+
+// 漢堡選單：同步控制所有頁面的 sidebar
+let _sidebarCollapsed = false;
+window.toggleSidebarGlobal = () => {
+  _sidebarCollapsed = !_sidebarCollapsed;
+  ['home','post','profile','shop'].forEach(page => {
+    const sidebar = document.getElementById('sidebar-' + page);
+    if (sidebar) sidebar.classList.toggle('collapsed', _sidebarCollapsed);
+  });
 };
 
 window.switchTab = (type) => {
@@ -1885,17 +2185,191 @@ window.switchInviteTab = (tab) => {
 
 function updateSidebarUser() {
   if (!currentUserData) return;
-  ['','2','3'].forEach(s => {
+  ['','2','3','4'].forEach(s => {
     const n = document.getElementById('sb-user-name'+s);
     const m = document.getElementById('sb-user-meta'+s);
     if (n) n.textContent = currentUserData.name;
     if (m) m.textContent = `${currentUserData.age} 歲・${currentUserData.gender}`;
   });
+  // 更新所有點數顯示
+  ['', '4'].forEach(s => {
+    const pts = document.getElementById('sb-user-points' + s);
+    if (pts) pts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
+  });
+  const shopPts = document.getElementById('shop-points-display');
+  if (shopPts) shopPts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
+  const profilePts = document.getElementById('profile-points');
+  if (profilePts) profilePts.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
   const tagsEl = document.getElementById('sb-user-tags');
   if (tagsEl) tagsEl.innerHTML = (currentUserData.skills||[]).length
     ? currentUserData.skills.map(s=>`<span class="tag" style="font-size:10px">${s}</span>`).join('')
     : '<span style="font-size:11px;color:#9ca3af">尚未設定技能</span>';
 }
+
+// ── 兌換中心 ──
+function renderShop() {
+  updateSidebarUser();
+  const grid = document.getElementById('shop-grid');
+  if (!grid) return;
+  const userPts = currentUserData?.points ?? 0;
+  grid.innerHTML = SHOP_ITEMS.map(item => {
+    const canRedeem = userPts >= item.price;
+    return `<div class="shop-card">
+      <div class="shop-card-icon">${item.icon}</div>
+      <div class="shop-card-name">${item.name}</div>
+      <div class="shop-card-desc">${item.desc}</div>
+      <div class="shop-card-price">⭐ ${item.price} 點</div>
+      <button class="btn-redeem" ${canRedeem?'':'disabled'}
+        onclick="window.redeemItem('${item.id}')">
+        ${canRedeem ? '立即兌換' : '點數不足'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+window.redeemItem = async (itemId) => {
+  const item = SHOP_ITEMS.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
+  const userPts = currentUserData?.points ?? 0;
+  if (userPts < item.price) return showToast('點數不足，無法兌換');
+
+  const userRef = doc(db, 'users', currentUser.uid);
+  try {
+    await runTransaction(db, async (t) => {
+      const snap = await t.get(userRef);
+      const cur  = snap.data()?.points ?? 0;
+      if (cur < item.price) throw new Error('點數不足');
+      t.update(userRef, { points: increment(-item.price) });
+    });
+    await addDoc(collection(db, 'point_transactions'), {
+      uid:    currentUser.uid,
+      name:   currentUserData.name,
+      type:   'redeem',
+      delta:  -item.price,
+      reason: `兌換 ${item.name}`,
+      createdAt: serverTimestamp()
+    });
+    currentUserData.points = userPts - item.price;
+    updateSidebarUser();
+    renderShop();
+    document.getElementById('redeem-success-msg').innerHTML =
+      `「${item.name}」兌換成功！<br>憑證將在 24 小時內寄送至你的信箱。`;
+    document.getElementById('redeem-success-overlay').classList.add('open');
+  } catch(e) {
+    showToast(e.message === '點數不足' ? '點數不足，無法兌換' : '兌換失敗，請稍後再試');
+  }
+};
+
+// 購買點數
+let _buyPtsSelected = 0;
+window.openBuyModal = () => {
+  _buyPtsSelected = 0;
+  document.querySelectorAll('.buy-pts-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('btn-confirm-buy').textContent = '確認購買';
+  document.getElementById('buy-points-modal').classList.add('open');
+};
+window.closeBuyModal = () => {
+  document.getElementById('buy-points-modal').classList.remove('open');
+};
+window.selectBuyPts = (btn) => {
+  document.querySelectorAll('.buy-pts-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  _buyPtsSelected = parseInt(btn.dataset.pts);
+  document.getElementById('btn-confirm-buy').textContent = `確認購買 ${_buyPtsSelected} 點（NT$${_buyPtsSelected}）`;
+};
+window.confirmBuy = async () => {
+  if (!_buyPtsSelected) return showToast('請先選擇購買數量');
+  if (!currentUser) return;
+  const pts = _buyPtsSelected;
+  const userRef = doc(db, 'users', currentUser.uid);
+  try {
+    await runTransaction(db, async (t) => {
+      t.update(userRef, { points: increment(pts) });
+    });
+    await addDoc(collection(db,'point_transactions'), {
+      uid:    currentUser.uid,
+      name:   currentUserData.name,
+      type:   'purchase',
+      delta:  pts,
+      reason: `購買 ${pts} 點（NT$${pts}）`,
+      createdAt: serverTimestamp()
+    });
+    currentUserData.points = (currentUserData.points ?? 0) + pts;
+    updateSidebarUser();
+    renderShop();
+    window.closeBuyModal();
+    showToast(`✅ 購買成功！已增加 ${pts} 點。`);
+  } catch(e) {
+    showToast('購買失敗，請稍後再試');
+  }
+};
+
+// 完成任務 Modal
+window.openCompleteModal = (dataStr) => {
+  const d = typeof dataStr === 'string' ? JSON.parse(dataStr.replace(/&quot;/g,'"')) : dataStr;
+  activeCompleteData = d;
+  document.getElementById('complete-modal-sub').textContent = `對象：${d.toName}`;
+  document.getElementById('complete-modal-detail').textContent =
+    `確認後將從需求者帳戶扣除 ${d.points} 點，並轉移給 ${d.toName}。此操作不可撤銷。`;
+  document.getElementById('complete-modal').classList.add('open');
+};
+window.closeCompleteModal = () => {
+  document.getElementById('complete-modal').classList.remove('open');
+  activeCompleteData = null;
+};
+window.confirmComplete = async () => {
+  if (!activeCompleteData) return;
+  const { inviteId, toUid, toName, points } = activeCompleteData;
+  if (!points || points <= 0) return showToast('此任務無點數可轉移');
+
+  // 我送出的邀請 type=need → 我是提供者，toUid 是需求者
+  const requesterUid  = toUid;
+  const providerUid   = currentUser.uid;
+  const requesterRef  = doc(db, 'users', requesterUid);
+  const providerRef   = doc(db, 'users', providerUid);
+  const inviteRef     = doc(db, 'invites', inviteId);
+
+  try {
+    await runTransaction(db, async (t) => {
+      const reqSnap = await t.get(requesterRef);
+      const curPts  = reqSnap.data()?.points ?? 0;
+      if (curPts < points) throw new Error('點數不足');
+      t.update(requesterRef, { points: increment(-points) });
+      t.update(providerRef,  { points: increment(points) });
+      t.update(inviteRef, { status: '已完成' });
+    });
+    await addDoc(collection(db,'point_transactions'), {
+      uid: requesterUid, name: toName,
+      type: 'spend', delta: -points,
+      reason: `任務完成 — 支付給 ${currentUserData.name}`,
+      counterpart: currentUserData.name,
+      createdAt: serverTimestamp()
+    });
+    await addDoc(collection(db,'point_transactions'), {
+      uid: providerUid, name: currentUserData.name,
+      type: 'earn', delta: points,
+      reason: `任務完成 — 收到來自 ${toName}`,
+      counterpart: toName,
+      createdAt: serverTimestamp()
+    });
+    currentUserData.points = (currentUserData.points ?? 0) + points;
+    updateSidebarUser();
+    window.closeCompleteModal();
+    showToast(`✅ 任務完成！獲得 ${points} 點！`);
+    renderProfile();
+  } catch(e) {
+    window.closeCompleteModal();
+    showToast(e.message === '點數不足' ? '需求者點數不足，請提醒對方購買點數' : '操作失敗，請稍後再試');
+  }
+};
+
+// Profile Tab 切換
+window.switchProfileTab = (tab) => {
+  document.querySelectorAll('.profile-tab').forEach((t,i) =>
+    t.classList.toggle('active', (i===0&&tab==='invites')||(i===1&&tab==='transactions')));
+  document.getElementById('profile-tab-invites').style.display      = tab==='invites'      ? 'block' : 'none';
+  document.getElementById('profile-tab-transactions').style.display = tab==='transactions' ? 'block' : 'none';
+};
 
 // ─────────────────────────────────
 //  示範假資料（Firestore 無資料時顯示）
@@ -2104,6 +2578,17 @@ window.openModal = (type, dataStr) => {
   document.getElementById('modal-detail-text').textContent = d.desc || `具備技能：${(d.skills||[]).join('、')}`;
   document.getElementById('modal-msg').value  = '';
   document.getElementById('modal-time').value = '';
+  // 顯示點數說明
+  const ptsInfo = document.getElementById('modal-points-info');
+  if (ptsInfo) {
+    if (type === 'need') {
+      const pts = d.points ?? calcPoints(d.skills);
+      ptsInfo.textContent = `⭐ 完成此任務後，你將獲得 ${pts} 點；需求者將扣除 ${pts} 點。`;
+      ptsInfo.style.display = 'block';
+    } else {
+      ptsInfo.style.display = 'none';
+    }
+  }
   document.getElementById('modal-overlay').classList.add('open');
 };
 
@@ -2118,30 +2603,39 @@ window.sendInvite = async () => {
   if (!msg)  return showToast('請填寫說明');
   if (!time) return showToast('請填寫希望時間');
 
-  const inviteId = 's' + Date.now();
-  const d        = activeModalData.d;
+  const d    = activeModalData.d;
+  const type = activeModalData.type;
   const toName   = d.name;
-  // need 卡片用 d.uid；offer 卡片（users collection）用 d.id
   const toUid    = d.uid && d.uid !== 'demo' ? d.uid : d.id;
+  const pts  = d.points ?? calcPoints(d.skills);
 
-  // 寫入 Firestore
+  // type='need'：我是提供者，對方是需求者
+  // type='offer'：我是需求者，對方是提供者
+  const requesterUid  = type === 'need' ? (d.uid || d.id) : currentUser.uid;
+  const requesterName = type === 'need' ? d.name : currentUserData.name;
+  const providerUid   = type === 'need' ? currentUser.uid : (d.uid || d.id);
+  const providerName  = type === 'need' ? currentUserData.name : d.name;
+
   try {
     const ref = await addDoc(collection(db,'invites'), {
-      fromUid:   currentUser.uid,
-      fromName:  currentUserData.name,
-      fromEmoji: currentUserData.emoji || '🙂',
-      fromMeta:  `${currentUserData.age} 歲・${currentUserData.gender}`,
-      contact:   currentUserData.email || '',
-      toName,
-      toUid,
-      type:      activeModalData.type,
-      msg, time, status: '等待回覆',
+      fromUid:      currentUser.uid,
+      fromName:     currentUserData.name,
+      fromEmoji:    currentUserData.emoji || '🙂',
+      fromMeta:     `${currentUserData.age} 歲・${currentUserData.gender}`,
+      contact:      currentUserData.email || '',
+      toName, toUid,
+      requesterUid, requesterName,
+      providerUid,  providerName,
+      needId:       type === 'need' ? (d.id || null) : null,
+      type,
+      points:       pts,
+      msg, time, status: '進行中',
       createdAt: serverTimestamp()
     });
-    console.log('✅ 邀請寫入成功 id:', ref.id, '| toUid:', toUid, '| fromUid:', currentUser.uid);
-    sentInvites.push({ id: inviteId, toName, time, msg, status: '等待回覆' });
+    console.log('✅ 邀請寫入成功 id:', ref.id, '| toUid:', toUid, '| pts:', pts);
+    sentInvites.push({ id: ref.id, toName, time, msg, status: '進行中' });
     window.closeModal();
-    showToast('邀請已送出！等待對方選擇接受或拒絕。');
+    showToast(`邀請已送出！任務完成後可確認轉移 ${pts} 點。`);
   } catch(e) {
     console.error('❌ 邀請寫入失敗:', e);
     showToast('送出失敗：' + e.message);
@@ -2158,6 +2652,7 @@ window.postNeed = async () => {
   if (!skills.length) return showToast('請選擇至少一個技能標籤');
   if (!desc)  return showToast('請填寫需求描述');
   if (!time)  return showToast('請填寫希望時間');
+  const pts = calcPoints(skills);
   try {
     const locPayload = (currentLocation.lat && currentLocation.lng)
       ? { lat: currentLocation.lat, lng: currentLocation.lng }
@@ -2167,13 +2662,15 @@ window.postNeed = async () => {
       age: currentUserData.age, gender: currentUserData.gender,
       emoji: currentUserData.emoji||'🙋',
       skills, desc, time,
+      points: pts,
+      status: '開放中',
       ...locPayload,
       createdAt: serverTimestamp()
     });
     document.getElementById('post-desc').value = '';
     document.getElementById('post-time').value = '';
     document.querySelectorAll('#post-skill-tags .skill-tag').forEach(t=>t.classList.remove('selected'));
-    showToast('需求已發布！' + (locPayload.lat ? ' 📍 已附上位置' : ''));
+    showToast(`需求已發布！此任務價值 ${pts} 點${locPayload.lat ? ' 📍 已附上位置' : ''}。`);
     window.switchMainPage('home');
     window.switchTab('need');
     loadCards();
@@ -2195,10 +2692,14 @@ function nowTime() {
   return new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
 }
 
-window.renderProfile = async function renderProfile() {
+async function renderProfile() {
   if (!currentUserData) return;
+  const avatarEl = document.getElementById('profile-avatar');
+  if (avatarEl) avatarEl.textContent = currentUserData.emoji || '🙂';
   document.getElementById('profile-name').textContent = currentUserData.name;
   document.getElementById('profile-meta').textContent = `${currentUserData.age} 歲・${currentUserData.gender}`;
+  const profilePtsEl = document.getElementById('profile-points');
+  if (profilePtsEl) profilePtsEl.textContent = `⭐ ${currentUserData.points ?? '—'} 點`;
   document.getElementById('profile-tags').innerHTML = (currentUserData.skills||[]).length
     ? currentUserData.skills.map(s=>`<span class="tag">${s}</span>`).join('')
     : '<span style="font-size:13px;color:#9ca3af">尚未設定技能</span>';
@@ -2209,16 +2710,23 @@ window.renderProfile = async function renderProfile() {
     const q = query(collection(db,'invites'), where('fromUid','==',currentUser.uid), orderBy('createdAt','desc'));
     const snap = await getDocs(q);
     const firestoreSent = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // 合併本地與 Firestore（以 Firestore 為主）
     const merged = firestoreSent.length ? firestoreSent : sentInvites;
     sl.innerHTML = merged.length
-      ? merged.map(h => `<div class="history-item">
-          <div class="h-name">對象：${h.toName}</div>
-          <div class="h-time">⏰ ${h.time}</div>
-          <div class="h-msg">${h.msg}</div>
-          ${statusBadge(h.status)}
-          ${h.rejectReason ? `<div style="margin-top:6px;font-size:12px;color:#9ca3af">拒絕原因：${h.rejectReason}</div>` : ''}
-        </div>`).join('')
+      ? merged.map(h => {
+          const canComplete = h.type === 'need' && h.status === '進行中';
+          const completeData = JSON.stringify({ inviteId: h.id, toUid: h.toUid, toName: h.toName, points: h.points || 0 }).replace(/"/g,'&quot;');
+          return `<div class="history-item">
+            <div class="h-name">對象：${h.toName}</div>
+            <div class="h-time">⏰ ${h.time}</div>
+            <div class="h-msg">${h.msg}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+              ${statusBadge(h.status)}
+              ${h.points ? `<span class="points-badge">⭐ ${h.points} 點</span>` : ''}
+              ${canComplete ? `<button onclick="window.openCompleteModal('${completeData}')" style="padding:4px 12px;background:#5B8DB8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">確認完成</button>` : ''}
+            </div>
+            ${h.rejectReason ? `<div style="margin-top:6px;font-size:12px;color:#9ca3af">拒絕原因：${h.rejectReason}</div>` : ''}
+          </div>`;
+        }).join('')
       : '<div class="empty-state"><span class="empty-icon">📭</span><p>尚無送出紀錄</p></div>';
   } catch(e) {
     sl.innerHTML = sentInvites.length
@@ -2278,6 +2786,38 @@ window.renderProfile = async function renderProfile() {
         </div>
       </div>`).join('')
     : '<div class="empty-state"><span class="empty-icon">📭</span><p>目前沒有待處理的邀請</p></div>';
+  // 點數交易記錄
+  await renderTransactions();
+}
+
+window.renderProfile = renderProfile;
+
+async function renderTransactions() {
+  const tl = document.getElementById('tx-list');
+  if (!tl) return;
+  tl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af">載入中...</div>';
+  try {
+    const q = query(collection(db,'point_transactions'), where('uid','==',currentUser.uid), orderBy('createdAt','desc'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      tl.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af"><div style="font-size:36px;margin-bottom:8px">⭐</div><p>尚無點數記錄</p></div>';
+    } else {
+      tl.innerHTML = snap.docs.map(d => {
+        const tx = d.data();
+        const isPlus = tx.delta > 0;
+        const dt = tx.createdAt?.toDate?.()?.toLocaleDateString('zh-TW') ?? '';
+        return `<div class="tx-item">
+          <div>
+            <div class="tx-desc">${tx.reason}</div>
+            <div class="tx-meta">${dt}${tx.counterpart ? ' · 對象：' + tx.counterpart : ''}</div>
+          </div>
+          <div class="tx-amount ${isPlus?'plus':'minus'}">${isPlus?'+':''}${tx.delta}</div>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) {
+    tl.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af">載入失敗</div>';
+  }
 }
 
 // ─────────────────────────────────
@@ -2367,7 +2907,7 @@ function renderChatMessages() {
         <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time}</div>
         <div class="bubble">${m.text}</div>
       </div>
-      ${isMe ? `<div class="bubble-avatar" style="background:#fff7ed">🙂</div>` : ''}
+      ${isMe ? `<div class="bubble-avatar" style="background:#EDF4FB">🙂</div>` : ''}
     </div>`;
   }).join('');
   el.scrollTop = el.scrollHeight;
@@ -2505,7 +3045,7 @@ function _nameToInfo(name, hint) {
 }
 
 // 產生頭像 HTML：優先 emoji，其次 photoURL img，最後預設圖示
-function avatarHtml(info, size = 36, bgColor = '#fff7ed') {
+function avatarHtml(info, size = 36, bgColor = '#EDF4FB') {
   if (info.emoji) {
     return `<div class="bubble-avatar" style="background:${bgColor};width:${size}px;height:${size}px;font-size:${Math.round(size*0.55)}px">${info.emoji}</div>`;
   }
@@ -2514,7 +3054,7 @@ function avatarHtml(info, size = 36, bgColor = '#fff7ed') {
   }
   // 文字頭像：取名字第一個字
   const letter = (info.displayName || '?')[0].toUpperCase();
-  return `<div class="bubble-avatar" style="background:#F97316;color:#fff;width:${size}px;height:${size}px;font-size:${Math.round(size*0.45)}px;font-weight:800">${letter}</div>`;
+  return `<div class="bubble-avatar" style="background:#5B8DB8;color:#fff;width:${size}px;height:${size}px;font-size:${Math.round(size*0.45)}px;font-weight:800">${letter}</div>`;
 }
 
 // 左側列表頭像（尺寸略大）
@@ -2526,7 +3066,7 @@ function listAvatarHtml(info) {
     return `<img class="chat-list-avatar" src="${info.avatar}" alt="${info.displayName}" style="object-fit:cover;border-radius:50%">`;
   }
   const letter = (info.displayName || '?')[0].toUpperCase();
-  return `<div class="chat-list-avatar" style="background:#F97316;color:#fff;font-size:18px;font-weight:800">${letter}</div>`;
+  return `<div class="chat-list-avatar" style="background:#5B8DB8;color:#fff;font-size:18px;font-weight:800">${letter}</div>`;
 }
 
 // ─────────────────────────────────
@@ -2638,7 +3178,7 @@ window.openChatRoom = async (chatId) => {
     crAvatar.innerHTML = `<img src="${peerInfo.avatar}" alt="${peerName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
   } else {
     crAvatar.textContent = (peerName)[0].toUpperCase();
-    crAvatar.style.background = '#F97316';
+    crAvatar.style.background = '#5B8DB8';
     crAvatar.style.color = '#fff';
   }
 
@@ -2678,7 +3218,7 @@ window.openChatRoom = async (chatId) => {
           <div class="bubble-time" style="text-align:${isMe?'right':'left'}">${m.time||''}</div>
           ${bubbleContent}
         </div>
-        ${isMe ? avatarHtml(senderInfo, 36, '#fff7ed') : ''}`;
+        ${isMe ? avatarHtml(senderInfo, 36, '#EDF4FB') : ''}`;
       msgEl.appendChild(div);
     }
 
@@ -2876,6 +3416,12 @@ document.getElementById('edit-need-modal-overlay').addEventListener('click', e =
 });
 document.getElementById('delete-confirm-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('delete-confirm-overlay')) window.closeDeleteConfirm();
+});
+document.getElementById('buy-points-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('buy-points-modal')) window.closeBuyModal();
+});
+document.getElementById('complete-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('complete-modal')) window.closeCompleteModal();
 });
 // 編輯 Modal 內的技能標籤點擊
 document.getElementById('edit-skill-tags').addEventListener('click', e => {
