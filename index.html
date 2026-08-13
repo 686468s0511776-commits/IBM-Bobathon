@@ -1607,15 +1607,85 @@
   /* ══════════════════════════════
      點數協商相關 UI
   ══════════════════════════════ */
-  /* 任務資訊列：設定點數按鈕 */
+  /* ── 聊天室頂部「報價列」（比 task-info-bar 更醒目的獨立列）── */
+  .chat-quote-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: linear-gradient(90deg, #f5f3ff, #ede9fe);
+    border-bottom: 1.5px solid #ddd6fe;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .chat-quote-bar.show { display: flex; }
+  body.dark .chat-quote-bar {
+    background: linear-gradient(90deg, #1e1b4b, #2e1b4b);
+    border-bottom-color: #4c1d95;
+  }
+  .chat-quote-label {
+    font-size: 13px; font-weight: 700; color: #6d28d9; white-space: nowrap;
+  }
+  body.dark .chat-quote-label { color: #c4b5fd; }
+  /* Helper 端輸入框 */
+  .quote-input-wrap {
+    display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+  }
+  .quote-pts-input {
+    width: 110px; padding: 7px 12px;
+    border: 1.5px solid #c4b5fd; border-radius: 10px;
+    font-size: 14px; font-weight: 700; outline: none;
+    background: #fff; color: #4c1d95;
+    transition: border-color .2s;
+  }
+  .quote-pts-input:focus { border-color: #7c3aed; }
+  body.dark .quote-pts-input { background: #1e1b4b; color: #e9d5ff; border-color: #7c3aed; }
+  .quote-fee-hint {
+    font-size: 11px; color: #7c3aed; flex: 1; white-space: nowrap;
+  }
+  body.dark .quote-fee-hint { color: #a78bfa; }
+  .btn-send-quote {
+    padding: 7px 18px; border-radius: 10px; border: none;
+    background: #7c3aed; color: #fff; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: background .15s; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-send-quote:hover { background: #6d28d9; }
+  .btn-send-quote:disabled { background: #9ca3af; cursor: not-allowed; }
+  /* Requester 端確認 */
+  .quote-requester-msg {
+    font-size: 13px; font-weight: 700; color: #1d4ed8; flex: 1;
+  }
+  body.dark .quote-requester-msg { color: #93c5fd; }
+  .btn-agree-quote {
+    padding: 7px 16px; border-radius: 10px; border: none;
+    background: #16a34a; color: #fff; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: background .15s; white-space: nowrap;
+  }
+  .btn-agree-quote:hover { background: #15803d; }
+  .btn-renegotiate-quote {
+    padding: 7px 14px; border-radius: 10px;
+    border: 1.5px solid #6b7280; background: transparent;
+    color: #6b7280; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .btn-renegotiate-quote:hover { border-color: #374151; color: #374151; }
+  body.dark .btn-renegotiate-quote { color: #9ca3af; border-color: #4b5563; }
+  /* 已鎖定點數 badge（報價列的第三態） */
+  .quote-locked-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 20px;
+    background: #dcfce7; color: #15803d; font-size: 13px; font-weight: 700;
+  }
+  body.dark .quote-locked-badge { background: #14532d; color: #4ade80; }
+
+  /* 舊有按鈕（保留向下相容） */
   .btn-set-points {
     padding: 4px 12px; border-radius: 20px; border: none;
     background: #8b5cf6; color: #fff; font-size: 12px; font-weight: 700;
     cursor: pointer; transition: opacity .15s; white-space: nowrap;
   }
   .btn-set-points:hover { opacity: .85; }
-
-  /* 報價確認按鈕組 */
   .btn-agree-points {
     padding: 4px 12px; border-radius: 20px; border: none;
     background: #22c55e; color: #fff; font-size: 12px; font-weight: 700;
@@ -2492,17 +2562,22 @@
             <!-- 按鈕由 _updateChatPipeline() 動態更新 -->
           </div>
         </div>
+
+        <!-- ══ 點數協商列（醒目獨立列，Helper 報價 / Requester 確認） ══ -->
+        <div class="chat-quote-bar" id="cr-quote-bar">
+          <!-- 狀態 A：Helper 輸入報價（由 JS 渲染內容） -->
+          <!-- 狀態 B：等待 Requester 確認 -->
+          <!-- 狀態 C：已鎖定點數 -->
+          <!-- 以下由 _updateQuoteBar() 動態填入 id="cr-quote-bar-inner" -->
+          <div id="cr-quote-bar-inner" style="display:contents"></div>
+        </div>
+
         <!-- 任務資訊列（任務標題 + 點數，常駐顯示） -->
         <div class="chat-task-info-bar" id="cr-task-info-bar">
           <span>📋</span>
           <span class="chat-task-title" id="cr-task-title">任務</span>
           <span class="chat-task-pts" id="cr-task-pts" style="display:none"></span>
           <span class="chat-task-done-badge" id="cr-task-done-badge" style="display:none">🎉 任務已完成</span>
-          <!-- 點數協商按鈕：Helper 視角 - 設定點數 -->
-          <button class="btn-set-points" id="cr-set-points-btn" style="display:none" onclick="window.openSetPointsModal()">💰 設定服務點數</button>
-          <!-- 點數協商按鈕：Requester 視角 - 同意或重新協商 -->
-          <button class="btn-agree-points" id="cr-agree-points-btn" style="display:none" onclick="window.agreeQuotedPoints()">✅ 同意此點數</button>
-          <button class="btn-renegotiate" id="cr-renegotiate-btn" style="display:none" onclick="window.renegotiatePoints()">🔄 重新協商</button>
           <button class="btn-task-review" id="cr-task-review-btn" style="display:none" onclick="window.openChatReview()">⭐ 評價對方</button>
         </div>
         <!-- 任務行動列（確認完成 / 取消任務） -->
@@ -6004,28 +6079,22 @@ function _updateChatActionBar(chat) {
   const ts          = chat.taskStatus || 'active';
   const confirmedBy = chat.completionConfirmedBy || null;
 
-  // ── 更新任務資訊列 ──
-  const infoBar       = document.getElementById('cr-task-info-bar');
-  const titleEl       = document.getElementById('cr-task-title');
-  const ptsEl         = document.getElementById('cr-task-pts');
-  const doneBadge     = document.getElementById('cr-task-done-badge');
-  const reviewBtn     = document.getElementById('cr-task-review-btn');
-  const setPointsBtn  = document.getElementById('cr-set-points-btn');
-  const agreeBtn      = document.getElementById('cr-agree-points-btn');
-  const renegotiateBtn= document.getElementById('cr-renegotiate-btn');
+  // ── 更新任務資訊列（標題 + 點數 badge + 評價按鈕）──
+  const infoBar   = document.getElementById('cr-task-info-bar');
+  const titleEl   = document.getElementById('cr-task-title');
+  const ptsEl     = document.getElementById('cr-task-pts');
+  const doneBadge = document.getElementById('cr-task-done-badge');
+  const reviewBtn = document.getElementById('cr-task-review-btn');
 
   if (infoBar && titleEl) {
-    const title         = chat.taskTitle || chat.peerName || '任務';
-    const points        = chat.points    || 0;
-    const quotedPoints  = chat.quotedPoints || 0;
-    const quoteStatus   = chat.quoteStatus  || '';  // 'pending_quote' | 'agreed'
-    const isHelper      = chat.providerUid === currentUser.uid;
-    const isRequester   = chat.requesterUid === currentUser.uid;
+    const title        = chat.taskTitle || chat.peerName || '任務';
+    const points       = chat.points    || 0;
+    const quotedPoints = chat.quotedPoints || 0;
 
     titleEl.textContent = title;
     infoBar.classList.add('show');
 
-    // ── 點數顯示（使用協議點數 quotedPoints，若有的話）──
+    // 點數顯示：優先顯示已鎖定 points，其次 quotedPoints
     if (ptsEl) {
       const displayPts = points > 0 ? points : quotedPoints;
       if (displayPts > 0) {
@@ -6036,29 +6105,8 @@ function _updateChatActionBar(chat) {
       }
     }
 
-    // ── 點數協商按鈕顯示邏輯 ──
-    // Helper（提供者）在尚無點數且非已完成時，顯示「設定點數」
-    if (setPointsBtn) {
-      setPointsBtn.style.display = (
-        isHelper && ts !== 'completed' && ts !== 'canceled' &&
-        quoteStatus !== 'agreed' && points === 0
-      ) ? 'inline' : 'none';
-    }
-    // Requester 在 quoteStatus=pending_quote 時顯示同意/重新協商
-    if (agreeBtn) {
-      agreeBtn.style.display = (
-        isRequester && quoteStatus === 'pending_quote' && ts !== 'completed'
-      ) ? 'inline' : 'none';
-    }
-    if (renegotiateBtn) {
-      renegotiateBtn.style.display = (
-        isRequester && quoteStatus === 'pending_quote' && ts !== 'completed'
-      ) ? 'inline' : 'none';
-    }
-
     if (ts === 'completed') {
       if (doneBadge) doneBadge.style.display = 'inline';
-      // 若對方尚未評價我（reviewBtn 是否顯示由 pendingReviewFor 邏輯決定，這裡只做常駐顯示）
       if (reviewBtn) {
         reviewBtn.style.display = 'inline';
         reviewBtn.dataset.peerId   = chat.participants?.find(u => u !== currentUser.uid) || '';
@@ -6071,6 +6119,9 @@ function _updateChatActionBar(chat) {
     }
   }
 
+  // ── 更新點數協商列（報價 / 確認 / 鎖定）──
+  _updateQuoteBar(chat);
+
   // ── 更新行動列 ──
   if (ts === 'completed' || ts === 'canceled') {
     actionBar.style.display = 'none';
@@ -6078,7 +6129,11 @@ function _updateChatActionBar(chat) {
     return;
   }
 
-  actionBar.style.display = 'flex';
+  // 只有點數已鎖定（quoteStatus=agreed 或 points>0）才顯示「完成任務」行動列
+  const quoteStatus = chat.quoteStatus || '';
+  const points      = chat.points || 0;
+  const canComplete = quoteStatus === 'agreed' || points > 0;
+  actionBar.style.display = canComplete ? 'flex' : 'none';
 
   if (ts === 'pending_completion') {
     if (confirmedBy === currentUser.uid) {
@@ -6099,6 +6154,168 @@ function _updateChatActionBar(chat) {
   // 同步更新 Pipeline 視覺
   _updateChatPipeline(chat);
 }
+
+// ── 點數協商列（chat-quote-bar）渲染函式 ──
+function _updateQuoteBar(chat) {
+  const bar   = document.getElementById('cr-quote-bar');
+  const inner = document.getElementById('cr-quote-bar-inner');
+  if (!bar || !inner || !currentUser) return;
+
+  const ts           = chat.taskStatus  || 'active';
+  const quoteStatus  = chat.quoteStatus || '';
+  const quotedPoints = chat.quotedPoints || 0;
+  const lockedPoints = chat.points       || 0;
+
+  // ── 判斷角色（含 fallback）──
+  // providerUid = Helper（提供幫助者）；requesterUid = 求助者
+  let isHelper    = chat.providerUid   === currentUser.uid;
+  let isRequester = chat.requesterUid  === currentUser.uid;
+  // fallback：若 providerUid/requesterUid 未設定，用 participants 推算
+  if (!isHelper && !isRequester && chat.participants?.length === 2) {
+    // 由 inviteType 判斷：'offer'＝我聯繫對方（我是 Requester）；'need'＝對方聯繫我（我是 Provider）
+    const inviteType = chat.inviteType || chat.type || '';
+    if (inviteType === 'offer') {
+      // 對方卡片是「提供幫助」→ 對方是 Helper，我是 Requester
+      isRequester = true;
+    } else if (inviteType === 'need') {
+      // 對方卡片是「需要幫助」→ 我是 Helper
+      isHelper = true;
+    } else {
+      // 最後 fallback：participants[0] 是發起方（Requester），[1] 是接受方（Helper）
+      isRequester = chat.participants[0] === currentUser.uid;
+      isHelper    = chat.participants[1] === currentUser.uid;
+    }
+  }
+
+  // 已完成／已取消：隱藏報價列
+  if (ts === 'completed' || ts === 'canceled') {
+    bar.classList.remove('show');
+    return;
+  }
+
+  // ── 狀態 C：點數已鎖定 ──
+  if (lockedPoints > 0 && (quoteStatus === 'agreed' || ts === 'active' && lockedPoints > 0)) {
+    // 點數已協商完成，顯示鎖定 badge
+    bar.classList.add('show');
+    inner.innerHTML = `
+      <span class="chat-quote-label">💰 服務點數</span>
+      <span class="quote-locked-badge">✅ 已鎖定 ${lockedPoints} 點</span>
+      <span style="font-size:11px;color:var(--text-muted);flex:1">（完成任務後自動結算）</span>`;
+    return;
+  }
+
+  // ── 狀態 B：Helper 已報價，等待 Requester 確認 ──
+  if (quoteStatus === 'pending_quote' && quotedPoints > 0) {
+    bar.classList.add('show');
+    if (isHelper) {
+      // Helper 視角：等待中
+      inner.innerHTML = `
+        <span class="chat-quote-label">💰 報價進行中</span>
+        <span style="font-size:13px;color:#6d28d9;flex:1">已送出 ${quotedPoints} 點報價，等待對方確認…</span>
+        <button class="btn-renegotiate-quote" onclick="window.renegotiatePoints()">撤回重報</button>`;
+    } else if (isRequester) {
+      // Requester 視角：確認或重新協商
+      const fee  = Math.floor(quotedPoints * 0.1);
+      const gain = quotedPoints - fee;
+      inner.innerHTML = `
+        <span class="chat-quote-label">💰 對方報價</span>
+        <span class="quote-requester-msg">對方提議 <strong>${quotedPoints} 點</strong>（對方獲得 ${gain} 點，平台手續費 ${fee} 點）</span>
+        <button class="btn-agree-quote" onclick="window.agreeQuotedPoints()">✅ 同意此點數</button>
+        <button class="btn-renegotiate-quote" onclick="window.renegotiatePoints()">🔄 重新協商</button>`;
+    } else {
+      inner.innerHTML = `<span class="chat-quote-label">💰 報價中：${quotedPoints} 點，等待雙方確認</span>`;
+    }
+    return;
+  }
+
+  // ── 狀態 A：尚未報價 或 撤回重報，Helper 端顯示輸入框 ──
+  const needsQuote = !quoteStatus || quoteStatus === 'renegotiate';
+  if (isHelper && needsQuote) {
+    bar.classList.add('show');
+    inner.innerHTML = `
+      <span class="chat-quote-label">💰 設定服務點數</span>
+      <div class="quote-input-wrap">
+        <input class="quote-pts-input" id="inline-quote-input" type="number" min="1" max="9999"
+          placeholder="輸入點數（如 100）"
+          oninput="window._onQuoteInputChange(this)" />
+        <span class="quote-fee-hint" id="inline-quote-hint">輸入後可預覽手續費</span>
+      </div>
+      <button class="btn-send-quote" id="inline-quote-btn" onclick="window.submitInlineQuote()">💰 發送報價</button>`;
+    return;
+  }
+
+  // ── 狀態 A'：Requester 視角（尚未有報價或已撤回）──
+  if (isRequester && needsQuote) {
+    bar.classList.add('show');
+    inner.innerHTML = `
+      <span class="chat-quote-label">⏳ 點數待協商</span>
+      <span style="font-size:13px;color:#6b7280;flex:1">等待對方（提供服務者）提出報價…</span>`;
+    return;
+  }
+
+  // 其他狀態：隱藏
+  bar.classList.remove('show');
+}
+
+// ── 報價輸入框即時預覽 ──
+window._onQuoteInputChange = (input) => {
+  const hint = document.getElementById('inline-quote-hint');
+  if (!hint) return;
+  const p = parseInt(input.value) || 0;
+  if (p > 0) {
+    const fee  = Math.floor(p * 0.1);
+    const gain = p - fee;
+    hint.textContent = `平台手續費 ${fee} 點 · 你實得 ${gain} 點`;
+  } else {
+    hint.textContent = '輸入後可預覽手續費';
+  }
+};
+
+// ── 內聯送出報價（取代 openSetPointsModal + submitSetPoints）──
+window.submitInlineQuote = async () => {
+  const input = document.getElementById('inline-quote-input');
+  const btn   = document.getElementById('inline-quote-btn');
+  const pts   = parseInt(input?.value || '0');
+  if (!pts || pts <= 0) return showToast('請輸入有效點數（大於 0）');
+  if (!activeChatId || !currentUser) return;
+
+  // 防重複點擊
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 送出中…'; }
+
+  const fee  = Math.floor(pts * 0.1);
+  const gain = pts - fee;
+  const chat = myChats.find(c => c.chatId === activeChatId);
+  const peerId = chat ? otherUid(chat) : '';
+
+  try {
+    await setDoc(doc(db, 'chats', activeChatId), {
+      quotedPoints: pts,
+      quoteStatus:  'pending_quote',
+      quotedBy:     currentUser.uid,
+      quotedAt:     serverTimestamp()
+    }, { merge: true });
+
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
+      senderId:     currentUser.uid,
+      receiverId:   peerId,
+      type:         'quote',
+      quotedPoints: pts,
+      fee, gain,
+      text:         `💰 服務報價：${pts} 點（你獲得 ${gain} 點，平台手續費 ${fee} 點）`,
+      quoteStatus:  'pending',
+      time:         nowTime(),
+      timestamp:    serverTimestamp(),
+      isRead:       false
+    });
+
+    if (chat) { chat.quotedPoints = pts; chat.quoteStatus = 'pending_quote'; }
+    _updateChatActionBar(chat || {});
+    showToast(`✅ 報價 ${pts} 點已送出，等待對方確認`);
+  } catch(e) {
+    showToast('報價送出失敗：' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '💰 發送報價'; }
+  }
+};
 
 // ── 第一方或第二方按「已完成」──
 window.requestCompletion = async () => {
