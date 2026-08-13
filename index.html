@@ -266,6 +266,8 @@
     box-shadow: 0 2px 8px rgba(0,0,0,.04);
     transition: box-shadow .2s, transform .2s;
     display: flex; flex-direction: column;
+    min-height: 300px;            /* 統一最小高度 */
+    position: relative;
   }
   .card:hover {
     box-shadow: 0 6px 24px rgba(249,115,22,.12);
@@ -274,62 +276,76 @@
 
   .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .avatar {
-    width: 48px; height: 48px; border-radius: 50%;
+    width: 44px; height: 44px; border-radius: 50%;
     background: #fff7ed; display: flex; align-items: center;
-    justify-content: center; font-size: 24px; flex-shrink: 0;
+    justify-content: center; font-size: 22px; flex-shrink: 0;
   }
   .card-name { font-size: 14px; font-weight: 700; color: #1f2328; }
   .card-meta { font-size: 11px; color: #b0b7c3; margin-top: 2px; }
 
-  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; min-height: 28px; }
   .tag {
-    padding: 4px 11px; border-radius: 20px;
+    padding: 3px 10px; border-radius: 20px;
     font-size: 11px; font-weight: 600;
     background: #fff7ed; color: #F97316;
     border: 1px solid #fed7aa;
   }
 
-  /* 需求標題（放大加粗） */
+  /* 需求標題 */
   .card-need-title {
-    font-size: 17px; font-weight: 800; color: #1f2328;
+    font-size: 16px; font-weight: 800; color: #1f2328;
     margin-bottom: 6px; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical; overflow: hidden;
   }
+  /* 描述內文：固定 3 行，超出截斷 */
   .card-desc {
-    font-size: 14px; color: #374151; line-height: 1.65;
-    margin-bottom: 16px; flex: 1;
+    font-size: 13px; color: #374151; line-height: 1.6;
+    margin-bottom: 14px; flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
   }
 
   .btn-card {
-    width: 100%; padding: 11px;
+    width: 100%; padding: 10px;
     background: #F97316; color: #fff;
     border: none; border-radius: 10px;
     font-size: 13px; font-weight: 700;
     cursor: pointer; transition: background .2s;
+    margin-top: auto;
   }
   .btn-card:hover { background: #ea6c0a; }
   .btn-card.pending {
     background: #e5e7eb; color: #9ca3af; cursor: default;
   }
 
-  /* 「這是你的需求」併排按鈕列 */
+  /* 底部按鈕列（編輯 + 刪除） */
   .card-btn-row {
-    display: flex; gap: 8px; align-items: center;
+    display: flex; gap: 6px; align-items: center; margin-top: auto;
   }
   .btn-card-mine {
-    flex: 1; padding: 10px 12px;
+    flex: 1; padding: 9px 10px;
     background: #fff7ed; color: #F97316;
     border: 1.5px solid #fed7aa; border-radius: 10px;
-    font-size: 12px; font-weight: 700;
-    cursor: default; text-align: center;
+    font-size: 11px; font-weight: 700;
+    cursor: default; text-align: center; white-space: nowrap;
   }
   .btn-card-edit {
-    padding: 10px 16px;
+    padding: 9px 13px;
     background: #F97316; color: #fff;
     border: none; border-radius: 10px;
-    font-size: 13px; font-weight: 700;
+    font-size: 12px; font-weight: 700;
     cursor: pointer; transition: background .2s; white-space: nowrap;
   }
   .btn-card-edit:hover { background: #ea6c0a; }
+  .btn-card-delete {
+    padding: 9px 11px;
+    background: #fff; color: #dc2626;
+    border: 1.5px solid #fca5a5; border-radius: 10px;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+  }
+  .btn-card-delete:hover { background: #fef2f2; border-color: #dc2626; }
 
   /* tab panel */
   .tab-panel { display: none; }
@@ -1300,6 +1316,19 @@
   </div>
 </div>
 
+<!-- 刪除確認 Modal -->
+<div class="modal-overlay" id="delete-confirm-overlay">
+  <div class="modal" style="max-width:400px;text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">🗑️</div>
+    <h3 style="margin-bottom:8px">確定要刪除嗎？</h3>
+    <p id="delete-confirm-text" style="font-size:14px;color:#6b7280;margin-bottom:24px">刪除後無法復原。</p>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="window.closeDeleteConfirm()">取消</button>
+      <button class="btn-send" style="background:#dc2626" onclick="window.confirmDeleteItem()">確認刪除</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -1313,7 +1342,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithRedirect, getRedirectResult }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, getDocs,
-         query, orderBy, serverTimestamp, where, onSnapshot }
+         query, orderBy, serverTimestamp, where, onSnapshot, deleteDoc }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1844,7 +1873,8 @@ function renderNeedCards(cards) {
   const el = document.getElementById('need-cards');
   if (!cards.length) { el.innerHTML = '<div style="text-align:center;padding:60px;color:#9ca3af"><div style="font-size:48px;margin-bottom:12px">🙋</div><p>目前沒有求助需求</p></div>'; return; }
   el.innerHTML = cards.map(d => {
-    const isMe = d.uid === currentUser?.uid;
+    // 嚴格判斷：只有 uid 完全相符才顯示管理按鈕
+    const isMe = !!(d.uid && currentUser?.uid && d.uid === currentUser.uid);
     const data = JSON.stringify(d).replace(/"/g,'&quot;');
 
     // 距離標籤
@@ -1854,16 +1884,14 @@ function renderNeedCards(cards) {
       distBadge = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">📍 ${dist < 1 ? Math.round(dist*1000)+'m' : dist.toFixed(1)+'km'}</span>`;
     }
 
-    // 底部按鈕：自己的需求顯示「📌 這是你的需求」+ 「✏️ 編輯」；別人的顯示「我來幫忙」
+    // 底部按鈕（嚴格 isMe）
     const bottomBtn = isMe
       ? `<div class="card-btn-row">
-           <div class="btn-card-mine">📌 這是你的需求</div>
+           <div class="btn-card-mine">📌 我的需求</div>
            <button class="btn-card-edit" onclick="window.openEditNeedModal('${d.id}','${data}')">✏️ 編輯</button>
+           <button class="btn-card-delete" onclick="window.openDeleteConfirm('needs','${d.id}','${d.desc.slice(0,18).replace(/'/g,'')}')">🗑️</button>
          </div>`
       : `<button class="btn-card" onclick="window.openModal('need','${data}')">我來幫忙 🙋</button>`;
-
-    // 需求主標題（取 desc 前 20 字作為卡片標題）
-    const titleText = d.desc.length > 22 ? d.desc.slice(0, 20) + '…' : d.desc;
 
     return `<div class="card">
       <div class="card-header">
@@ -1874,17 +1902,48 @@ function renderNeedCards(cards) {
         </div>
       </div>
       <div class="tags">${tagsHTML(d.skills)}${distBadge}</div>
-      <div class="card-need-title">${titleText}</div>
-      <div class="card-desc">${d.desc}${d.time ? `<br><small style="color:#9ca3af;font-size:12px">⏰ ${d.time}</small>` : ''}</div>
+      <div class="card-need-title">${d.skills.join('・') || '求助需求'}</div>
+      <div class="card-desc">${d.desc}${d.time ? `<br><small style="color:#9ca3af;font-size:11px">⏰ ${d.time}</small>` : ''}</div>
       ${bottomBtn}
     </div>`;
   }).join('');
 }
 
 // ─────────────────────────────────
+//  刪除確認 Modal
+// ─────────────────────────────────
+let _deleteTarget = { collection: '', id: '' };
+
+window.openDeleteConfirm = (col, id, preview) => {
+  _deleteTarget = { collection: col, id };
+  const label = col === 'needs' ? '這筆求助需求' : '這筆提供幫助';
+  document.getElementById('delete-confirm-text').textContent =
+    `確定要刪除「${preview}…」嗎？此操作無法復原。`;
+  document.getElementById('delete-confirm-overlay').classList.add('open');
+};
+
+window.closeDeleteConfirm = () => {
+  document.getElementById('delete-confirm-overlay').classList.remove('open');
+  _deleteTarget = { collection: '', id: '' };
+};
+
+window.confirmDeleteItem = async () => {
+  const { collection: col, id } = _deleteTarget;
+  if (!col || !id) return;
+  try {
+    await deleteDoc(doc(db, col, id));
+    showToast('✅ 已刪除！');
+    window.closeDeleteConfirm();
+    loadCards();
+  } catch(e) {
+    showToast('刪除失敗：' + e.message);
+  }
+};
+
+// ─────────────────────────────────
 //  編輯需求 Modal
 // ─────────────────────────────────
-let _editingNeedId = null;   // 目前編輯中的需求 Firestore doc ID
+let _editingNeedId = null;
 
 window.openEditNeedModal = (needId, dataStr) => {
   _editingNeedId = needId;
@@ -1928,21 +1987,32 @@ function renderOfferCards(users) {
   const el = document.getElementById('offer-cards');
   if (!users.length) { el.innerHTML = '<div style="text-align:center;padding:60px;color:#9ca3af"><div style="font-size:48px;margin-bottom:12px">💪</div><p>邀請朋友加入平台！</p></div>'; return; }
   el.innerHTML = users.map(d => {
+    // users 集合以 doc id = uid，嚴格比對
+    const isMe = !!(d.id && currentUser?.uid && d.id === currentUser.uid);
     const data = JSON.stringify(d).replace(/"/g,'&quot;');
     let distBadge = '';
     if (d.lat && d.lng && currentLocation.lat && currentLocation.lng) {
       const dist = calculateDistance(currentLocation.lat, currentLocation.lng, d.lat, d.lng);
-      distBadge = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">
-        📍 ${dist < 1 ? Math.round(dist * 1000) + 'm' : dist.toFixed(1) + 'km'}
-      </span>`;
+      distBadge = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">📍 ${dist < 1 ? Math.round(dist*1000)+'m' : dist.toFixed(1)+'km'}</span>`;
     }
+    const skillText = (d.skills||[]).join('、') || '尚未設定技能';
+    const bottomBtn = isMe
+      ? `<div class="card-btn-row">
+           <div class="btn-card-mine">👤 我的資料</div>
+         </div>`
+      : `<button class="btn-card" onclick="window.openModal('offer','${data}')">尋求幫助 💬</button>`;
     return `<div class="card">
-      <div class="card-header"><div class="avatar">${d.emoji||'🙂'}</div>
-        <div><div class="card-name">${d.name || d.displayName}</div><div class="card-meta">${d.age ? d.age + ' 歲・' + d.gender : ''}</div></div>
+      <div class="card-header">
+        <div class="avatar">${d.emoji||'🙂'}</div>
+        <div>
+          <div class="card-name">${d.name || d.displayName || '社區鄰居'}</div>
+          <div class="card-meta">${d.age ? d.age + ' 歲・' + d.gender : ''}</div>
+        </div>
       </div>
       <div class="tags">${tagsHTML(d.skills)}${distBadge}</div>
-      <div class="card-desc">具備：${(d.skills||[]).join('、')||'尚未設定技能'}</div>
-      <button class="btn-card" onclick="window.openModal('offer','${data}')">尋求幫助 💬</button>
+      <div class="card-need-title">${skillText}</div>
+      <div class="card-desc">具備：${skillText}</div>
+      ${bottomBtn}
     </div>`;
   }).join('');
 }
@@ -2612,6 +2682,9 @@ document.getElementById('chat-modal-overlay').addEventListener('click', e => {
 });
 document.getElementById('edit-need-modal-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('edit-need-modal-overlay')) window.closeEditNeedModal();
+});
+document.getElementById('delete-confirm-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('delete-confirm-overlay')) window.closeDeleteConfirm();
 });
 // 編輯 Modal 內的技能標籤點擊
 document.getElementById('edit-skill-tags').addEventListener('click', e => {
