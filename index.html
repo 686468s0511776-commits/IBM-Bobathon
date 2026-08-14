@@ -165,8 +165,13 @@
     body.mobile-chat-open .chat-main-panel {
       display: flex !important;
       flex-direction: column;
-      height: 100%;
+      /* 全螢幕：navbar(56px) 已用 position:sticky，底部 nav 被隱藏 → 全高 */
+      height: calc(100vh - 56px);
       overflow: hidden;
+    }
+    /* 開啟對話時隱藏底部導覽列 */
+    body.mobile-chat-open #mobile-bottom-nav {
+      display: none !important;
     }
     #chat-room-active {
       flex: 1 !important;
@@ -175,6 +180,33 @@
       overflow: hidden !important;
       height: auto !important;
       min-height: 0 !important;
+    }
+    /* 訊息區底部留白，避免被固定輸入框遮擋 */
+    body.mobile-chat-open .cr-messages {
+      padding-bottom: 72px !important;
+    }
+    /* 輸入列固定在螢幕最下方 */
+    body.mobile-chat-open .chat-room-input-row {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 200 !important;
+      background: #fff !important;
+      border-top: 1.5px solid #e5e7eb !important;
+      box-shadow: 0 -2px 8px rgba(0,0,0,.08);
+      padding: env(safe-area-inset-bottom, 0px) 10px 10px !important;
+      padding-top: 8px !important;
+    }
+    body.dark.mobile-chat-open .chat-room-input-row {
+      background: #1f2937 !important;
+      border-top-color: #374151 !important;
+    }
+    /* upload-bar 也固定，緊貼輸入列上方 */
+    body.mobile-chat-open .upload-bar {
+      position: fixed !important;
+      bottom: 60px !important;
+      left: 0; right: 0; z-index: 199;
     }
     /* ── Header：縮小 padding，包住所有元素不截斷 ── */
     .chat-room-header {
@@ -4659,6 +4691,8 @@ window.switchMainPage = (name) => {
     const backBtn = document.getElementById('cr-back-btn');
     if (backBtn) backBtn.style.display = 'none';
     activeChatId = null;
+    // 確保底部導覽列在列表狀態下可見
+    _showMobileNav();
   }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(map[name]).classList.add('active');
@@ -4682,6 +4716,8 @@ window.mobileChatBack = () => {
   const backBtn = document.getElementById('cr-back-btn');
   if (backBtn) backBtn.style.display = 'none';
   activeChatId = null;
+  // 重新顯示底部導覽列
+  _showMobileNav();
   // 清除對話室監聽器（節省流量）
   if (window._roomUnsubscribe) { window._roomUnsubscribe(); window._roomUnsubscribe = null; }
   // 清除 active 樣式
@@ -6532,6 +6568,8 @@ window.openChatRoom = async (chatId) => {
     document.body.classList.add('mobile-chat-open');
     const backBtn = document.getElementById('cr-back-btn');
     if (backBtn) backBtn.style.display = 'inline-flex';
+    // 隱藏底部導覽列，讓輸入框固定貼底
+    _hideMobileNav();
   }
 
   // 用 participants 取對方 UID，確保不會取到自己
