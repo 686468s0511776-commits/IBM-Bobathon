@@ -346,6 +346,10 @@
   }
 
   /* 手機底部導覽列 */
+  /* 電腦版（>768px）強制隱藏底部導覽列，優先權最高 */
+  @media (min-width: 769px) {
+    #mobile-bottom-nav { display: none !important; }
+  }
   .mobile-bottom-nav {
     display: none;
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
@@ -4283,10 +4287,12 @@ function _showManualAreaSelector() {
 }
 
 // ── 底部導覽列顯示 / 隱藏輔助函式 ──
-// 用 inline style 直接控制，確保蓋過任何 CSS 規則
+// 嚴格限制：僅在手機端（≤768px）且非聊天對話狀態下顯示
 function _showMobileNav() {
   const nav = document.getElementById('mobile-bottom-nav');
   if (!nav) return;
+  // 電腦版：永遠不顯示
+  if (window.innerWidth > 768) return;
   // 手機聊天對話中不允許顯示（body.mobile-chat-open 狀態）
   if (document.body.classList.contains('mobile-chat-open')) return;
   nav.style.display = 'flex';
