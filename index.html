@@ -3852,16 +3852,26 @@ const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127
 //  手機 Google Redirect 登入結果接收（頁面 redirect 返回後執行）
 // ─────────────────────────────────
 getRedirectResult(auth).then(result => {
-  // result 有值代表是 redirect 登入剛返回；onAuthStateChanged 會自動接手後續流程
-  if (result && result.user) {
+  // result 為 null 代表本次不是 redirect 回來，正常忽略
+  if (!result) return;
+  if (result.user) {
     console.log('✅ Google Redirect 登入成功：', result.user.email);
+    // onAuthStateChanged 會自動接手後續流程，無需額外處理
   }
 }).catch(e => {
-  if (e.code && e.code !== 'auth/null-user') {
-    console.warn('getRedirectResult error:', e.code, e.message);
-    // 僅在登入頁才顯示錯誤
-    const errEl = document.getElementById('login-error');
-    if (errEl) { errEl.textContent = 'Google 登入失敗：' + e.message; errEl.style.display = 'block'; }
+  // 以下 code 是正常情況，靜默忽略
+  const ignoredCodes = [
+    'auth/no-auth-event',
+    'auth/operation-not-supported-in-this-environment',
+  ];
+  if (!e.code || ignoredCodes.includes(e.code)) return;
+  console.warn('getRedirectResult error:', e.code, e.message);
+  // 僅在登入頁可見時才顯示錯誤
+  const errEl = document.getElementById('login-error');
+  const onAuthPage = document.getElementById('page-register')?.classList.contains('active');
+  if (errEl && onAuthPage) {
+    errEl.textContent = 'Google 登入失敗：' + e.message;
+    errEl.style.display = 'block';
   }
 });
 
@@ -3946,21 +3956,41 @@ window.switchAuthTab = (tab) => {
 //  Google 登入（手機用 Redirect，電腦用 Popup）
 // ─────────────────────────────────
 window.signInWithGoogle = async () => {
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  // 偵測需要使用 Redirect 的情境：
+  // 1. 手機/平板裝置（iOS / Android）
+  // 2. LINE / Facebook / Instagram / WeChat 等 in-app 內建瀏覽器（必定擋 Popup）
+  const ua = navigator.userAgent;
+  const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(ua);
+  const isInAppBrowser = /FBAN|FBAV|Instagram|Line\/|MicroMessenger|WebView/i.test(ua);
+  const useRedirect = isMobileDevice || isInAppBrowser;
+
+  // 顯示載入提示（redirect 模式會跳走，讓用戶知道正在處理）
+  const btnGoogle = document.querySelector('.btn-google');
+  if (btnGoogle && useRedirect) {
+    btnGoogle.textContent = '跳轉 Google 登入中…';
+    btnGoogle.disabled = true;
+  }
+
   try {
-    if (isMobile) {
-      // 手機：改用 Redirect 避免彈窗被攔截
+    if (useRedirect) {
       await signInWithRedirect(auth, googleProvider);
-      // redirect 後頁面會跳走，由 getRedirectResult 在返回後接收結果
+      // 頁面跳走後由 getRedirectResult 接收，程式碼不會繼續執行
     } else {
       const { signInWithPopup } = await import("https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js");
       await signInWithPopup(auth, googleProvider);
-      // 成功後由 onAuthStateChanged 接手，自動進入 App
+      // 成功後由 onAuthStateChanged 接手
     }
   } catch(e) {
-    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
-      showErr('login-error', 'Google 登入失敗：' + e.message);
+    // 恢復按鈕
+    if (btnGoogle) { btnGoogle.disabled = false; btnGoogle.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" /> 使用 Google 登入'; }
+    const ignoredCodes = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'];
+    if (ignoredCodes.includes(e.code)) return;
+    // popup 被擋時自動 fallback 到 redirect
+    if (e.code === 'auth/popup-blocked') {
+      try { await signInWithRedirect(auth, googleProvider); } catch(_) {}
+      return;
     }
+    showErr('login-error', 'Google 登入失敗：' + e.message);
   }
 };
 
