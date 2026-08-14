@@ -2681,15 +2681,15 @@
             <div class="skill-category" style="margin-bottom:14px">
               <div class="skill-cat-header green">🟢 一般互助</div>
               <div class="skill-tags" id="reg-general-tags">
-                <span class="skill-tag" data-skill="搬運" data-cat="general">🪜 搬運</span>
-                <span class="skill-tag" data-skill="代買" data-cat="general">🛒 代買</span>
-                <span class="skill-tag" data-skill="代領" data-cat="general">📦 代領</span>
-                <span class="skill-tag" data-skill="陪伴" data-cat="general">💚 陪伴</span>
-                <span class="skill-tag" data-skill="外出協助" data-cat="general">🚶 外出協助</span>
-                <span class="skill-tag" data-skill="居家整理" data-cat="general">🧹 居家整理</span>
-                <span class="skill-tag" data-skill="寵物照顧" data-cat="general">🐾 寵物照顧</span>
-                <span class="skill-tag" data-skill="其他(一般)" data-cat="general" data-other="generalTasks"
-                  onclick="window.toggleOtherInput('reg-general-other', this)">➕ 其他</span>
+                <button type="button" class="skill-tag" data-skill="搬運" data-cat="general">🪜 搬運</button>
+                <button type="button" class="skill-tag" data-skill="代買" data-cat="general">🛒 代買</button>
+                <button type="button" class="skill-tag" data-skill="代領" data-cat="general">📦 代領</button>
+                <button type="button" class="skill-tag" data-skill="陪伴" data-cat="general">💚 陪伴</button>
+                <button type="button" class="skill-tag" data-skill="外出協助" data-cat="general">🚶 外出協助</button>
+                <button type="button" class="skill-tag" data-skill="居家整理" data-cat="general">🧹 居家整理</button>
+                <button type="button" class="skill-tag" data-skill="寵物照顧" data-cat="general">🐾 寵物照顧</button>
+                <button type="button" class="skill-tag" data-skill="其他(一般)" data-cat="general" data-other="generalTasks"
+                  onclick="window.toggleOtherInput('reg-general-other', this)">➕ 其他</button>
               </div>
               <div class="skill-other-input-wrap" id="reg-general-other">
                 <input class="skill-other-input" id="reg-general-other-input"
@@ -2700,17 +2700,17 @@
             <div class="skill-category" style="margin-bottom:0">
               <div class="skill-cat-header blue">🔵 技能互助</div>
               <div class="skill-tags" id="reg-skill-tags">
-                <span class="skill-tag" data-skill="簡單修繕" data-cat="skill">🔧 簡單修繕</span>
-                <span class="skill-tag" data-skill="基礎電器" data-cat="skill">💡 基礎電器</span>
-                <span class="skill-tag" data-skill="電腦" data-cat="skill">💻 電腦</span>
-                <span class="skill-tag" data-skill="手機/3C" data-cat="skill">📱 手機/3C</span>
-                <span class="skill-tag" data-skill="腳踏車維修" data-cat="skill">🚲 腳踏車維修</span>
-                <span class="skill-tag" data-skill="課業" data-cat="skill">📚 課業</span>
-                <span class="skill-tag" data-skill="設計" data-cat="skill">🎨 設計</span>
-                <span class="skill-tag" data-skill="攝影" data-cat="skill">📷 攝影</span>
-                <span class="skill-tag" data-skill="程式設計" data-cat="skill">👨‍💻 程式設計</span>
-                <span class="skill-tag" data-skill="其他(技能)" data-cat="skill" data-other="skills"
-                  onclick="window.toggleOtherInput('reg-skill-other', this)">➕ 其他</span>
+                <button type="button" class="skill-tag" data-skill="簡單修繕" data-cat="skill">🔧 簡單修繕</button>
+                <button type="button" class="skill-tag" data-skill="基礎電器" data-cat="skill">💡 基礎電器</button>
+                <button type="button" class="skill-tag" data-skill="電腦" data-cat="skill">💻 電腦</button>
+                <button type="button" class="skill-tag" data-skill="手機/3C" data-cat="skill">📱 手機/3C</button>
+                <button type="button" class="skill-tag" data-skill="腳踏車維修" data-cat="skill">🚲 腳踏車維修</button>
+                <button type="button" class="skill-tag" data-skill="課業" data-cat="skill">📚 課業</button>
+                <button type="button" class="skill-tag" data-skill="設計" data-cat="skill">🎨 設計</button>
+                <button type="button" class="skill-tag" data-skill="攝影" data-cat="skill">📷 攝影</button>
+                <button type="button" class="skill-tag" data-skill="程式設計" data-cat="skill">👨‍💻 程式設計</button>
+                <button type="button" class="skill-tag" data-skill="其他(技能)" data-cat="skill" data-other="skills"
+                  onclick="window.toggleOtherInput('reg-skill-other', this)">➕ 其他</button>
               </div>
               <div class="skill-other-input-wrap" id="reg-skill-other">
                 <input class="skill-other-input" id="reg-skill-other-input"
@@ -3727,7 +3727,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signOut, onAuthStateChanged, GoogleAuthProvider,
-         signInWithRedirect, getRedirectResult, setPersistence, browserLocalPersistence }
+         signInWithRedirect, getRedirectResult }
   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, getDocs,
          query, orderBy, serverTimestamp, where, onSnapshot, deleteDoc,
@@ -3748,11 +3748,7 @@ const auth    = getAuth(app);
 const db      = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
-
-// 強制 browserLocalPersistence：確保手機跳轉後 Auth token 不丟失
-setPersistence(auth, browserLocalPersistence).catch(e =>
-  console.warn('setPersistence failed:', e.message)
-);
+// Firebase Web SDK v9+ 在瀏覽器環境預設即為 browserLocalPersistence，無需手動設定
 
 // ─────────────────────────────────
 //  狀態
