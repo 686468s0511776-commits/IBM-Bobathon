@@ -3874,7 +3874,7 @@ onAuthStateChanged(auth, async user => {
     try {
       // 每次登入都確保 displayName / email / photoURL 寫入（merge 不覆蓋其他欄位）
       const derivedName = user.displayName || user.email.split('@')[0] || '社區鄰居';
-      const isAdmin = ADMIN_EMAILS.includes(user.email);
+      const isAdmin = ADMIN_EMAILS.includes((user.email || '').toLowerCase());
       await setDoc(doc(db, 'users', user.uid), {
         uid:         user.uid,
         displayName: derivedName,
@@ -4099,11 +4099,16 @@ function showSkillSetup() {
         完成設定，進入平台 →
       </button>
     </div>`;
-  // 技能標籤點擊切換
-  overlay.querySelectorAll('.setup-skill-tag').forEach(t => {
-    if (!t.dataset.other && t.dataset.skill !== '其他(一般)' && t.dataset.skill !== '其他(技能)') {
-      t.addEventListener('click', () => t.classList.toggle('selected'));
-    }
+  // 技能標籤點擊切換（事件委派：掛在容器上，避免「其他」按鈕觸發兩次）
+  ['setup-general-tags', 'setup-skill-tags'].forEach(containerId => {
+    const container = overlay.querySelector(`#${containerId}`);
+    if (!container) return;
+    container.addEventListener('click', e => {
+      const tag = e.target.closest('.setup-skill-tag');
+      if (!tag) return;
+      // 「其他」由 onclick 處理展開輸入框，只 toggle selected，不 return
+      tag.classList.toggle('selected');
+    });
   });
   document.body.appendChild(overlay);
 }
@@ -4364,7 +4369,7 @@ function enterApp() {
   const mbnAdminBtn = document.getElementById('mbn-admin');
   const msdAdminBtn = document.getElementById('msd-admin-btn');  // 抽屜選單
   const _isAdmin = (currentUserData && currentUserData.role === 'admin')
-                || (currentUser && ADMIN_EMAILS.includes(currentUser.email));
+                || (currentUser && ADMIN_EMAILS.includes((currentUser.email || '').toLowerCase()));
   if (adminBtn    && _isAdmin) adminBtn.style.display    = 'inline-flex';
   if (mbnAdminBtn && _isAdmin) mbnAdminBtn.style.display = 'flex';
   if (msdAdminBtn && _isAdmin) msdAdminBtn.style.display = 'flex';
@@ -4626,37 +4631,28 @@ function showAuthPage() {
   document.getElementById('page-register').classList.add('active');
 }
 
-window.doLogout = () => {
-  localStorage.removeItem('isLoggedIn');
-  localStorage.removeItem('user');
-  localStorage.removeItem('mockUser');
-  sentInvites = []; recvInvites = []; chatLogs = {};
-  currentUser = null; currentUserData = null;
-  // 清除監聽器
+window.doLogout = async () => {
+  // ── 1. 清除所有 Firestore 監聽器 ──
   if (_inviteListenerUnsub)  { _inviteListenerUnsub();  _inviteListenerUnsub  = null; }
   if (window._chatListUnsub) { window._chatListUnsub(); window._chatListUnsub = null; }
   if (window._roomUnsubscribe){ window._roomUnsubscribe(); window._roomUnsubscribe = null; }
-  // 清除 offer 卡片監聽器
   if (window._offerCardsUnsub) { window._offerCardsUnsub(); window._offerCardsUnsub = null; }
-  // 清除送出邀請監聽器
   if (window._sentInvitesUnsub) { window._sentInvitesUnsub(); window._sentInvitesUnsub = null; }
-  // 清除收到邀請監聽器（profile 頁用）
   if (window._recvInvitesProfileUnsub) { window._recvInvitesProfileUnsub(); window._recvInvitesProfileUnsub = null; }
-  // 清除點數記錄監聽器
   if (window._txUnsub) { window._txUnsub(); window._txUnsub = null; }
-  // 清除 Profile 監聽器
   if (window._profileUnsub) { window._profileUnsub(); window._profileUnsub = null; }
   _unreadChatUnsubs.forEach(fn => fn());
   _unreadChatUnsubs = [];
-  _unreadMap      = {};
-  _unreadCountMap = {};
-  _updateUnreadBadge();
-  if (!IS_LOCAL) {
-    signOut(auth);
-    showAuthPage();  // signOut 是非同步，不等它，直接切換畫面
-  } else {
-    showAuthPage();
-  }
+  // ── 2. 清除全域狀態 ──
+  sentInvites = []; recvInvites = []; chatLogs = {};
+  currentUser = null; currentUserData = null;
+  _unreadMap = {}; _unreadCountMap = {};
+  // ── 3. 徹底清除本地快取 ──
+  try { localStorage.clear(); } catch(e) {}
+  try { sessionStorage.clear(); } catch(e) {}
+  // ── 4. 執行 Firebase 登出，完成後重新整理頁面（確保所有狀態乾淨）──
+  try { await signOut(auth); } catch(e) { console.warn('signOut error:', e.message); }
+  location.reload();
 };
 
 // ─────────────────────────────────
@@ -4794,7 +4790,7 @@ function updateSidebarUser() {
   });
   // 管理員顯示 ∞，一般用戶顯示實際點數
   const _isAdminAcc = currentUserData.role === 'admin'
-    || (currentUser && ADMIN_EMAILS.includes(currentUser.email));
+    || (currentUser && ADMIN_EMAILS.includes((currentUser.email || '').toLowerCase()));
   const ptsDisplay  = _isAdminAcc ? '∞' : (currentUserData.points ?? '—');
   ['', '4'].forEach(s => {
     const pts = document.getElementById('sb-user-points' + s);
@@ -7763,7 +7759,7 @@ async function _finalizeCompletion(chat) {
         const curPts    = reqSnap.data()?.points ?? 0;
         // 管理員帳號跳過點數檢查
         const reqIsAdmin = reqSnap.data()?.role === 'admin'
-          || ADMIN_EMAILS.includes(reqSnap.data()?.email || '');
+          || ADMIN_EMAILS.includes((reqSnap.data()?.email || '').toLowerCase());
         if (!reqIsAdmin && curPts < points) throw new Error('點數不足');
         t.update(reqRef,      { points: increment(-points) });
         t.update(provRef,     { points: increment(providerGain) });
@@ -8051,7 +8047,7 @@ let _adminCurrentTab = 'treasury';  // 當前分頁
 window.openAdminPanel = async () => {
   // 權限守衛（雙重判斷）
   const _isAdminUser = (currentUserData && currentUserData.role === 'admin')
-                    || (currentUser && ADMIN_EMAILS.includes(currentUser.email));
+                    || (currentUser && ADMIN_EMAILS.includes((currentUser.email || '').toLowerCase()));
   if (!_isAdminUser) {
     alert('⚠️ 權限不足：僅管理者可使用此功能');
     return;
