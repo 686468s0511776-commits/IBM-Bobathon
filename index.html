@@ -148,10 +148,24 @@
     }
     .chat-room-layout {
       grid-template-columns: 1fr !important;
-      height: calc(100vh - 56px);
+      height: calc(100vh - 120px); /* 56px navbar + 64px bottom nav */
     }
+    /* 手機版：預設顯示對話列表，隱藏右欄 */
     .chat-list-panel {
+      display: flex !important;
+      height: 100%;
+    }
+    .chat-main-panel {
       display: none !important;
+    }
+    /* 切換到對話視窗模式 */
+    body.mobile-chat-open .chat-list-panel {
+      display: none !important;
+    }
+    body.mobile-chat-open .chat-main-panel {
+      display: flex !important;
+      flex-direction: column;
+      height: 100%;
     }
     #chat-room-active {
       height: 100% !important;
@@ -3040,6 +3054,9 @@
       <div id="chat-room-active" style="display:none;flex-direction:column;height:100%">
         <!-- 標頭 -->
         <div class="chat-room-header">
+          <!-- 手機返回按鈕 -->
+          <button id="cr-back-btn" onclick="window.mobileChatBack()" title="返回對話列表"
+            style="display:none;background:none;border:none;color:#5B8DB8;font-size:22px;cursor:pointer;padding:4px 8px 4px 0;flex-shrink:0;line-height:1">⬅️</button>
           <div class="cr-avatar" id="cr-avatar" style="cursor:pointer" onclick="window.openChatPeerProfile()">🙂</div>
           <div style="flex:1;min-width:0">
             <div class="cr-name" id="cr-name" style="cursor:pointer" onclick="window.openChatPeerProfile()">—</div>
@@ -4550,6 +4567,13 @@ window.switchMainPage = (name) => {
     if (window._chatListUnsub)  { window._chatListUnsub();  window._chatListUnsub  = null; }
     if (window._roomUnsubscribe){ window._roomUnsubscribe(); window._roomUnsubscribe = null; }
   }
+  // ── 進入聊天室時，手機版重置為「顯示對話列表」狀態 ──
+  if (name === 'chatroom' && window.innerWidth <= 768) {
+    document.body.classList.remove('mobile-chat-open');
+    const backBtn = document.getElementById('cr-back-btn');
+    if (backBtn) backBtn.style.display = 'none';
+    activeChatId = null;
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(map[name]).classList.add('active');
   document.querySelectorAll('#main-nav .nav-btn').forEach((b,i) =>
@@ -4562,6 +4586,20 @@ window.switchMainPage = (name) => {
   if (name === 'chatroom') window.loadChatList && window.loadChatList();
   if (name === 'shop')     renderShop();
   updateSidebarUser();
+};
+
+// ─────────────────────────────────
+//  手機版聊天室：返回對話列表
+// ─────────────────────────────────
+window.mobileChatBack = () => {
+  document.body.classList.remove('mobile-chat-open');
+  const backBtn = document.getElementById('cr-back-btn');
+  if (backBtn) backBtn.style.display = 'none';
+  activeChatId = null;
+  // 清除對話室監聽器（節省流量）
+  if (window._roomUnsubscribe) { window._roomUnsubscribe(); window._roomUnsubscribe = null; }
+  // 清除 active 樣式
+  document.querySelectorAll('.chat-list-item').forEach(el => el.classList.remove('active'));
 };
 
 // 漢堡選單：
@@ -6402,6 +6440,13 @@ window.openChatRoom = async (chatId) => {
   activeChatId = chatId;
   const chat = myChats.find(c => c.chatId === chatId);
   if (!chat) return;
+
+  // ── 手機版：切換到對話視窗模式 ──
+  if (window.innerWidth <= 768) {
+    document.body.classList.add('mobile-chat-open');
+    const backBtn = document.getElementById('cr-back-btn');
+    if (backBtn) backBtn.style.display = 'inline-flex';
+  }
 
   // 用 participants 取對方 UID，確保不會取到自己
   const peerId   = otherUid(chat);
