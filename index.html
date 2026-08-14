@@ -166,10 +166,106 @@
       display: flex !important;
       flex-direction: column;
       height: 100%;
+      overflow: hidden;
     }
     #chat-room-active {
-      height: 100% !important;
+      flex: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      height: auto !important;
+      min-height: 0 !important;
     }
+    /* ── Header：縮小 padding，包住所有元素不截斷 ── */
+    .chat-room-header {
+      padding: 10px 12px !important;
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+      flex-shrink: 0 !important;
+    }
+    .cr-avatar { width: 36px !important; height: 36px !important; font-size: 18px !important; }
+    .cr-name   { font-size: 14px !important; }
+    /* 顯示電話 & 檢舉按鈕手機縮小 */
+    .btn-show-phone  { padding: 4px 8px !important; font-size: 11px !important; }
+    .btn-report-chat { padding: 4px 8px !important; font-size: 11px !important; }
+    /* ── 安全提醒：手機版精簡為一行，可關閉 ── */
+    .safety-banner {
+      padding: 6px 12px !important;
+      flex-shrink: 0 !important;
+    }
+    .safety-banner-text {
+      font-size: 11px !important;
+      /* 截斷超長文字，一行顯示 */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* ── 狀態流程條：橫向滑動 ── */
+    .chat-status-bar {
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      padding: 8px 12px !important;
+      gap: 4px !important;
+      flex-shrink: 0 !important;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chat-status-bar::-webkit-scrollbar { display: none; }
+    .pipeline-step { padding: 4px 10px !important; font-size: 11px !important; }
+    .pipeline-arrow { width: 16px !important; font-size: 10px !important; }
+    /* ── pipeline-actions 按鈕縮小 ── */
+    .pipeline-actions { gap: 4px !important; }
+    .btn-pipeline-action { padding: 4px 8px !important; font-size: 11px !important; }
+    /* ── 議價列（chat-quote-bar）：垂直排列 ── */
+    .chat-quote-bar {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 6px !important;
+      padding: 8px 12px !important;
+      flex-shrink: 0 !important;
+    }
+    .chat-quote-bar .chat-quote-label { order: 1; }
+    .chat-quote-bar .quote-input-wrap  { flex: 1 1 100%; order: 2; margin-top: 0; }
+    .chat-quote-bar .btn-send-quote    { order: 3; width: 100%; margin-top: 2px; }
+    .quote-pts-input { width: 100% !important; }
+    .btn-send-quote, .btn-agree-quote, .btn-renegotiate-quote {
+      padding: 6px 10px !important;
+      font-size: 12px !important;
+    }
+    /* ── 任務行動列（chat-action-bar）：折行 ── */
+    .chat-action-bar {
+      flex-wrap: wrap !important;
+      padding: 6px 12px !important;
+      gap: 6px !important;
+      flex-shrink: 0 !important;
+    }
+    .chat-action-label { flex: 1 1 100% !important; }
+    .btn-task-complete, .btn-task-cancel {
+      flex: 1 !important;
+      padding: 6px 8px !important;
+      font-size: 11px !important;
+    }
+    /* ── 任務資訊列縮小 ── */
+    .chat-task-info-bar {
+      padding: 5px 12px !important;
+      font-size: 11px !important;
+      flex-shrink: 0 !important;
+    }
+    /* ── 訊息區：flex-1，獨立滾動，不被任何欄位擠壓 ── */
+    .cr-messages {
+      flex: 1 1 0 !important;
+      overflow-y: auto !important;
+      min-height: 0 !important;
+      padding: 12px !important;
+    }
+    /* ── 輸入列縮小 ── */
+    .chat-room-input-row {
+      padding: 8px 10px !important;
+      flex-shrink: 0 !important;
+    }
+    .chat-room-input { padding: 9px 12px !important; font-size: 13px !important; }
+    .chat-room-send  { padding: 9px 14px !important; font-size: 13px !important; }
+    .btn-attach      { width: 36px !important; height: 36px !important; }
     /* 搜尋列 & 快捷標籤 */
     .quick-tags-bar {
       flex-wrap: nowrap;
@@ -187,14 +283,6 @@
     .shop-grid {
       grid-template-columns: 1fr 1fr !important;
     }
-    /* 聊天室報價列 flex-wrap */
-    .chat-quote-bar {
-      flex-wrap: wrap;
-      padding: 8px 12px;
-    }
-    .chat-quote-bar .quote-input-wrap { flex: 1 1 100%; order: 2; margin-top: 6px; }
-    .chat-quote-bar .btn-send-quote   { order: 3; width: 100%; margin-top: 4px; }
-    .chat-quote-bar .chat-quote-label { order: 1; }
     /* Modal 手機適配 */
     .modal { border-radius: 20px 20px 0 0; margin-top: auto; max-height: 90vh; overflow-y: auto; }
     .user-profile-box { width: 95% !important; max-height: 90vh; overflow-y: auto; }
@@ -203,8 +291,6 @@
     .mobile-bottom-nav {
       display: flex !important;
     }
-    /* 手機版訊息列表 padding 讓底部 nav 不遮住 */
-    .cr-messages { padding-bottom: 0; }
     /* 管理者後台 Modal 手機適配 */
     .admin-panel {
       width: 100% !important;
