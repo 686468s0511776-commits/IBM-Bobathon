@@ -3854,12 +3854,56 @@ const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127
 // ─────────────────────────────────
 //  手機 Google Redirect 登入結果接收（頁面 redirect 返回後執行）
 // ─────────────────────────────────
-getRedirectResult(auth).then(result => {
+// 旗標：追蹤 onAuthStateChanged 是否已成功進入 App（防止重複執行）
+let _authHandled = false;
+
+getRedirectResult(auth).then(async result => {
   // result 為 null 代表本次不是 redirect 回來，正常忽略
-  if (!result) return;
-  if (result.user) {
-    console.log('✅ Google Redirect 登入成功：', result.user.email);
-    // onAuthStateChanged 會自動接手後續流程，無需額外處理
+  if (!result || !result.user) return;
+
+  const user = result.user;
+  console.log('✅ Google Redirect 登入成功：', user.email);
+
+  // 等待最多 3 秒讓 onAuthStateChanged 先接手（正常情況）
+  // 若 onAuthStateChanged 已處理完畢則直接跳過
+  await new Promise(resolve => setTimeout(resolve, 800));
+  if (_authHandled) return;
+
+  // onAuthStateChanged 尚未成功接手（競爭條件）→ 主動補觸登入流程
+  console.log('🔄 Redirect 補觸登入流程...');
+  currentUser = user;
+  try {
+    const derivedName = user.displayName || user.email.split('@')[0] || '社區鄰居';
+    const isAdmin = ADMIN_EMAILS.includes((user.email || '').toLowerCase());
+    // 確保 Firestore users 文件存在（初始點數 + 基本資料）
+    await setDoc(doc(db, 'users', user.uid), {
+      uid:         user.uid,
+      displayName: derivedName,
+      email:       user.email,
+      photoURL:    user.photoURL || '',
+      lastSeen:    serverTimestamp(),
+      points:      100,   // 新用戶初始點數
+      ...(isAdmin ? { role: 'admin' } : {})
+    }, { merge: true });   // merge: 已存在的欄位不覆蓋
+
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    currentUserData = snap.exists() ? snap.data() : {
+      name: derivedName, displayName: derivedName,
+      email: user.email, photoURL: user.photoURL || '',
+      emoji: '🙂', skills: [], age: '', gender: ''
+    };
+    if (!currentUserData.name) currentUserData.name = derivedName;
+
+    _authHandled = true;
+    if (currentUserData.skillsConfigured || currentUserData.age) {
+      enterApp();
+    } else {
+      showSkillSetup();
+    }
+  } catch(e) {
+    console.warn('Redirect 補觸失敗，嘗試重新整理：', e.message);
+    // 最後手段：reload 讓 onAuthStateChanged 重新執行
+    location.reload();
   }
 }).catch(e => {
   // 以下 code 是正常情況，靜默忽略
@@ -3903,6 +3947,8 @@ onAuthStateChanged(auth, async user => {
       if (snap.exists()) {
         currentUserData = snap.data();
         if (!currentUserData.name) currentUserData.name = currentUserData.displayName || derivedName;
+        // ── 標記已由 onAuthStateChanged 成功處理，避免 getRedirectResult 補觸重複執行 ──
+        _authHandled = true;
         // ── 首次登入判斷：若已設定過技能（skillsConfigured=true 或 age 有值）→ 直接進入 App
         if (currentUserData.skillsConfigured || currentUserData.age) {
           enterApp();
@@ -3921,6 +3967,7 @@ onAuthStateChanged(auth, async user => {
           age:         '',
           gender:      ''
         };
+        _authHandled = true;
         showSkillSetup();
       }
     } catch(e) {
