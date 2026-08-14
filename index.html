@@ -4283,9 +4283,13 @@ function _showManualAreaSelector() {
 }
 
 // ── 底部導覽列顯示 / 隱藏輔助函式 ──
+// 用 inline style 直接控制，確保蓋過任何 CSS 規則
 function _showMobileNav() {
   const nav = document.getElementById('mobile-bottom-nav');
-  if (nav) nav.style.removeProperty('display');
+  if (!nav) return;
+  // 手機聊天對話中不允許顯示（body.mobile-chat-open 狀態）
+  if (document.body.classList.contains('mobile-chat-open')) return;
+  nav.style.display = 'flex';
 }
 function _hideMobileNav() {
   const nav = document.getElementById('mobile-bottom-nav');
