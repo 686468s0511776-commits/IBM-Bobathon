@@ -474,6 +474,9 @@
     /* 防止換行時標籤高度塌陷疊壓 */
     display: inline-flex; align-items: center; white-space: nowrap;
     margin-bottom: 4px;
+    /* 手機觸控：避免瀏覽器把 tap 攔截成 scroll，確保 click 正常觸發 */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(91,141,184,.2);
   }
   .skill-tag.selected {
     background: #5B8DB8; border-color: #5B8DB8; color: #fff;
@@ -4076,9 +4079,10 @@ function showSkillSetup() {
   // 首次登入 Google → 補填年齡/性別/技能
   const overlay = document.createElement('div');
   overlay.id = 'skill-setup-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:300;padding:24px;overflow-y:auto';
+  // align-items:flex-start 確保手機高度不足時可正常捲動，不被截斷
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;justify-content:center;z-index:300;padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:20px;padding:36px;max-width:520px;width:100%">
+    <div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:520px;width:100%;margin:auto">
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:40px;margin-bottom:8px">👋</div>
         <h2 style="font-size:20px;font-weight:800;color:#3D3D3D">歡迎，${currentUserData.name}！</h2>
@@ -4131,16 +4135,21 @@ function showSkillSetup() {
         完成設定，進入平台 →
       </button>
     </div>`;
-  // 技能標籤點擊切換（事件委派：掛在容器上，避免「其他」按鈕觸發兩次）
+  // 技能標籤點擊切換（同時綁 click + touchend，兼容手機觸控）
   ['setup-general-tags', 'setup-skill-tags'].forEach(containerId => {
     const container = overlay.querySelector(`#${containerId}`);
     if (!container) return;
-    container.addEventListener('click', e => {
+
+    const handleTagToggle = (e) => {
       const tag = e.target.closest('.setup-skill-tag');
       if (!tag) return;
-      // 「其他」由 onclick 處理展開輸入框，只 toggle selected，不 return
+      // 防止 touchend 後 click 重複觸發
+      if (e.type === 'touchend') e.preventDefault();
       tag.classList.toggle('selected');
-    });
+    };
+
+    container.addEventListener('click',    handleTagToggle);
+    container.addEventListener('touchend', handleTagToggle, { passive: false });
   });
   document.body.appendChild(overlay);
 }
