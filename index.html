@@ -2429,15 +2429,16 @@
                  location.hostname === '127.0.0.1' ||
                  location.protocol === 'file:';
 
-  // ── 工具：存取本地帳號資料庫 ──
+  // ── 工具：存取本地帳號資料庫（帳號列表用 localStorage，登入狀態改用 sessionStorage 隔離分頁）──
   function getAccounts() {
     try { return JSON.parse(localStorage.getItem('mockAccounts') || '{}'); } catch(e) { return {}; }
   }
   function saveAccounts(db) { localStorage.setItem('mockAccounts', JSON.stringify(db)); }
 
   function loginAs(user) {
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('user', JSON.stringify(user));
+    // 改用 sessionStorage：每個分頁獨立，不互相覆蓋
+    sessionStorage.setItem('isLoggedIn', 'true');
+    sessionStorage.setItem('user', JSON.stringify(user));
     location.reload();
   }
 
@@ -2500,10 +2501,10 @@
   // ── 頁面載入後恢復登入狀態（DOMContentLoaded） ──
   document.addEventListener('DOMContentLoaded', function() {
     if (!IS_LOCAL) return;
-    if (localStorage.getItem('isLoggedIn') !== 'true') return;
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') return;
 
     var user = {};
-    try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch(e) {}
+    try { user = JSON.parse(sessionStorage.getItem('user') || '{}'); } catch(e) {}
 
     // 強制切換頁面
     document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -2531,10 +2532,10 @@
     window.__MOCK_USER__ = user;
   });
 
-  // ── 登出 ──
+  // ── 登出（Mock 模式）──
   window.doLogout = function() {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('user');
     location.reload();
   };
 
@@ -3818,9 +3819,10 @@ const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127
 (function restoreMock() {
   if (!IS_LOCAL) return;
   try {
-    const raw = localStorage.getItem('isLoggedIn');
+    // 改讀 sessionStorage：每個分頁獨立，不跨分頁共享
+    const raw = sessionStorage.getItem('isLoggedIn');
     if (raw !== 'true') return;
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
     currentUser = { uid: 'mock-demo-user' };
     currentUserData = {
       name:   user.name   || 'Google 測試用戶',
@@ -3841,8 +3843,8 @@ const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127
     updateSidebarUser();
     loadCards();
   } catch(e) {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('user');
   }
 })();
 
@@ -4647,8 +4649,10 @@ window.doLogout = async () => {
   sentInvites = []; recvInvites = []; chatLogs = {};
   currentUser = null; currentUserData = null;
   _unreadMap = {}; _unreadCountMap = {};
-  // ── 3. 徹底清除本地快取 ──
-  try { localStorage.clear(); } catch(e) {}
+  // ── 3. 清除帳號相關快取（保留 theme、safetyBanner 等非帳號設定）──
+  try {
+    ['isLoggedIn', 'user', 'mockUser', 'mockAccounts'].forEach(k => localStorage.removeItem(k));
+  } catch(e) {}
   try { sessionStorage.clear(); } catch(e) {}
   // ── 4. 執行 Firebase 登出，完成後重新整理頁面（確保所有狀態乾淨）──
   try { await signOut(auth); } catch(e) { console.warn('signOut error:', e.message); }
