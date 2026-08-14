@@ -477,6 +477,13 @@
     /* 手機觸控：避免瀏覽器把 tap 攔截成 scroll，確保 click 正常觸發 */
     touch-action: manipulation;
     -webkit-tap-highlight-color: rgba(91,141,184,.2);
+    /* button 元素 reset：確保 <button> 與 <span> 視覺一致 */
+    background: #f9fafb;
+    appearance: none; -webkit-appearance: none;
+    font-family: inherit;
+    line-height: 1;
+    text-align: center;
+    min-height: 36px;
   }
   .skill-tag.selected {
     background: #5B8DB8; border-color: #5B8DB8; color: #fff;
@@ -4155,10 +4162,11 @@ function showSkillSetup() {
       <div style="margin-bottom:14px">
         <div class="skill-cat-header green" style="margin-bottom:8px">🟢 一般互助</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px" id="setup-general-tags">
-          ${['搬運','代買','代領','陪伴','外出協助','居家整理','寵物照顧'].map(s=>`
-            <span class="skill-tag setup-skill-tag" data-skill="${s}" data-cat="general">${s}</span>`).join('')}
-          <span class="skill-tag setup-skill-tag" data-skill="其他(一般)" data-cat="general"
-            onclick="window.toggleOtherInput('setup-general-other',this)">➕ 其他</span>
+          ${['搬運','代買','代領','陪伴','外出協助','居家整理','寵物照顧'].map(s =>
+            `<button type="button" class="skill-tag setup-skill-tag" data-skill="${s}" data-cat="general">${s}</button>`
+          ).join('')}
+          <button type="button" class="skill-tag setup-skill-tag" data-skill="其他(一般)" data-cat="general"
+            data-other-wrap="setup-general-other">➕ 其他</button>
         </div>
         <div class="skill-other-input-wrap" id="setup-general-other">
           <input class="skill-other-input" id="setup-general-other-input" placeholder="請輸入其他一般幫助…"/>
@@ -4168,35 +4176,37 @@ function showSkillSetup() {
       <div style="margin-bottom:24px">
         <div class="skill-cat-header blue" style="margin-bottom:8px">🔵 技能互助</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px" id="setup-skill-tags">
-          ${['簡單修繕','基礎電器','電腦','手機/3C','腳踏車維修','課業','設計','攝影','程式設計'].map(s=>`
-            <span class="skill-tag setup-skill-tag" data-skill="${s}" data-cat="skill">${s}</span>`).join('')}
-          <span class="skill-tag setup-skill-tag" data-skill="其他(技能)" data-cat="skill"
-            onclick="window.toggleOtherInput('setup-skill-other',this)">➕ 其他</span>
+          ${['簡單修繕','基礎電器','電腦','手機/3C','腳踏車維修','課業','設計','攝影','程式設計'].map(s =>
+            `<button type="button" class="skill-tag setup-skill-tag" data-skill="${s}" data-cat="skill">${s}</button>`
+          ).join('')}
+          <button type="button" class="skill-tag setup-skill-tag" data-skill="其他(技能)" data-cat="skill"
+            data-other-wrap="setup-skill-other">➕ 其他</button>
         </div>
         <div class="skill-other-input-wrap" id="setup-skill-other">
           <input class="skill-other-input" id="setup-skill-other-input" placeholder="請輸入其他技能幫助…"/>
         </div>
       </div>
-      <button onclick="window.completeSetup()"
+      <button type="button" onclick="window.completeSetup()"
         style="width:100%;padding:13px;background:#5B8DB8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
         完成設定，進入平台 →
       </button>
     </div>`;
-  // 技能標籤點擊切換（同時綁 click + touchend，兼容手機觸控）
+
+  // 技能標籤點擊切換（button 原生 click，iOS/Android 均可靠觸發）
   ['setup-general-tags', 'setup-skill-tags'].forEach(containerId => {
     const container = overlay.querySelector(`#${containerId}`);
     if (!container) return;
-
-    const handleTagToggle = (e) => {
+    container.addEventListener('click', e => {
       const tag = e.target.closest('.setup-skill-tag');
       if (!tag) return;
-      // 防止 touchend 後 click 重複觸發
-      if (e.type === 'touchend') e.preventDefault();
+      // 「其他」：展開/收合輸入框
+      const wrapId = tag.dataset.otherWrap;
+      if (wrapId) {
+        window.toggleOtherInput(wrapId, tag);
+        return;   // toggleOtherInput 已處理 selected
+      }
       tag.classList.toggle('selected');
-    };
-
-    container.addEventListener('click',    handleTagToggle);
-    container.addEventListener('touchend', handleTagToggle, { passive: false });
+    });
   });
   document.body.appendChild(overlay);
 }
